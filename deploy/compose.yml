@@ -38,10 +38,8 @@ services:
       - bash
       - -lc
       - |
-        set -euxo pipefail
-         /deploy/scripts/init-env.sh
+        set -euxo pipefail  
         /deploy/scripts/init-postgres.sh
-
     restart: "no"
 
   mod-rag-api:
