@@ -25,6 +25,7 @@ if [[ ! -f "$RAG_SQL" ]]; then
   exit 1
 fi
 
+echo "[init-postgres] HELLO "
 log "waiting for postgres at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
 for i in $(seq 1 60); do
   if pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres >/dev/null 2>&1; then
@@ -33,15 +34,6 @@ for i in $(seq 1 60); do
   sleep 1
 done
 
-log "hard resetting database '${POSTGRES_DB}'..."
-psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<SQL
-SELECT pg_terminate_backend(pid)
-FROM pg_stat_activity
-WHERE datname = '${POSTGRES_DB}' AND pid <> pg_backend_pid();
-
-DROP DATABASE IF EXISTS "${POSTGRES_DB}";
-CREATE DATABASE "${POSTGRES_DB}";
-SQL
 
 log "applying rag.sql from: $RAG_SQL"
 psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f "$RAG_SQL"
