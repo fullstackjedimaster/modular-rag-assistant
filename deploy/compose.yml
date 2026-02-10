@@ -31,12 +31,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      sh -lc "
-        set -eux;
-        ./scripts/init-env.sh
-        ./scripts/init-postgres.sh
-      "
+    command: ["sh", "-lc", "/deploy/scripts/init-env.sh && /deploy/scripts/init-postgres.sh"]
     restart: "no"
 
   mod-rag-api:
