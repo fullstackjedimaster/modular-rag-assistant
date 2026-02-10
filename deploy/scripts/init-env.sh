@@ -54,7 +54,6 @@ replace_key() {
 
 main() {
   log "ENV_DIR=$ENV_DIR"
-  mkdir -p "$ENV_DIR"
 
   local files=(
     "postgres.env"
