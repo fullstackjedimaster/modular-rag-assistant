@@ -54,9 +54,7 @@ replace_key() {
 }
 
 main() {
-  log "SCRIPT_DIR=$SCRIPT_DIR"
 
-  log "ENV_DIR=$ENV_DIR"
 
   local files=(
     "postgres.env"
