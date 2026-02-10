@@ -14,6 +14,7 @@ RUN set -eux; \
       postgresql-client \
       redis-tools \
       bash \
+      openssl \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     command -v psql; \

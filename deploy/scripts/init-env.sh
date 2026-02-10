@@ -17,12 +17,22 @@ need sed
 need awk
 
 gen_secret() {
-  # URL-safe token: letters, digits, '_' and '-'
-  python - <<'PY'
+  if command -v openssl >/dev/null 2>&1; then
+    # URL-safe base64: translate +/ to -_ and drop =
+    openssl rand -base64 48 \
+      | tr -d '\n' \
+      | tr '+/' '-_' \
+      | tr -d '='
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 - <<'PY'
 import secrets
 print(secrets.token_urlsafe(48))
 PY
+  else
+    err "Need either openssl or python3 to generate secrets"
+  fi
 }
+
 
 
 escape_sed_repl() {
