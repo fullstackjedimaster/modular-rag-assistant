@@ -6,7 +6,7 @@ set -euo pipefail
 # Generates a fresh POSTGRES_PASSWORD and writes DATABASE_URL deterministically.
 # Resolve deploy dir from this script's location
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-ENV_DIR="$(cd -- "$SCRIPT_DIR/../env" >/dev/null 2>&1 && pwd)"
+ENV_DIR="/deploy/env"
 
 
 
@@ -18,6 +18,7 @@ need() { command -v "$1" >/dev/null 2>&1 || err "Missing required command: $1"; 
 need cp
 need sed
 need awk
+
 
 gen_secret() {
   if command -v openssl >/dev/null 2>&1; then

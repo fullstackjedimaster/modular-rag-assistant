@@ -15,39 +15,38 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U rag -d rag" ]
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
       interval: 2s
       timeout: 2s
       retries: 60
 
-  # One-shot init: applies rag.sql AFTER postgres is healthy.
+  # One-shot init: ALWAYS regenerates env files and ALWAYS hard-resets DB + applies rag.sql.
   bootstrap:
     build:
       context: /opt/stacks/modular-rag-assistant
       dockerfile: deploy/docker/bootstrap/Dockerfile
     image: mod-rag-api/bootstrap:local
+
+    # We mount the host env dir into the container so init-env.sh overwrites the env
+    # files that Compose services actually use.
+    volumes:
+      - ./env:/deploy/env
+
     env_file:
       - ./env/postgres.env
-      - ./env/mod-rag-api.env
+
     depends_on:
       postgres:
         condition: service_healthy
+
     command:
       - bash
       - -lc
       - |
         set -euxo pipefail
-        echo "=== bootstrap: starting ==="
-        echo "whoami=$(whoami) pwd=$(pwd)"
-        echo "=== running init-env ==="
         /deploy/scripts/init-env.sh
-        echo "=== init-env exit=$? (should be 0) ==="
-        echo "=== listing scripts dir ==="
-        ls -la /deploy/scripts
-        echo "=== running init-postgres ==="
         /deploy/scripts/init-postgres.sh
-        echo "=== init-postgres exit=$? ==="
-        echo "=== bootstrap: done ==="
+
     restart: "no"
 
   mod-rag-api:
@@ -63,7 +62,6 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-    # Bind only to localhost; nginx will proxy /api/* to this.
     ports:
       - "127.0.0.1:8002:8002"
 
@@ -87,7 +85,5 @@ services:
       NEXT_PUBLIC_AI_RAG_API_BASE: /api
     restart: unless-stopped
 
-    # Bind only to localhost; nginx serves rag.fullstackjedi.dev -> this.
     ports:
       - "127.0.0.1:3003:3003"
-
