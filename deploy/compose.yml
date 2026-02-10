@@ -32,7 +32,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: [ "bash", "-lc", "/deploy/scripts/init-env.sh && /deploy/scripts/init-postgres.sh" ]
+    command:
+      - bash
+      - -lc
+      - |
+        set -euxo pipefail
+        echo "=== bootstrap: starting ==="
+        echo "whoami=$(whoami) pwd=$(pwd)"
+        echo "=== running init-env ==="
+        /deploy/scripts/init-env.sh
+        echo "=== init-env exit=$? (should be 0) ==="
+        echo "=== listing scripts dir ==="
+        ls -la /deploy/scripts
+        echo "=== running init-postgres ==="
+        /deploy/scripts/init-postgres.sh
+        echo "=== init-postgres exit=$? ==="
+        echo "=== bootstrap: done ==="
     restart: "no"
 
   mod-rag-api:
