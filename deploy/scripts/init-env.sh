@@ -84,7 +84,7 @@ main() {
     if grep -q '^POSTGRES_PASSWORD=CHANGE_ME' "$mod_rag_api_file"; then
       local pg_pass_current
       pg_pass_current="$(awk -F= '/^POSTGRES_PASSWORD=/{print $2}' "$pg_file" | tr -d '\r')"
-      replace_key "$cloud_file" "POSTGRES_PASSWORD" "$pg_pass_current"
+      replace_key "$mod_rag_api_file" "POSTGRES_PASSWORD" "$pg_pass_current"
       log "Copied POSTGRES_PASSWORD into $(basename "$mod_rag_api_file")"
     fi
 
