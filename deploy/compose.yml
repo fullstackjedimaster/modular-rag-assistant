@@ -28,7 +28,7 @@ services:
     image: mod-rag-api/bootstrap:local
     env_file:
       - ./env/postgres.env
-      - ./env/mod-rag-api.dnv
+      - ./env/mod-rag-api.env
     depends_on:
       postgres:
         condition: service_healthy
