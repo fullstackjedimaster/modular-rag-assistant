@@ -26,7 +26,7 @@ services:
   bootstrap:
     build:
       context: /opt/stacks/modular-rag-assistant
-      dockerfile: mod-rag/deploy/docker/bootstrap/Dockerfile
+      dockerfile: deploy/docker/bootstrap/Dockerfile
     image: mod-rag/bootstrap:local
     env_file:
       - ./env/postgres.env
@@ -43,7 +43,7 @@ services:
   mod-rag-api:
     build:
       context: /opt/stacks/modular-rag-assistant
-      dockerfile: mod-rag/deploy/docker/mod-rag-api/Dockerfile
+      dockerfile: deploy/docker/mod-rag-api/Dockerfile
     image: mod-rag-api:local
     env_file:
       - ./env/mod-rag-api.env
@@ -68,7 +68,7 @@ services:
   mod-rag:
     build:
       context: /opt/stacks/modular-rag-assistant
-      dockerfile: mod-rag/deploy/docker/mod-rag/Dockerfile
+      dockerfile: deploy/docker/mod-rag/Dockerfile
       args:
         NEXT_PUBLIC_AI_RAG_API_BASE: /api
     image: mod-rag:local
