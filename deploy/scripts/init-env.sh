@@ -7,8 +7,7 @@ set -euo pipefail
 # Resolve deploy dir from this script's location
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ENV_DIR="/deploy/env"
-log "$SCRIPT_DIR"
-log  "$ENV_DIR"
+
 
 
 
@@ -55,6 +54,8 @@ replace_key() {
 }
 
 main() {
+  log "SCRIPT_DIR=$SCRIPT_DIR"
+
   log "ENV_DIR=$ENV_DIR"
 
   local files=(
