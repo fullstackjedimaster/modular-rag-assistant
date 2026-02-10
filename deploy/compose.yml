@@ -3,23 +3,21 @@ name: modular-rag-assistant
 services:
   postgres:
     image: postgres:16
-    env_file:
-      - ./env/postgres.env
-    volumes:
-      - mod-rag-pgdata:/var/lib/postgresql/data
-
-    # Optional: expose to host ONLY if you want pgAdmin/psql from the droplet host.
-    # If you don't need host access, delete this ports block entirely.
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+    tmpfs:
+      - /var/lib/postgresql/data
     ports:
       - "127.0.0.1:5434:5432"
-
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      test: [ "CMD-SHELL", "pg_isready -U rag -d rag" ]
       interval: 2s
-      timeout: 3s
+      timeout: 2s
       retries: 60
 
   # One-shot init: applies rag.sql AFTER postgres is healthy.
@@ -27,7 +25,7 @@ services:
     build:
       context: /opt/stacks/modular-rag-assistant
       dockerfile: deploy/docker/bootstrap/Dockerfile
-    image: mod-rag/bootstrap:local
+    image: mod-rag-api/bootstrap:local
     env_file:
       - ./env/postgres.env
     depends_on:
@@ -36,6 +34,7 @@ services:
     command: >
       sh -lc "
         set -eux;
+        /deploy/scripts/init-env.sh
         /deploy/scripts/init-postgres.sh
       "
     restart: "no"
@@ -49,8 +48,6 @@ services:
       - ./env/mod-rag-api.env
       - ./env/postgres.env
     depends_on:
-      postgres:
-        condition: service_healthy
       bootstrap:
         condition: service_completed_successfully
     restart: unless-stopped
@@ -83,5 +80,3 @@ services:
     ports:
       - "127.0.0.1:3003:3003"
 
-volumes:
-  mod-rag-pgdata: {}
