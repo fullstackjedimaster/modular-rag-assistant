@@ -21,13 +21,9 @@ RUN set -eux; \
     command -v pg_isready; \
     command -v redis-cli
 
-RUN useradd -m -u 1001 -s /usr/sbin/nologin appuser
-
+# Copy deploy scripts (includes rag.sql)
 COPY deploy/scripts/ /deploy/scripts/
-RUN chmod +x /deploy/scripts/*.sh \
- && chown -R appuser:appuser /deploy
-
-USER appuser
+RUN chmod +x /deploy/scripts/*.sh
 
 ENTRYPOINT ["/usr/bin/tini","--"]
 CMD ["bash", "-lc", "echo bootstrap ready"]
