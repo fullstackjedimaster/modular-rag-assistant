@@ -27,14 +27,9 @@ services:
       dockerfile: deploy/docker/bootstrap/Dockerfile
     image: mod-rag-api/bootstrap:local
 
-    # We mount the host env dir into the container so init-env.sh overwrites the env
-    # files that Compose services actually use.
-    volumes:
-      - ./env:/deploy/env
-
     env_file:
       - ./env/postgres.env
-
+      - ./env/mod-rag-api
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,7 +39,6 @@ services:
       - -lc
       - |
         set -euxo pipefail
-        /deploy/scripts/init-env.sh
         /deploy/scripts/init-postgres.sh
 
     restart: "no"
