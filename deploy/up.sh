@@ -13,8 +13,8 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 
 docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml down -v --remove-orphans
 
-echo "[up] Generating env + secrets"
-bash -x "$DEPLOY_DIR/scripts/init-env.sh"
+# echo "[up] Generating env + secrets"
+# bash -x "$DEPLOY_DIR/scripts/init-env.sh"
 
 echo "[up] Building + starting stack"
 docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml build --no-cache

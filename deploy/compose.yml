@@ -29,7 +29,7 @@ services:
 
     env_file:
       - ./env/postgres.env
-      - ./env/mod-rag-api
+      - ./env/mod-rag-api.env
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,6 +39,7 @@ services:
       - -lc
       - |
         set -euxo pipefail
+         /deploy/scripts/init-env.sh
         /deploy/scripts/init-postgres.sh
 
     restart: "no"
