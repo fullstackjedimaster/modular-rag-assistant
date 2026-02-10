@@ -4,8 +4,8 @@ set -euo pipefail
 # deploy/scripts/init-env.sh
 # Always regenerates deploy/env/*.env from *.env.example (clean slate every run).
 # Generates a fresh POSTGRES_PASSWORD and writes DATABASE_URL deterministically.
-
-ENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/./env" && pwd)"
+# Resolve deploy dir from this script's location
+ENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/env" && pwd)"
 
 log()  { echo -e "\033[1;32m[+] $*\033[0m"; }
 err()  { echo -e "\033[1;31m[✗] $*\033[0m" >&2; exit 1; }
