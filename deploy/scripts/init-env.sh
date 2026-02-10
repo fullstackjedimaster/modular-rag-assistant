@@ -88,6 +88,18 @@ main() {
       log "Copied POSTGRES_PASSWORD into $(basename "$mod_rag_api_file")"
     fi
 
+  # Read connection parts (from api env after copy) with safe defaults
+    local host port db user
+    host="$(awk -F= '/^POSTGRES_HOST=/{print $2}' "$mod_rag_api_file" | tail -n 1)"
+    port="$(awk -F= '/^POSTGRES_PORT=/{print $2}' "$mod_rag_api_file" | tail -n 1)"
+    db="$(awk -F= '/^POSTGRES_DB=/{print $2}' "$mod_rag_api_file" | tail -n 1)"
+    user="$(awk -F= '/^POSTGRES_USER=/{print $2}' "$mod_rag_api_file" | tail -n 1)"
+
+    host="${host:-postgres}"
+    port="${port:-5432}"
+    db="${db:-rag}"
+    user="${user:-rag}"
+
     # Deterministically write DATABASE_URL (no placeholder patching)
     local dsn
     dsn="postgresql://${user}:${pg_pass}@${host}:${port}/${db}?sslmode=disable"
