@@ -1,0 +1,27 @@
+# Python
+*.pyc
+__pycache__/
+.env
+
+# Node
+node_modules/
+.next/
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local virtualenvs
+.venv/
+cloud/.venv/
+mesh/.venv/
+
+mod-rag/node_modules/
+
+# ---- deploy runtime secrets (never commit) ----
+
+
+data/
+
+

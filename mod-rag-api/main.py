@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+
+from routers.db import init_db_pool, close_db_pool
+
+# ✅ your main rag client API (keep ONLY the /rag-clients version)
+from routers.routes_rag_clients import router as rag_clients_router  # adjust import if needed
+from routers.client_docs_router import router as client_docs_router
+
+try:
+    from routers.embed_context_router import build_embed_context_router  # type: ignore
+except Exception:
+    build_embed_context_router = None  # type: ignore
+
+
+def _p(p: str) -> Path:
+    return Path(p).expanduser().resolve()
+
+
+HERE = Path(__file__).parent.resolve()
+CONFIG_DIR = _p(os.getenv("CONFIG_DIR", str(HERE / "config")))
+
+app = FastAPI(title="Mod RAG API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Optional: serve /config/* if present (handy for debugging)
+if CONFIG_DIR.exists() and CONFIG_DIR.is_dir():
+    app.mount("/config", StaticFiles(directory=str(CONFIG_DIR)), name="config")
+
+# ✅ primary DB-backed client_context API
+app.include_router(rag_clients_router)
+
+
+app.include_router(client_docs_router)
+
+# ✅ embed/context router (nginx strips /api/ already)
+if build_embed_context_router:
+    app.include_router(build_embed_context_router())
+
+
+@app.get("/health", response_class=PlainTextResponse)
+def health() -> str:
+    return "ok"
+
+
+@app.on_event("startup")
+async def _startup() -> None:
+    await init_db_pool(app)
+
+
+@app.on_event("shutdown")
+async def _shutdown() -> None:
+    await close_db_pool(app)

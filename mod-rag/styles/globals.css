@@ -1,0 +1,184 @@
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+  @font-face {
+    font-family: "Orbitron";
+    src: url("/fonts/Orbitron-SemiBold.ttf") format("truetype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Orbitron";
+    src: url("/fonts/Orbitron-Bold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Orbitron";
+    src: url("/fonts/Orbitron-ExtraBold.ttf") format("truetype");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Orbitron";
+    src: url("/fonts/Orbitron-Black.ttf") format("truetype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Optional: Include variable font fallback if needed */
+  @font-face {
+    font-family: "OrbitronVariable";
+    src: url("/fonts/Orbitron-VariableFont_wght.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+
+
+body {
+    margin: 0; /* Remove default body margin */
+    font-family: 'Orbitron', system-ui, sans-serif;
+    background: linear-gradient(
+        45deg,
+        #999 5%,    /* Dark silver */
+        #fff 10%,    /* Lightest highlight */
+        #ccc 30%,    /* Medium silver */
+        #ddd 50%,    /* Lighter silver */
+        #ccc 70%,    /* Medium silver */
+        #fff 80%,    /* Lightest highlight */
+        #999 95%     /* Dark silver */
+    );
+    border-radius: 4px; /* Optional: adds rounded corners to the form */
+    width: 100%;
+    height: 100%;
+
+}
+
+.main-section{
+   width: 100%;
+    max-width: 334px;
+}
+
+.fieldset-section{
+    border-width: thick;
+    font-size: 14px;
+    border-style: ridge;
+    font-weight: bold;
+}
+
+.panel-section{
+    background: white;
+    padding: 3px;
+    border-style: inset;
+    border-width: thick;
+
+
+}
+
+.control-section{
+    border-radius: 4px;
+    padding: 3px;
+    border-style: inset;
+    width: auto;
+    justify-items: center;
+    align-content:  center;
+}
+
+.panel{
+    font-weight: bold;
+    font-size: 4px;
+    text-anchor: middle;
+    alignment-baseline:  middle;
+}
+
+.header{
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+}
+
+.fault-injection-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    max-width: 300px;
+    margin: 0 auto;
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+
+.fault-injection-controls select,
+.fault-injection-controls button {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Disable Chrome's scroll anchoring (prevents jitter) */
+html, body {
+    overflow-anchor: none;
+    margin: 0;
+    padding: 0;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-y: auto;   /* allow scrolling if content taller than viewport */
+}
+
+/* Kill Tailwind's h-screen / min-h-screen locks inside iframe */
+[class*="min-h-0"],
+[class*="h-auto"] {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+/* Defensive: don't let flex/grid children force artificial heights */
+* {
+    min-height: 0;
+}
+
+html, body { margin:0; padding:0; overflow-x:hidden; }
+*, *::before, *::after { box-sizing:border-box; }
+
+/* Prevent inner iframes from having their own vertical scrollbar */
+:root, html, body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-y: visible !important;
+}
+
+/* globals.css */
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+#__next, body, html {
+    min-height: 0 !important; /* don’t force screen height */
+}
+
+/* /daq-ui/src/app/globals.css (safe clamps for iframe embedding) */
+html, body, #__next { min-height: 0 !important; height: auto !important; }
+main.main-section { min-height: auto !important; }
+img, canvas, svg, video { max-width: 100%; height: auto; display: block; }

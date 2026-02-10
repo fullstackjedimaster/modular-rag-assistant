@@ -1,0 +1,87 @@
+name: modular-rag-assistant
+
+services:
+  postgres:
+    image: postgres:16
+    env_file:
+      - ./env/postgres.env
+    volumes:
+      - mod-rag-pgdata:/var/lib/postgresql/data
+
+    # Optional: expose to host ONLY if you want pgAdmin/psql from the droplet host.
+    # If you don't need host access, delete this ports block entirely.
+    ports:
+      - "127.0.0.1:5434:5432"
+
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  # One-shot init: applies rag.sql AFTER postgres is healthy.
+  bootstrap:
+    build:
+      context: /opt/stacks/modular-rag-assistant
+      dockerfile: mod-rag/deploy/docker/bootstrap/Dockerfile
+    image: mod-rag/bootstrap:local
+    env_file:
+      - ./env/postgres.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -lc "
+        set -eux;
+        /deploy/scripts/init-postgres.sh
+      "
+    restart: "no"
+
+  mod-rag-api:
+    build:
+      context: /opt/stacks/modular-rag-assistant
+      dockerfile: mod-rag/deploy/docker/mod-rag-api/Dockerfile
+    image: mod-rag-api:local
+    env_file:
+      - ./env/mod-rag-api.env
+      - ./env/postgres.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+    # Bind only to localhost; nginx will proxy /api/* to this.
+    ports:
+      - "127.0.0.1:8002:8002"
+
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health', timeout=2).read()\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  mod-rag:
+    build:
+      context: /opt/stacks/modular-rag-assistant
+      dockerfile: mod-rag/deploy/docker/mod-rag/Dockerfile
+      args:
+        NEXT_PUBLIC_AI_RAG_API_BASE: /api
+    image: mod-rag:local
+    env_file:
+      - ./env/mod-rag.env
+    environment:
+      PORT: "3003"
+      NEXT_PUBLIC_AI_RAG_API_BASE: /api
+    restart: unless-stopped
+
+    # Bind only to localhost; nginx serves rag.fullstackjedi.dev -> this.
+    ports:
+      - "127.0.0.1:3003:3003"
+
+volumes:
+  mod-rag-pgdata: {}
