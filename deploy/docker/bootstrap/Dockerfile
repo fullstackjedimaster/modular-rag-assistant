@@ -12,22 +12,27 @@ RUN set -eux; \
       tini \
       ca-certificates \
       postgresql-client \
+      redis-tools \
       bash \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     command -v psql; \
-    psql --version; \
     command -v pg_isready; \
-    bash --version; \
-    python -V
+    command -v redis-cli
 
+# Non-root is fine, but ONLY if the bind-mounted deploy dir is readable.
 RUN useradd -m -u 1001 -s /usr/sbin/nologin appuser
 
-COPY ./deploy/scripts/ /deploy/scripts/
+# You don’t actually need psycopg/redis here unless your scripts import them.
+# Keeping it minimal is better.
+# RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Copy the deploy scripts from THIS repo layout
+COPY deploy/scripts/ /deploy/scripts/
 RUN chmod +x /deploy/scripts/*.sh \
  && chown -R appuser:appuser /deploy
 
 USER appuser
 
 ENTRYPOINT ["/usr/bin/tini","--"]
-CMD ["python", "-c", "print('bootstrap ready')"]
+CMD ["bash", "-lc", "echo bootstrap ready"]
