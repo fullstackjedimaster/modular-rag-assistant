@@ -34,8 +34,8 @@ services:
     command: >
       sh -lc "
         set -eux;
-        deploy/scripts/init-env.sh
-        deploy/scripts/init-postgres.sh
+        ./scripts/init-env.sh
+        ./scripts/init-postgres.sh
       "
     restart: "no"
 
