@@ -26,13 +26,6 @@ gen_secret() {
       | tr -d '\n' \
       | tr '+/' '-_' \
       | tr -d '='
-  elif command -v python3 >/dev/null 2>&1; then
-    python3 - <<'PY'
-import secrets
-print(secrets.token_urlsafe(48))
-PY
-  else
-    err "Need either openssl or python3 to generate secrets"
   fi
 }
 
@@ -77,36 +70,32 @@ main() {
   done
 
   local pg_file="${ENV_DIR}/postgres.env"
-  local api_file="${ENV_DIR}/mod-rag-api.env"
+  local mod_rag_api_file="${ENV_DIR}/mod-rag-api.env"
 
-  # Fresh password each run (clean slate demo)
-  local pg_pass
-  pg_pass="$(gen_secret)"
+  if grep -q '^POSTGRES_PASSWORD=CHANGE_ME' "$pg_file"; then
+      local pg_pass
+      pg_pass="$(gen_secret)"
+      replace_key "$pg_file" "POSTGRES_PASSWORD" "$pg_pass"
+      log "Generated POSTGRES_PASSWORD in $(basename "$pg_file")"
+    else
+      log "POSTGRES_PASSWORD already set in $(basename "$pg_file")"
+    fi
 
-  # Write password into both env files
-  replace_key "$pg_file"  "POSTGRES_PASSWORD" "$pg_pass"
-  replace_key "$api_file" "POSTGRES_PASSWORD" "$pg_pass"
-  log "Generated and synced POSTGRES_PASSWORD"
+    if grep -q '^POSTGRES_PASSWORD=CHANGE_ME' "$mod_rag_api_file"; then
+      local pg_pass_current
+      pg_pass_current="$(awk -F= '/^POSTGRES_PASSWORD=/{print $2}' "$pg_file" | tr -d '\r')"
+      replace_key "$cloud_file" "POSTGRES_PASSWORD" "$pg_pass_current"
+      log "Copied POSTGRES_PASSWORD into $(basename "$mod_rag_api_file")"
+    fi
 
-  # Read connection parts (from api env after copy) with safe defaults
-  local host port db user
-  host="$(awk -F= '/^POSTGRES_HOST=/{print $2}' "$api_file" | tail -n 1)"
-  port="$(awk -F= '/^POSTGRES_PORT=/{print $2}' "$api_file" | tail -n 1)"
-  db="$(awk -F= '/^POSTGRES_DB=/{print $2}' "$api_file" | tail -n 1)"
-  user="$(awk -F= '/^POSTGRES_USER=/{print $2}' "$api_file" | tail -n 1)"
+    # Deterministically write DATABASE_URL (no placeholder patching)
+    local dsn
+    dsn="postgresql://${user}:${pg_pass}@${host}:${port}/${db}?sslmode=disable"
+    replace_key "$mod_rag_api_file" "DATABASE_URL" "$dsn"
+    replace_key "$pg_file" "DATABASE_URL" "$dsn"
+    log "Wrote DATABASE_URL deterministically"
 
-  host="${host:-postgres}"
-  port="${port:-5432}"
-  db="${db:-rag}"
-  user="${user:-rag}"
-
-  # Deterministically write DATABASE_URL (no placeholder patching)
-  local dsn
-  dsn="postgresql://${user}:${pg_pass}@${host}:${port}/${db}?sslmode=disable"
-  replace_key "$api_file" "DATABASE_URL" "$dsn"
-  log "Wrote DATABASE_URL deterministically"
-
-  log "Environment initialization complete ✔"
+    log "Environment initialization complete ✔"
 }
 
 main "$@"

@@ -5,7 +5,7 @@ set -euo pipefail
 # Uses standard POSTGRES_* env vars (from ./env/postgres.env)
 
 : "${POSTGRES_HOST:=postgres}"
-: "${POSTGRES_PORT:=5432}"  
+: "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_DB:=rag}"
 : "${POSTGRES_USER:=rag}"
 : "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
