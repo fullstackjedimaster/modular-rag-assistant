@@ -23,7 +23,7 @@ RUN set -eux; \
 
 RUN useradd -m -u 1001 -s /usr/sbin/nologin appuser
 
-COPY ./mod-rag/deploy/scripts/ /deploy/scripts/
+COPY ./deploy/scripts/ /deploy/scripts/
 RUN chmod +x /deploy/scripts/*.sh \
  && chown -R appuser:appuser /deploy
 
