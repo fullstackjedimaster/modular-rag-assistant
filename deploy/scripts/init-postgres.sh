@@ -43,7 +43,7 @@ fi
 
 echo "[init-postgres] Creating schema/tables and seeding data..."
 
-psql -v ON_ERROR_STOP=1 "$DATABASE_URL" <<SQL
+psql -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS rag;
