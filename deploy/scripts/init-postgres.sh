@@ -50,14 +50,14 @@ CREATE SCHEMA IF NOT EXISTS rag;
 
 SET search_path TO rag;
 
--- Prompt chaining mode
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'prompt_chaining_mode' AND typnamespace = 'rag'::regnamespace) THEN
 CREATE TYPE rag.prompt_chaining_mode AS ENUM ('append', 'replace', 'none');
 END IF;
-END$$;
 
+END$$
 -- =========================
 -- Tables
 -- =========================
@@ -400,8 +400,11 @@ RETURN jsonb_build_object(
                            )
                    )
        );
-END;
+    END;
+
 $$ LANGUAGE plpgsql;
+
+
 
 COMMIT;
 
