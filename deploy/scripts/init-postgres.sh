@@ -57,7 +57,7 @@ BEGIN
 CREATE TYPE rag.prompt_chaining_mode AS ENUM ('append', 'replace', 'none');
 END IF;
 
-END$$
+END$$;
 -- =========================
 -- Tables
 -- =========================
