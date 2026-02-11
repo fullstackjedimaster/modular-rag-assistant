@@ -31,27 +31,9 @@ SITE_NAME="${SITE_NAME:-TEST}"
 SITEARRAY_LABEL="${SITEARRAY_LABEL:-Site Array TEST}"
 TZ_NAME="${TZ_NAME:-America/Chicago}"
 
-echo "[init-postgres] Using DB host='${POSTGRES_HOST:-<from DATABASE_URL>}' db='${POSTGRES_DB:-<from DATABASE_URL>}' user='${POSTGRES_USER:-<from DATABASE_URL>}'"
+echo "[init-postgres] Using '$DATABASE_URL'"
 echo "[init-postgres] Waiting for Postgres and checking schema..."
 
-i=1
-while [ "$i" -le 60 ]; do
-  out="$(psql "$DATABASE_URL" -tA -c "SELECT 1 FROM pg_namespace WHERE nspname='rag' LIMIT 1;" 2>/dev/null || true)"
-  out="$(echo "$out" | tr -d '[:space:]')"
-
-if [ "$out" = "1" ]; then
-  echo "[init-postgres] Postgres is ready. Schema 'ss' already exists. Skipping (only runs on fresh DB)."
-  exit 0
-fi # Distinguish "psql failed (not ready)" from "ready but schema missing"
- if psql "$DATABASE_URL" -tAc "SELECT 1" >/dev/null 2>&1; then
-   echo "[init-postgres] Postgres is ready. Schema 'ss' not found; proceeding with initialization."
-   break
-fi
-
-echo "[init-postgres] Not ready yet ($i/60); sleeping 1s..."
-sleep 1
-i=$((i + 1))
-done
 
 # Final hard fail if Postgres never came up
 if ! psql "$DATABASE_URL" -tAc "SELECT 1" >/dev/null 2>&1; then
