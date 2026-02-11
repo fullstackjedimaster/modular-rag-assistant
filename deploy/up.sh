@@ -16,7 +16,7 @@ echo "[up] Generating env + secrets"
 bash -x "$DEPLOY_DIR/scripts/init-env.sh"
 
 echo "[up] Building + starting stack"
-docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml build --no-cache
+#docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml build --no-cache
 
 echo "[up] Building + starting stack"
 docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml up -d --force-recreate --renew-anon-volumes --remove-orphans
