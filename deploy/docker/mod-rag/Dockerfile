@@ -13,9 +13,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY ./mod-rag ./
 
-ARG NEXT_PUBLIC_AI_RAG_API_BASE
-ENV NEXT_PUBLIC_AI_RAG_API_BASE=${NEXT_PUBLIC_AI_RAG_API_BASE}
-
 ENV NODE_ENV=production
 RUN npm run build
 

@@ -69,14 +69,9 @@ services:
     build:
       context: /opt/stacks/modular-rag-assistant
       dockerfile: deploy/docker/mod-rag/Dockerfile
-      args:
-        NEXT_PUBLIC_AI_RAG_API_BASE: /api
     image: mod-rag:local
     env_file:
       - ./env/mod-rag.env
-    environment:
-      PORT: "3003"
-      NEXT_PUBLIC_AI_RAG_API_BASE: /api
     restart: unless-stopped
 
     ports:
