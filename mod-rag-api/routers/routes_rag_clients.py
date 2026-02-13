@@ -22,7 +22,7 @@ from .schemas import (
 )
 from .status_registry import REGISTRY
 
-router = APIRouter(prefix="/rag-clients", tags=["rag-clients"])
+router = APIRouter(prefix="/api/rag-clients", tags=["rag-clients"])
 
 
 # ---------------------------
