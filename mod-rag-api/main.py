@@ -38,13 +38,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Optional: serve /config/* if present (handy for debugging)
-if CONFIG_DIR.exists() and CONFIG_DIR.is_dir():
-    app.mount("/config", StaticFiles(directory=str(CONFIG_DIR)), name="config")
 
 # ✅ primary DB-backed client_context API
 app.include_router(rag_clients_router)
-
 
 app.include_router(client_docs_router)
 
