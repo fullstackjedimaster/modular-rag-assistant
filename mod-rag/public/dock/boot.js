@@ -59,8 +59,12 @@
     }
 
     // Mount the dock app
-    var qs = "?frameId=" + encodeURIComponent(frameId) + "&dock=1";
-    iframe.src = origin.replace(/\/$/, "") + "/dock" + qs;
+    // var qs = "?frameId=" + encodeURIComponent(frameId) + "&dock=1";
+    // iframe.src = origin.replace(/\/$/, "") + "/dock/Page.tsx" + qs;
+
+
+    iframe.src = origin.replace(/\/$/, "") + "/dock/Page.tsx";
+
 
     // Height listener
     window.addEventListener("message", function (ev) {

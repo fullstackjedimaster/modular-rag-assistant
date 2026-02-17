@@ -80,9 +80,7 @@ export default function DashboardClient() {
             <GroupBox title="Configured Host Apps">
                 <div className="flex items-center justify-between gap-3">
                     <div className="text-sm">Loading…</div>
-                    <a className="border rounded px-3 py-2 text-sm hover:bg-gray-50" href="/hosts/new">
-                        Configure New Client
-                    </a>
+
                 </div>
             </GroupBox>
         );
@@ -93,9 +91,7 @@ export default function DashboardClient() {
             <GroupBox title="Configured Host Apps">
                 <div className="flex items-center justify-between gap-3">
                     <div className="text-sm text-red-600 whitespace-pre-wrap">{err || "Failed to load."}</div>
-                    <a className="border rounded px-3 py-2 text-sm hover:bg-gray-50" href="/hosts/new">
-                        Configure New Client
-                    </a>
+
                 </div>
 
                 <button className="mt-3 border rounded px-3 py-2 text-sm" onClick={() => void boot()} type="button">
@@ -111,9 +107,7 @@ export default function DashboardClient() {
                 <div className="text-xs text-gray-600">
                     Click a client to manage its context (docs, messages, prompt).
                 </div>
-                <a className="border rounded px-3 py-2 text-sm hover:bg-gray-50" href="/hosts/new">
-                    Configure New Client
-                </a>
+
             </div>
 
             <div className="overflow-x-auto">
