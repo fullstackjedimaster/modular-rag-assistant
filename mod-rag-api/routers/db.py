@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 from typing import Any, Dict, List, Optional, Union
 
 import asyncpg
 from fastapi import HTTPException, Request
 from fastapi.applications import FastAPI
-
 
 AppLike = Union[FastAPI, Any]  # anything with .state is fine
 
@@ -21,8 +21,8 @@ def _database_url() -> str:
 def _get_app(obj: Any) -> Any:
     """
     Accept either:
-      - FastAPI app
-      - Request
+    - FastAPI app
+    - Request
     and return the FastAPI app-ish object that has .state.
     """
     if hasattr(obj, "app"):  # Request
@@ -68,7 +68,10 @@ async def close_db_pool(app_or_request: AppLike) -> None:
 def _pool_from_request(request: Request) -> asyncpg.Pool:
     pool = getattr(request.app.state, "db_pool", None)
     if pool is None:
-        raise HTTPException(status_code=500, detail="DB pool not initialized (app.state.db_pool is missing).")
+        raise HTTPException(
+            status_code=500,
+            detail="DB pool not initialized (app.state.db_pool is missing).",
+        )
     return pool
 
 
@@ -78,6 +81,7 @@ async def call_rows(request: Request, fn: str, *args: Any) -> List[Dict[str, Any
     """
     pool = _pool_from_request(request)
     sql = f"SELECT * FROM {fn}({', '.join(f'${i}' for i in range(1, len(args) + 1))});"
+
     try:
         async with pool.acquire() as conn:
             rows = await conn.fetch(sql, *args)
@@ -92,6 +96,7 @@ async def call_val(request: Request, fn: str, *args: Any) -> Any:
     """
     pool = _pool_from_request(request)
     sql = f"SELECT {fn}({', '.join(f'${i}' for i in range(1, len(args) + 1))}) AS v;"
+
     try:
         async with pool.acquire() as conn:
             row = await conn.fetchrow(sql, *args)
@@ -103,7 +108,35 @@ async def call_val(request: Request, fn: str, *args: Any) -> Any:
 async def call_jsonb(request: Request, fn: str, *args: Any) -> Any:
     """
     Call a SQL function that returns JSON/JSONB.
-    asyncpg typically returns JSON as dict/list already.
+
+    Depending on the function, driver behavior, casts, or SQL construction,
+    asyncpg may return:
+    - dict / list
+    - a JSON string
+    - None
+
+    Normalize JSON strings into Python objects so route handlers can safely
+    treat JSON/JSONB results as structured data.
     """
     v = await call_val(request, fn, *args)
+
+    if v is None:
+        return None
+
+    if isinstance(v, (dict, list)):
+        return v
+
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return None
+
+        try:
+            return json.loads(s)
+        except json.JSONDecodeError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"{fn} returned a non-JSON string instead of JSON/JSONB: {e}",
+            ) from e
+
     return v
