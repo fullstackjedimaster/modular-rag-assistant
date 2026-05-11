@@ -27,7 +27,7 @@ export function SmartExplainer({
   const effectiveId = subjectId;
 
   const [query, setQuery] = useState<string>(usecase.default_query || "");
-  const [telemetry, setTelemetry] = useState<Telemetry>({});
+  const [setTelemetry] = useState<Telemetry>({});
   const [log, setLog] = useState<string>("");
   const [contextsOpen, setContextsOpen] = useState<boolean>(false);
   const [toast, setToast] = useState<{
@@ -51,20 +51,21 @@ export function SmartExplainer({
     embed_model: usecase.embed_model,
   });
 
-  useEffect(() => {
-    const t: Telemetry = {};
+  const telemetry = useMemo<Telemetry>(() => {
+  const t: Telemetry = {};
 
-    if (Array.isArray(usecase.telemetry_keys) && usecase.telemetry_keys.length > 0) {
-      for (const key of usecase.telemetry_keys) {
-        const v = attrs?.[key];
-        if (typeof v === "string" || typeof v === "number") {
-          t[key] = v;
-        }
+  if (Array.isArray(usecase.telemetry_keys) && usecase.telemetry_keys.length > 0) {
+    for (const key of usecase.telemetry_keys) {
+      const v = attrs?.[key];
+
+      if (typeof v === "string" || typeof v === "number") {
+        t[key] = v;
       }
     }
+  }
 
-    setTelemetry(t);
-  }, [attrs, usecase.telemetry_keys]);
+  return t;
+}, [attrs, usecase.telemetry_keys]);
 
   const base = (process.env.NEXT_PUBLIC_AI_CORE_BASE || "https://ai-ui.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
@@ -227,8 +228,8 @@ export function SmartExplainer({
         const resp = await fetch(`${base}/admin/models`);
         if (resp.ok) {
           const data = await resp.json();
-          setLlmModels(data.llm_models ?? llmModels);
-          setEmbedChoices(data.embed_models ?? embedChoices);
+          setLlmModels((prev) => data.llm_models ?? prev);
+          setEmbedChoices((prev) => data.embed_models ?? prev);
         }
       } catch (err) {
         console.warn("Failed to fetch /admin/models:", err);
@@ -256,5 +257,13 @@ export function SmartExplainer({
         heatmapData={heatmapData}
       />
 
-      {toast && (
-        <Toast
+        {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onCloseAction={() => setToast(null)}
+                />
+            )}
+        </div>
+    );
+}
