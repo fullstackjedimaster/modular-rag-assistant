@@ -12,7 +12,7 @@ AppLike = Union[FastAPI, Any]  # anything with .state is fine
 
 
 def _database_url() -> str:
-    url = os.getenv("DATABASE_URL", "").strip()
+    url = env("DATABASE_URL", "").strip()
     if not url:
         raise RuntimeError("DATABASE_URL env var is required for db access.")
     return url
@@ -44,9 +44,9 @@ async def init_db_pool(app_or_request: AppLike) -> None:
     try:
         app.state.db_pool = await asyncpg.create_pool(
             dsn=_database_url(),
-            min_size=int(os.getenv("DB_POOL_MIN", "1")),
-            max_size=int(os.getenv("DB_POOL_MAX", "10")),
-            command_timeout=float(os.getenv("DB_COMMAND_TIMEOUT", "30")),
+            min_size=int(env("DB_POOL_MIN", "1")),
+            max_size=int(env("DB_POOL_MAX", "10")),
+            command_timeout=float(env("DB_COMMAND_TIMEOUT", "30")),
         )
     except Exception as e:
         raise RuntimeError(f"Failed to create asyncpg pool: {e}") from e

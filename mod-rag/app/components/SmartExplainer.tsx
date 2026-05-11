@@ -5,6 +5,7 @@ import { ExplanationPanel, Telemetry, UseCaseContext } from "@/app/components/Ex
 import { useStream } from "@/app/hooks/useStream";
 import { useAIConfig } from "@/app/hooks/useAIConfig";
 import Toast from "@/app/components/Toast";
+import { settings } from "@/app/lib/settings";
 
 type AttrValue = string | number | boolean | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -67,7 +68,7 @@ export function SmartExplainer({
   return t;
 }, [attrs, usecase.telemetry_keys]);
 
-  const base = (process.env.NEXT_PUBLIC_AI_CORE_BASE || "https://ai-ui.fullstackjedi.dev").replace(/\/$/, "");
+  const base = (settings.AI_CORE_BASE || "https://ai-ui.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
 
   const url = useMemo(() => {

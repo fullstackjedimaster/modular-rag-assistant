@@ -38,7 +38,7 @@ from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-
+from settings import env
 
 # ----------------------------- token helpers -----------------------------
 
@@ -102,8 +102,8 @@ def _retention() -> Retention:
     # global retention knobs (simple + predictable)
     try:
         return Retention(
-            max_events=int(os.getenv("CONTEXT_MAX_EVENTS", "50")),
-            max_age_seconds=int(os.getenv("CONTEXT_MAX_AGE_SECONDS", "600")),
+            max_events=int(env("CONTEXT_MAX_EVENTS", "50")),
+            max_age_seconds=int(env("CONTEXT_MAX_AGE_SECONDS", "600")),
         )
     except Exception:
         return Retention()
@@ -161,7 +161,7 @@ class ContextEventResponse(BaseModel):
 # ----------------------------- auth dependencies -----------------------------
 
 def _signing_secret() -> str:
-    sec = os.getenv("EMBED_SIGNING_SECRET")
+    sec = env("EMBED_SIGNING_SECRET")
     if not sec:
         raise HTTPException(status_code=500, detail="Missing EMBED_SIGNING_SECRET env var")
     return sec
@@ -170,7 +170,7 @@ def _require_admin(request: Request) -> None:
     """
     Simple shared-secret admin gate. Swap for Auth0/JWT later.
     """
-    admin_secret = os.getenv("EMBED_ADMIN_SECRET")
+    admin_secret = env("EMBED_ADMIN_SECRET")
     if not admin_secret:
         raise HTTPException(status_code=403, detail="Admin endpoint disabled (set EMBED_ADMIN_SECRET)")
     got = request.headers.get("x-embed-admin") or request.headers.get("x-admin-secret")
@@ -217,7 +217,7 @@ def build_embed_context_router() -> APIRouter:
     async def create_embed_session(req: EmbedSessionRequest, request: Request):
         _require_admin(request)
 
-        ttl = int(os.getenv("EMBED_TOKEN_TTL_SECONDS", "600"))
+        ttl = int(env("EMBED_TOKEN_TTL_SECONDS", "600"))
         exp = _now() + max(60, ttl)
 
         session_id = f"es_{_now()}_{os.urandom(3).hex()}"

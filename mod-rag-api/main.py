@@ -26,13 +26,13 @@ def _p(p: str) -> Path:
 
 
 HERE = Path(__file__).parent.resolve()
-CONFIG_DIR = _p(os.getenv("CONFIG_DIR", str(HERE / "config")))
+
 
 app = FastAPI(title="Mod RAG API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

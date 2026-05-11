@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {settings} from "@/app/lib/settings";
 
 export type UseCaseConfig = {
   id: string;
@@ -49,7 +50,7 @@ export function useUseCase() {
 
     async function loadUsecases() {
       try {
-        const base = (process.env.NEXT_PUBLIC_CONFIG_BASE || "/config").replace(/\/+$/, "");
+        const base = (settings.AI_CORE_BASE || "/config").replace(/\/+$/, "");
         const url = `${base}/usecases.json?t=${Date.now()}`;
 
         const response = await fetch(url, {

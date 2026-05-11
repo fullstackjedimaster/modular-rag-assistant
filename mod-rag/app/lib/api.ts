@@ -1,8 +1,9 @@
 // /mesh-daq/mesh-daq-ui/src/lib/api.ts
 import { Fault  } from "@/app/lib/faults/types"
 import type { HallucinationReport, SaliencyMap, TokenIGSaliency } from "./types";
+import settings from "@/app/lib/settings";
 
-const BASE = process.env.NEXT_PUBLIC_AI_BACKEND ?? "http://localhost:8000";
+const BASE = settings.AI_RAG_API_BASE
 
 interface Panel {
     mac: string

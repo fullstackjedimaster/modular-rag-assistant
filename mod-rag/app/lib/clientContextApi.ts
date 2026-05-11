@@ -1,4 +1,6 @@
 // app/lib/clientContextApi.ts
+import {settings} from "@/app/lib/settings";
+
 export type ContentDocRow = {
     id: number;
     doc_name: string;
@@ -11,7 +13,7 @@ export type ContextMessageRow = {
 };
 
 function apiBase(): string {
-    return (process.env.NEXT_PUBLIC_AI_RAG_API_BASE || "").replace(/\/+$/, "");
+    return (settings.AI_RAG_API_BASE || "").replace(/\/+$/, "");
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
