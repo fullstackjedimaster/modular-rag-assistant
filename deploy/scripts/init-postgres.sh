@@ -35,11 +35,7 @@ echo "[init-postgres] Using '$DATABASE_URL'"
 echo "[init-postgres] Waiting for Postgres and checking schema..."
 
 
-# Final hard fail if Postgres never came up
-if ! psql "$DATABASE_URL" -tAc "SELECT 1" >/dev/null 2>&1; then
-  echo "[init-postgres] ERROR: Postgres never became ready."
-  exit 1
-fi
+
 
 echo "[init-postgres] Creating schema/tables and seeding data..."
 
