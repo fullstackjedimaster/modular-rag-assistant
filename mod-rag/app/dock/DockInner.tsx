@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SmartExplainer } from "@/app/components/SmartExplainer";
-import { useUsecase } from "@/app/hooks/useUseCase";
+import { useUseCase } from "@/app/hooks/useUseCase";
 import { parseDockMessage } from "@/app/lib/messages";
 
 type AttrValue = string | number | boolean | null | undefined;
@@ -13,8 +13,11 @@ function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(`[dock] ${msg}`);
 }
 
-function requireAllowlist(usecase: any): string[] {
+function requireAllowlist(
+  usecase: { telemetry_keys?: unknown } | undefined
+): string[] {
   const keys = usecase?.telemetry_keys;
+
   assert(Array.isArray(keys), "usecase.telemetry_keys must exist and be an array.");
   assert(keys.length > 0, "usecase.telemetry_keys must be non-empty.");
 
@@ -38,7 +41,7 @@ function pickRequiredAttrs(attrs: Attrs, allow: string[]) {
       `attr "${key}" must be string|number|boolean, got ${t}.`
     );
 
-    out[key] = v as string | number | boolean;
+    out[key] = v;
   }
 
   return out;
@@ -49,7 +52,7 @@ export default function DockInner() {
   const forcedUsecase = params.get("usecase") || undefined;
   const forcedClient = params.get("client") || undefined;
 
-  const { selected, loaded, setSelectedId } = useUsecase();
+  const { selected, loaded, setSelectedId } = useUseCase();
 
   const [subjectId, setSubjectId] = useState<string | undefined>(undefined);
   const [attrs, setAttrs] = useState<Attrs>({});
@@ -62,6 +65,7 @@ export default function DockInner() {
   useEffect(() => {
     if (!loaded) return;
     if (!forcedUsecase) return;
+
     setSelectedId(forcedUsecase);
   }, [loaded, forcedUsecase, setSelectedId]);
 
@@ -91,11 +95,12 @@ export default function DockInner() {
 
           setAttrs(a);
           setDockError(null);
-          return;
         }
-      } catch (err: any) {
-        const text = String(err?.message || "");
+      } catch (err: unknown) {
+        const text = err instanceof Error ? err.message : String(err || "");
+
         if (text.includes("invalid message type")) return;
+
         setDockError(text || "Unknown dock error.");
       }
     };
@@ -113,7 +118,7 @@ export default function DockInner() {
   }, [attrs, loaded, selected, subjectId]);
 
   if (!loaded) {
-    return <div className="p-3 text-sm text-gray-500">Loading dock…</div>;
+    return <div className="p-3 text-sm text-gray-500">Loading dock?</div>;
   }
 
   return (
@@ -127,22 +132,26 @@ export default function DockInner() {
       <div className="mb-3 rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-sm">
         <div>
           <span className="font-medium text-gray-800">Client:</span>{" "}
-          {clientId ?? "waiting…"}
+          {clientId ?? "waiting?"}
         </div>
+
         {clientLabel && (
           <div>
             <span className="font-medium text-gray-800">Project:</span> {clientLabel}
           </div>
         )}
+
         {clientHostUrl && (
           <div className="truncate">
             <span className="font-medium text-gray-800">Host:</span> {clientHostUrl}
           </div>
         )}
+
         <div>
           <span className="font-medium text-gray-800">Use case:</span>{" "}
-          {selected?.id ?? forcedUsecase ?? "waiting…"}
+          {selected?.id ?? forcedUsecase ?? "waiting?"}
         </div>
+
         <div>
           <span className="font-medium text-gray-800">Selected target:</span>{" "}
           {subjectId ?? "none"}
@@ -151,13 +160,13 @@ export default function DockInner() {
 
       {!selected && (
         <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          Waiting for explainer configuration…
+          Waiting for explainer configuration?
         </div>
       )}
 
       {selected && !subjectId && (
         <div className="mb-3 rounded border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-          Waiting for a selection from the target demo…
+          Waiting for a selection from the target demo?
         </div>
       )}
 
