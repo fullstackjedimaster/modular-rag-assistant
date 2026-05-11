@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # Optional local-dev fallback only.
 # In Docker, variables should already be injected by docker compose.
-LOCAL_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+LOCAL_ENV_PATH = Path(__file__).resolve().parent / ".env"
 if LOCAL_ENV_PATH.exists():
     load_dotenv(LOCAL_ENV_PATH)
 
