@@ -51,7 +51,7 @@ export function useUseCase() {
     async function loadUsecases() {
       try {
         const base = (settings.AI_CORE_BASE || "/config").replace(/\/+$/, "");
-        const url = `${base}/usecases.json?t=${Date.now()}`;
+        const url = `${base}/config/usecases.json?t=${Date.now()}`;
 
         const response = await fetch(url, {
           cache: "no-store",
