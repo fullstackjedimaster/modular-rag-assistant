@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 import asyncpg
 from fastapi import HTTPException, Request
 from fastapi.applications import FastAPI
+from settings import env
 
 AppLike = Union[FastAPI, Any]  # anything with .state is fine
 

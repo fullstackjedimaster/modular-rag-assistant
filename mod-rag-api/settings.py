@@ -26,3 +26,4 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 
 EMBED_SIGNING_SECRET = env("EMBED_SIGNING_SECRET", required=True)
+DATABASE_URL = env("DATABASE_URL", required=True)
