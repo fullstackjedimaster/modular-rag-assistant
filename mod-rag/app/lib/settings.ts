@@ -15,7 +15,11 @@ export const settings = {
 
   AI_CORE_BASE:
      process.env.NEXT_PUBLIC_AI_CORE_BASE ||
-     "https://ai-core.fullstackjedi.dev"
+     "https://ai-core.fullstackjedi.dev",
+
+  DATABASE_URL:
+   process.env.DATABASE_URL ||
+     ""
 
 
 } as const;
