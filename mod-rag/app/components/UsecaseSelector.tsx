@@ -1,9 +1,9 @@
 "use client";
-import { useUsecase } from "@/app/hooks/useUseCase";
+import { useUseCase } from "@/app/hooks/useUseCase";
 import { useEffect, useMemo } from "react";
 
 export default function UsecaseSelector() {
-    const { allUsecases, selectedId, setSelectedId, loaded } = useUsecase();
+    const { allUsecases, selectedId, setSelectedId, loaded } = useUseCase();
     const entries = useMemo(() => Object.values(allUsecases), [allUsecases]);
 
     // Resolve the selected use case object
