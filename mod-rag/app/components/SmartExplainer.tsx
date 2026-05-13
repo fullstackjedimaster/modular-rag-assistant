@@ -68,7 +68,7 @@ export function SmartExplainer({
   return t;
 }, [attrs, usecase.telemetry_keys]);
 
-  const base = (settings.AI_CORE_BASE || "https://ai-ui.fullstackjedi.dev").replace(/\/$/, "");
+  const base = (settings.AI_CORE_BASE || "https://ai-core.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
 
   const url = useMemo(() => {
