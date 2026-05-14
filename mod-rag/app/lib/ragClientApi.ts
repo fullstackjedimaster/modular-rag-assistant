@@ -1,12 +1,12 @@
 // app/lib/ragClientApi.ts
 export type RagClientRow = {
-    id: number;
+    id: string;
     name: string;
     host_url: string;
 }
 
 export type RagClientFull = {
-    id: number;
+    id: string;
     name: string;
     host_url: string;
     collection:string;
@@ -25,13 +25,13 @@ export type RagClientStatus = {
 };
 
 export type ContentDoc = {
-    id: number;
+    id: string;
     doc_name: string;
     file_path: string;
 };
 
 export type TelemetryMessage = {
-    id: number;
+    id: string;
     message_name: string;
     message_value: string;
 };
@@ -80,20 +80,20 @@ export async function listRagClients(): Promise<RagClientRow[]> {
 }
 
 // Full single client (nested context/docs/messages/prompts)
-export async function getRagClient(id: number): Promise<RagClientFull> {
+export async function getRagClient(id: string): Promise<RagClientFull> {
     return apiFetch<RagClientFull>(`/api/rag-clients/${id}`);
 }
 
 // Create
-export async function createRagClient(body: CreateRagClientIn): Promise<{ id: number }> {
-    return apiFetch<{ id: number }>(`/api/rag-clients`, {
+export async function createRagClient(body: CreateRagClientIn): Promise<{ id: string }> {
+    return apiFetch<{ id: string }>(`/api/rag-clients`, {
         method: "POST",
         body: JSON.stringify(body),
     });
 }
 
 // Update
-export async function updateRagClient(id: number, body: UpdateRagClientIn): Promise<{ ok: true }> {
+export async function updateRagClient(id: string, body: UpdateRagClientIn): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -101,22 +101,22 @@ export async function updateRagClient(id: number, body: UpdateRagClientIn): Prom
 }
 
 // Delete
-export async function deleteRagClient(id: number): Promise<{ ok: true }> {
+export async function deleteRagClient(id: string): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}`, { method: "DELETE" });
 }
 
 // Status map by ID
-export async function getRagClientStatuses(ids: number[]): Promise<Record<number, RagClientStatus>> {
+export async function getRagClientStatuses(ids: string[]): Promise<Record<string, RagClientStatus>> {
     const q = ids.map((x) => `id=${encodeURIComponent(String(x))}`).join("&");
-    return apiFetch<Record<number, RagClientStatus>>(`/api/rag-clients/status?${q}`);
+    return apiFetch<Record<string, RagClientStatus>>(`/api/rag-clients/status?${q}`);
 }
 
 // Trigger dock injection / connect
-export async function connectRagClient(id: number): Promise<{ ok: true }> {
+export async function connectRagClient(id: string): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}/connect`, { method: "POST" });
 }
 
 // Disconnect
-export async function disconnectRagClient(id: number): Promise<{ ok: true }> {
+export async function disconnectRagClient(id: string): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}/disconnect`, { method: "POST" });
 }

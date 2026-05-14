@@ -11,7 +11,7 @@ import {
     type ContentDocRow,
 } from "@/app/lib/clientContextApi";
 
-export default function ContentDocsBox(props: { clientId: number }) {
+export default function ContentDocsBox(props: { clientId: string }) {
     const { clientId } = props;
 
     const [busy, setBusy] = useState(false);
@@ -67,7 +67,7 @@ export default function ContentDocsBox(props: { clientId: number }) {
         }
     }
 
-    async function onSaveRow(docId: number, next: { doc_name: string; file_path: string }) {
+    async function onSaveRow(docId: string, next: { doc_name: string; file_path: string }) {
         setNote("");
         setBusy(true);
         try {
@@ -84,7 +84,7 @@ export default function ContentDocsBox(props: { clientId: number }) {
         }
     }
 
-    async function onDelete(docId: number) {
+    async function onDelete(docId: string) {
         if (!confirm("Delete this content doc?")) return;
         setNote("");
         setBusy(true);

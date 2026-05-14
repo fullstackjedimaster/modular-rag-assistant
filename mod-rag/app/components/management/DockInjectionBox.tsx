@@ -25,7 +25,7 @@ import {
  * - selectedId?: optional legacy string selection (we try to parse int)
  */
 export default function DockInjectionBox(props: {
-    clientId?: number;
+    clientId?: string;
     selectedId?: string;
 }) {
     const { clientId, selectedId } = props;
@@ -33,17 +33,16 @@ export default function DockInjectionBox(props: {
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState("");
     const [clients, setClients] = useState<RagClientRow[]>([]);
-    const [pickedId, setPickedId] = useState<number | null>(null);
+    const [pickedId, setPickedId] = useState<string | null>(null);
 
     const [statusBusy, setStatusBusy] = useState(false);
     const [statusNote, setStatusNote] = useState<string>("");
     const [status, setStatus] = useState<RagClientStatus | null>(null);
 
     const preferredId = useMemo(() => {
-        if (typeof clientId === "number" && Number.isFinite(clientId)) return clientId;
+        if (typeof clientId === "string") return clientId;
         if (selectedId) {
-            const n = Number(selectedId);
-            if (Number.isFinite(n)) return n;
+           return selectedId;
         }
         return null;
     }, [clientId, selectedId]);
@@ -86,7 +85,7 @@ export default function DockInjectionBox(props: {
         }
     }
 
-    async function refreshStatus(id: number) {
+    async function refreshStatus(id: string) {
         setStatusBusy(true);
         setStatusNote("");
         try {
@@ -173,7 +172,7 @@ export default function DockInjectionBox(props: {
                         <select
                             className="border rounded px-2 py-2 text-sm"
                             value={pickedId ?? ""}
-                            onChange={(e) => setPickedId(Number(e.target.value))}
+                            onChange={(e) => setPickedId(e.target.value)}
                             disabled={busy}
                         >
                             {clients.map((c) => (

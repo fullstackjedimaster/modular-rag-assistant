@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import GroupBox from "@/app/components/GroupBox";
 import { getSystemPrompt, saveSystemPrompt } from "@/app/lib/clientContextApi";
 
-export default function SystemPromptBox(props: { clientId: number }) {
+export default function SystemPromptBox(props: { clientId: string }) {
     const { clientId } = props;
 
     const [busy, setBusy] = useState(false);

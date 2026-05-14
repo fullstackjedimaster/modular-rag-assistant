@@ -2,7 +2,7 @@
 import {settings} from "@/app/lib/settings";
 
 export type ContentDocRow = {
-    id: number;
+    id: string;
     doc_name: string;
     file_path: string;
 };
@@ -43,7 +43,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 // Content Docs (DB rows)
 // -------------------------
 
-export async function listContentDocs(clientId: number): Promise<ContentDocRow[]> {
+export async function listContentDocs(clientId: string): Promise<ContentDocRow[]> {
     return apiFetch<ContentDocRow[]>(`/api/rag-clients/${clientId}/content-docs`);
 }
 
@@ -94,12 +94,12 @@ export async function saveContextMessages(clientId: number, rows: ContextMessage
 // System Prompt
 // -------------------------
 
-export async function getSystemPrompt(clientId: number): Promise<string> {
+export async function getSystemPrompt(clientId: string): Promise<string> {
     const res = await apiFetch<{ text: string }>(`/api/rag-clients/${clientId}/system-prompt`);
     return res.text || "";
 }
 
-export async function saveSystemPrompt(clientId: number, text: string): Promise<{ ok: true }> {
+export async function saveSystemPrompt(clientId: string, text: string): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/system-prompt`, {
         method: "PUT",
         body: JSON.stringify({ text }),

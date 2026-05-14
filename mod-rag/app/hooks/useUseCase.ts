@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {settings} from "@/app/lib/settings";
+import {
+  getRagClient,
+  type RagClientFull,
+  type PromptChainingMode,
+} from "@/app/lib/ragClientApi";
 
 export type UseCaseConfig = {
   id: string;
@@ -13,16 +17,12 @@ export type UseCaseConfig = {
   telemetry_keys: string[];
   llm_model: string;
   embed_model: string;
+  chaining_mode: PromptChainingMode;
   groupbox_title: string;
   default_query: string;
 };
 
 export type UseCaseMap = Record<string, UseCaseConfig>;
-
-type UsecasesJson = {
-  default?: string;
-  usecases?: UseCaseMap;
-};
 
 type AISelectUsecaseMsg = {
   type: "AI_SELECT_USECASE";
@@ -40,7 +40,24 @@ function postToParent(msg: AISelectUsecaseMsg): void {
   }
 }
 
-export function useUseCase() {
+function ragClientToUseCase(client: RagClientFull): UseCaseConfig {
+  return {
+    id: client.id,
+    projectKey: client.id,
+    label: client.name,
+    description: client.host_url || client.name,
+    collection: client.collection,
+    prompt_template: client.prompt,
+    telemetry_keys: client.telemetry_messages.map((m) => m.message_name),
+    llm_model: client.llm_model,
+    embed_model: client.embed_model,
+    chaining_mode: client.chaining_mode,
+    groupbox_title: client.name,
+    default_query: "",
+  };
+}
+
+export function useUseCase(ragClientId?: string) {
   const [allUsecases, setAllUsecases] = useState<UseCaseMap>({});
   const [selectedId, setSelectedId] = useState<string>("");
   const [loaded, setLoaded] = useState<boolean>(false);
@@ -48,35 +65,31 @@ export function useUseCase() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadUsecases() {
+    async function loadUsecaseFromRagClient() {
+      setLoaded(false);
+
+      if (!ragClientId) {
+        setAllUsecases({});
+        setSelectedId("");
+        setLoaded(true);
+        return;
+      }
+
       try {
-        const base = (settings.AI_CORE_BASE || "/config").replace(/\/+$/, "");
-        const url = `${base}/config/usecases.json?t=${Date.now()}`;
-
-        const response = await fetch(url, {
-          cache: "no-store",
-          headers: {
-            pragma: "no-cache",
-            "cache-control": "no-cache, no-store, must-revalidate",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to load usecases.json: ${response.status}`);
-        }
-
-        const json = (await response.json()) as UsecasesJson;
+        const client = await getRagClient(ragClientId);
 
         if (cancelled) return;
 
-        const map = json.usecases || {};
-        const def = json.default || Object.keys(map)[0] || "";
+        const usecase = ragClientToUseCase(client);
 
-        setAllUsecases(map);
-        setSelectedId(def);
+        setAllUsecases({
+          [usecase.id]: usecase,
+        });
+
+        setSelectedId(usecase.id);
         setLoaded(true);
       } catch (error) {
-        console.error("Failed to load usecases:", error);
+        console.error("Failed to load RAG client as usecase:", error);
 
         if (!cancelled) {
           setAllUsecases({});
@@ -86,12 +99,12 @@ export function useUseCase() {
       }
     }
 
-    void loadUsecases();
+    void loadUsecaseFromRagClient();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [ragClientId]);
 
   useEffect(() => {
     if (!loaded || !selectedId) return;
