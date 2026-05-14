@@ -49,16 +49,10 @@ class TelemetryMessageRow(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+PromptChainingMode = Literal["append","replace","none"]
 
-type PromptChainingMode = ["append", "replace", "none"]
 
 
-class PromptRow(BaseModel):
-    id: str
-    text: str
-    chaining_mode: PromptChainingMode = "append"
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
 
 
 # ---------------------------
@@ -85,28 +79,25 @@ class TelemetryMessageIn(BaseModel):
     message_value: str = Field(..., min_length=1)
 
 
-class PromptIn(BaseModel):
-    text: str = Field(..., min_length=1)
-    chaining_mode: Optional[PromptChainingMode] = None
-
-
 # ---------------------------
 # Nested client JSON (from rag.get_rag_client_json)
 # ---------------------------
-
-class RagClientContext(BaseModel):
-    id: str
-    content_docs: List[ContentDocRow] = Field(default_factory=list)
-    telemetry_messages: List[TelemetryMessageRow] = Field(default_factory=list)
-    prompts: List[PromptRow] = Field(default_factory=list)
 
 
 class RagClientFull(BaseModel):
     id: str
     name: str
     host_url: str
-    context: Optional[RagClientContext] = None
-
+    collection:str
+    llm_model: str
+    embed_model: str
+    prompt: str
+    chaining_mode: PromptChainingMode
+    content_docs: List[ContentDocRow] = Field(default_factory=list)
+    telemetry_messages: List[TelemetryMessageRow] = Field(default_factory=list)
 
 # If you ever want a generic passthrough type for JSON blobs:
 JsonAny = Any
+
+
+
