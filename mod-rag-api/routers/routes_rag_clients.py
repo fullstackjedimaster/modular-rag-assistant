@@ -11,8 +11,6 @@ from .schemas import (
     ContentDocIn,
     ContentDocRow,
     CreateRagClientIn,
-    PromptIn,
-    PromptRow,
     RagClientFull,
     RagClientRow,
     RagClientStatus,
