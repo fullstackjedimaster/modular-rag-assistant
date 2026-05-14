@@ -110,6 +110,8 @@ SET name = p_name,
     prompt = p_prompt,
     chaining_mode = p_chaining_mode
 WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION rag.delete_rag_client(p_id INT)
