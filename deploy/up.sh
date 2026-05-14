@@ -19,7 +19,7 @@ echo "[up] Building + starting stack"
 docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml build --no-cache
 
 echo "[up] Building + starting stack"
-docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml up -d   --force-recreate --renew-anon-volumes --remove-orphans
+docker compose -p "$COMPOSE_PROJECT_NAME" -f "$DEPLOY_DIR"/compose.yml up -d  --build --force-recreate --renew-anon-volumes --remove-orphans
 
 echo "[up] Done"
 
