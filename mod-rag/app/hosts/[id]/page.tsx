@@ -2,16 +2,19 @@
 import ManagementShell from "@/app/components/management/ManagementShell";
 
 export const metadata = {
-    title: "Manage Client",
+  title: "Manage Host",
 };
 
-export default async function HostPage(props: { params: Promise<{ id: string }> }) {
-    const { id } = await props.params;
-    const clientId = Number(id);
+type HostPageProps = {
+  params: {
+    id: string;
+  };
+};
 
-    return (
-        <main className="p-4 space-y-4">
-            <ManagementShell mode="edit" clientId={Number.isFinite(clientId) ? clientId : undefined} />
-        </main>
-    );
+export default function HostPage({ params }: HostPageProps) {
+  return (
+    <main className="space-y-4 p-4">
+      <ManagementShell mode="edit" clientId={params.id} />
+    </main>
+  );
 }

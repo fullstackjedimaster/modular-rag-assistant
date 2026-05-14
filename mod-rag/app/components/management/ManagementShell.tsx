@@ -22,7 +22,7 @@ import SystemPromptBox from "@/app/components/management/SystemPromptBox";
 type Mode = "create" | "edit";
 type LoadState = "idle" | "loading" | "ready" | "error";
 
-export default function ManagementShell(props: { mode: Mode; clientId?: string }) {
+export default function ManagementShell(props: { mode: Mode; clientId: string }) {
     const { mode, clientId } = props;
     const router = useRouter();
 
