@@ -18,8 +18,8 @@ export default function DashboardClient() {
     const [err, setErr] = useState<string>("");
 
     const [rows, setRows] = useState<RagClientRow[]>([]);
-    const [statusById, setStatusById] = useState<Record<number, RagClientStatus>>({});
-    const [connectingId, setConnectingId] = useState<number | null>(null);
+    const [statusById, setStatusById] = useState<Record<string, RagClientStatus>>({});
+    const [connectingId, setConnectingId] = useState<string | null>(null);
 
     const ids = useMemo(() => rows.map((r) => r.id), [rows]);
 
@@ -39,7 +39,7 @@ export default function DashboardClient() {
 
     useEffect(() => {
         void boot();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, []);
 
     // Poll connection statuses
@@ -64,7 +64,7 @@ export default function DashboardClient() {
         };
     }, [state, ids]);
 
-    async function onConnect(id: number) {
+    async function onConnect(id: string) {
         setConnectingId(id);
         try {
             await connectRagClient(id);
