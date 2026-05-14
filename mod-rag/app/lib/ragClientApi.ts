@@ -3,6 +3,19 @@ export type RagClientRow = {
     id: number;
     name: string;
     host_url: string;
+}
+
+export type RagClientFull = {
+    id: number;
+    name: string;
+    host_url: string;
+    collection:string;
+    llm_model: string;
+    embed_model: string;
+    prompt: string;
+    chaining_mode: PromptChainingMode;
+    content_docs:ContentDoc[];
+    telemetry_messages: TelemetryMessage[];
 };
 
 export type RagClientStatus = {
@@ -25,22 +38,6 @@ export type TelemetryMessage = {
 
 export type PromptChainingMode = "append" | "replace" | "none";
 
-export type PromptRow = {
-    id: number;
-    text: string;
-    chaining_mode: PromptChainingMode;
-};
-
-export type ClientContext = {
-    id: number;
-    content_docs: ContentDoc[];
-    telemetry_messages: TelemetryMessage[];
-    prompts: PromptRow[];
-};
-
-export type RagClientFull = RagClientRow & {
-    context: ClientContext | null;
-};
 
 export type CreateRagClientIn = { name: string; host_url: string };
 export type UpdateRagClientIn = { name: string; host_url: string };

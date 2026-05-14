@@ -48,18 +48,18 @@ export async function listContentDocs(clientId: number): Promise<ContentDocRow[]
 }
 
 export async function addContentDoc(
-    clientId: number,
+    clientId: string,
     body: { doc_name: string; file_path: string }
-): Promise<{ id: number }> {
-    return apiFetch<{ id: number }>(`/api/rag-clients/${clientId}/content-docs`, {
+): Promise<{ id: string }> {
+    return apiFetch<{ id: string }>(`/api/rag-clients/${clientId}/content-docs`, {
         method: "POST",
         body: JSON.stringify(body),
     });
 }
 
 export async function updateContentDoc(
-    clientId: number,
-    docId: number,
+    clientId: string,
+    docId: string,
     body: { doc_name: string; file_path: string }
 ): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/content-docs/${docId}`, {
@@ -68,7 +68,7 @@ export async function updateContentDoc(
     });
 }
 
-export async function deleteContentDoc(clientId: number, docId: number): Promise<{ ok: true }> {
+export async function deleteContentDoc(clientId: string, docId: string): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/content-docs/${docId}`, {
         method: "DELETE",
     });

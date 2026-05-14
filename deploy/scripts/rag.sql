@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS rag.rag_client (
                                               id          SERIAL PRIMARY KEY,
                                               name        TEXT NOT NULL UNIQUE,         -- formerly FRAME_ID
                                               host_url    TEXT NOT NULL,                -- URL/URI of host app including iframe URI
-                                              docs_colleclion TEXT NOT NULL,
+                                              colleclion TEXT NOT NULL,
+                                              llm_model TEXT NOT NULL DEFAULT 'llama3.2',
+                                              embed_model text NOT NULL DEFAULT 'nomic-embed-text',
                                               prompt    TEXT NOT NULL,
                                               chaining_mode prompt_chaining_mode NOT NULL,
 
@@ -86,23 +88,25 @@ END$$;
 -- CRUD: rag_client
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name TEXT, p_host_url TEXT, p_docs_colleclion TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name TEXT, p_host_url TEXT, p_colleclion TEXT, p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
 RETURNS INT AS $$
 DECLARE
 v_id INT;
 BEGIN
-INSERT INTO rag.rag_client (name, host_url, docs_colleclion, prompt ,  chaining_mode )
-VALUES (p_name, p_host_url, p_docs_colleclion, p_prompt ,  p_chaining_mode)
+INSERT INTO rag.rag_client (name, host_url, collection,  llm_model, embed_model,prompt ,  chaining_mode )
+VALUES (p_name, p_host_url, p_colleclion, p_llm_model, p_embed_model, p_prompt ,  p_chaining_mode)
     RETURNING id INTO v_id;
 
 
-CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id INT, p_name TEXT, p_host_url TEXT, p_docs_colleclion TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id INT, p_name TEXT, p_host_url TEXT, p_colleclion TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
 RETURNS VOID AS $$
 BEGIN
 UPDATE rag.rag_client
 SET name = p_name,
     host_url = p_host_url,
-    docs_colleclion = p_docs_colleclion,
+    colleclion = p_colleclion,
+    llm_model = p_llm_model,
+    embed_model = p_embed_model,
     prompt = p_prompt,
     chaining_mode = p_chaining_mode
 WHERE id = p_id;
@@ -221,7 +225,9 @@ RETURN jsonb_build_object(
         'id', (v_client->>'id')::int,
         'name', v_client->>'name',
         'host_url', v_client->>'host_url',
-        'docs_collection', v-client->>'docs_collection',
+        'collection', v-client->>'collection',
+        'llm_model', v-client->>'llm_model',
+        'embed_model', v-client->>'embed_model',
         'content_docs', COALESCE(
                 (SELECT jsonb_agg(jsonb_build_object(
                         'id', cd.id,
