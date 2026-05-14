@@ -98,13 +98,13 @@ VALUES (p_name, p_host_url, p_colleclion, p_llm_model, p_embed_model, p_prompt ,
     RETURNING id INTO v_id;
 
 
-CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id INT, p_name TEXT, p_host_url TEXT, p_colleclion TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id INT, p_name TEXT, p_host_url TEXT, p_collection TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
 RETURNS VOID AS $$
 BEGIN
 UPDATE rag.rag_client
 SET name = p_name,
     host_url = p_host_url,
-    colleclion = p_colleclion,
+    collection = p_collection,
     llm_model = p_llm_model,
     embed_model = p_embed_model,
     prompt = p_prompt,
