@@ -6,6 +6,6 @@ export const metadata = {
 };
 
 export default function ClientPage({ params }: { params: { id: string } }) {
-    const id = Number(params.id);
+    const id = String(params.id);
     return <ManagementShell mode="edit" clientId={id} />;
 }

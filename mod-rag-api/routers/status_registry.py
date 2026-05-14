@@ -30,7 +30,7 @@ class StatusRegistry:
                 st.detail = detail
             self._m[client_id] = st
 
-    def set_connected(self, client_id: int, connected: bool, detail: str = "") -> None:
+    def set_connected(self, client_id: str, connected: bool, detail: str = "") -> None:
         with self._lock:
             st = self._m.get(client_id) or _Status()
             st.connected = connected
@@ -39,7 +39,7 @@ class StatusRegistry:
                 st.detail = detail
             self._m[client_id] = st
 
-    def snapshot(self, only_ids: Iterable[int] | None = None) -> Dict[int, _Status]:
+    def snapshot(self, only_ids: Iterable[str] | None = None) -> Dict[str, _Status]:
         with self._lock:
             if only_ids:
                 ids = set(int(x) for x in only_ids)

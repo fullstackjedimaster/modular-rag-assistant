@@ -27,7 +27,7 @@ class ConnectResponse(BaseModel):
 # ---------------------------
 
 class RagClientRow(BaseModel):
-    id: int
+    id: str
     name: str
     host_url: str
     created_at: Optional[datetime] = None
@@ -35,7 +35,7 @@ class RagClientRow(BaseModel):
 
 
 class ContentDocRow(BaseModel):
-    id: int
+    id: str
     doc_name: str
     file_path: str
     created_at: Optional[datetime] = None
@@ -43,18 +43,18 @@ class ContentDocRow(BaseModel):
 
 
 class TelemetryMessageRow(BaseModel):
-    id: int
+    id: str
     message_name: str
     message_value: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
-PromptChainingMode = Literal["append", "replace", "none"]
+type PromptChainingMode = ["append", "replace", "none"]
 
 
 class PromptRow(BaseModel):
-    id: int
+    id: str
     text: str
     chaining_mode: PromptChainingMode = "append"
     created_at: Optional[datetime] = None
@@ -95,14 +95,14 @@ class PromptIn(BaseModel):
 # ---------------------------
 
 class RagClientContext(BaseModel):
-    id: int
+    id: str
     content_docs: List[ContentDocRow] = Field(default_factory=list)
     telemetry_messages: List[TelemetryMessageRow] = Field(default_factory=list)
     prompts: List[PromptRow] = Field(default_factory=list)
 
 
 class RagClientFull(BaseModel):
-    id: int
+    id: str
     name: str
     host_url: str
     context: Optional[RagClientContext] = None
