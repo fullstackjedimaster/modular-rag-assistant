@@ -8,7 +8,7 @@ export const metadata = {
 export default function NewHostPage() {
     return (
         <main className="p-4 space-y-4">
-            <ManagementShell mode="create" />
+            <ManagementShell mode="create" clientId={"new"}/>
         </main>
     );
 }
