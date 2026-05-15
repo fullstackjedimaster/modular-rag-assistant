@@ -5,8 +5,8 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from db import call_jsonb, call_rows, call_val
-from schemas import (
+from routers.db import call_jsonb, call_rows, call_val
+from routers.schemas import (
     ConnectResponse,
     ContentDocIn,
     ContentDocRow,
