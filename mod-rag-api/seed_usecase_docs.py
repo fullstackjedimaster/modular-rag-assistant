@@ -58,7 +58,7 @@ QDRANT_URL="http://qdrant:6333"
 OLLAMA_BASE_URL="http://ollama:11434"
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve()
 
 
 
@@ -70,17 +70,17 @@ class UsecaseConfig:
     source_dir: str
 
 
-def load_usecase(uc_id: str) -> UsecaseConfig:
-
-    collection = uc.get("collection")
-    if not collection:
-        raise SystemExit(f"usecase '{uc_id}' missing 'collection'")
-
-    source_dir = uc.get("source_dir", uc_id)
-    if not source_dir:
-        raise SystemExit(f"usecase '{uc_id}' missing 'source_dir'")
-
-    return UsecaseConfig(id=uc_id, collection=collection, source_dir=source_dir)
+# def load_usecase(uc_id: str) -> UsecaseConfig:
+#
+#     collection = uc.get("collection")
+#     if not collection:
+#         raise SystemExit(f"usecase '{uc_id}' missing 'collection'")
+#
+#     source_dir = uc.get("source_dir", uc_id)
+#     if not source_dir:
+#         raise SystemExit(f"usecase '{uc_id}' missing 'source_dir'")
+#
+#     return UsecaseConfig(id=uc_id, collection=collection, source_dir=source_dir)
 
 
 def discover_txt_files(folder: Path) -> List[Path]:
@@ -162,7 +162,7 @@ def recreate_collection(client: QdrantClient, name: str, vec_size: int):
 
 
 def seed_usecase(uc:UsecaseConfig):
-    src_folder = ROOT / uc.source_dir
+    src_folder = Path("/opt/stacks/modular-rag-assistant/mod-rag-api/source_docs")
     if not src_folder.exists():
         raise SystemExit(f"source folder not found: {src_folder}")
 
@@ -225,7 +225,7 @@ def main():
     collection = "mesh_daq_fault_docs"
     uc_id = str(uuid.uuid4())
 
-    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="../source_docs")
+    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="source_docs")
 
     seed_usecase(uc)
 
