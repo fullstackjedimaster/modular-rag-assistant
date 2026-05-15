@@ -15,7 +15,7 @@ export const settings = {
 
   AI_CORE_BASE:
      process.env.NEXT_PUBLIC_AI_CORE_BASE ||
-     "http://localhost:8001",
+      "https://ai-core.fullstackjedi.dev",
 
   DATABASE_URL:
    process.env.DATABASE_URL ||
