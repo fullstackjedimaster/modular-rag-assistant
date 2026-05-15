@@ -93,7 +93,6 @@ class RagClientFull(BaseModel):
     embed_model: str
     prompt: str
     chaining_mode: PromptChainingMode
-    content_docs: List[ContentDocRow] = Field(default_factory=list)
     telemetry_messages: List[TelemetryMessageRow] = Field(default_factory=list)
 
 # If you ever want a generic passthrough type for JSON blobs:

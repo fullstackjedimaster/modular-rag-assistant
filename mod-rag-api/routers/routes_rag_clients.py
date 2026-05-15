@@ -5,8 +5,8 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from .db import call_jsonb, call_rows, call_val
-from .schemas import (
+from db import call_jsonb, call_rows, call_val
+from schemas import (
     ConnectResponse,
     ContentDocIn,
     ContentDocRow,
@@ -18,7 +18,7 @@ from .schemas import (
     TelemetryMessageRow,
     UpdateRagClientIn,
 )
-from .status_registry import REGISTRY
+from status_registry import REGISTRY
 
 router = APIRouter(prefix="/api/rag-clients", tags=["rag-clients"])
 
