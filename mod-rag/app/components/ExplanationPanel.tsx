@@ -16,13 +16,6 @@ export type ProgressInfo = {
   done?: boolean;
 };
 
-type ExplanationPanelUsecase = {
-  id: string;
-  label: string;
-  telemetry_keys: string[];
-  groupbox_title: string;
-};
-
 export type ExplanationPanelProps = {
   query: string;
   setQuery: (v: string) => void;
@@ -62,9 +55,15 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
     try {
       await navigator.clipboard.writeText(answer);
     } catch {
-      // no-op
+      // Clipboard may be unavailable in some browser/security contexts.
     }
   }, [answer]);
+
+  const telemetryEntries = useMemo(() => {
+    return Object.entries(telemetry || {}).filter(
+      ([, value]) => value !== undefined && value !== null && value !== ""
+    );
+  }, [telemetry]);
 
   const statusColor = useMemo(() => {
     const s = (progress?.status || "").toLowerCase();
@@ -86,13 +85,13 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
   }, [contextsOpen, contexts]);
 
   return (
-    <GroupBox title={groupbox_title}>
+    <GroupBox title="AI Explanation">
       <div className="mb-4 space-y-4">
-        {telemetry_keys.length > 0 && (
-          <div className="font-mono text-xs dark:text-gray-300">
-            {usecase.telemetry_keys.map((key) => (
+        {telemetryEntries.length > 0 && (
+          <div className="rounded border border-gray-200 bg-gray-50 p-2 font-mono text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            {telemetryEntries.map(([key, value]) => (
               <div key={key}>
-                {key}: {telemetry?.[key] ?? "?"}
+                {key}: {String(value)}
               </div>
             ))}
           </div>
@@ -107,7 +106,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
               if (e.key === "Enter" && !streaming) onExplain();
             }}
             className="w-full rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-            placeholder={`Ask about ${usecase.label.toLowerCase()}...`}
+            placeholder="Ask for an explanation..."
             aria-label="Query input"
           />
         </div>
@@ -147,9 +146,11 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           role="status"
         >
           {progress
-            ? `${progress.elapsed.toFixed(2)}s | chars=${progress.chars} | ~tok=${progress.approx_tokens} | rate=${progress.rate_cps.toFixed(
-                1
-              )}c/s${progress.status ? " | " + progress.status : ""}${progress.note ? " | " + progress.note : ""}${
+            ? `${progress.elapsed.toFixed(2)}s | chars=${progress.chars} | ~tok=${
+                progress.approx_tokens
+              } | rate=${progress.rate_cps.toFixed(1)}c/s${
+                progress.status ? " | " + progress.status : ""
+              }${progress.note ? " | " + progress.note : ""}${
                 progress.done ? " | done" : ""
               }`
             : "idle"}
@@ -206,7 +207,10 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
         {heatmapData && heatmapData.length > 0 && (
           <div className="mt-4">
-            <SaliencyHeatmap title="Context Support Heatmap" sentences={heatmapData} />
+            <SaliencyHeatmap
+              title="Context Support Heatmap"
+              sentences={heatmapData}
+            />
           </div>
         )}
       </div>
