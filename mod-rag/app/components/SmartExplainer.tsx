@@ -94,29 +94,26 @@ export function SmartExplainer({
   const base = (settings.AI_CORE_BASE || "https://ai-core.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
 
-  const url = useMemo(() => {
-    const p = new URLSearchParams({
-      q: query,
-      collection,
-      model: cfg.local_model || llm_model,
-      llm_model: cfg.local_model || llm_model,
-      embed_model: cfg.embed_model || embed_model,
-      provider: cfg.provider,
-      prompt,
-      chaining_mode,
-      telemetry_messages: telemetryKeys.join(","),
-      sse: "1",
-    });
+  const p = new URLSearchParams({
+  q: query,
+  collection,
+  model: cfg.local_model || llm_model,
+  llm_model: cfg.local_model || llm_model,
+  embed_model: cfg.embed_model || embed_model,
+  provider: cfg.provider,
+  prompt,
+  chaining_mode,
+});
 
-    if (subjectId) {
-      p.set("subject", subjectId);
-    }
+if (telemetryKeys.length > 0) {
+  p.set("telemetry_messages", telemetryKeys.join(","));
+}
 
-    for (const [key, val] of Object.entries(telemetry)) {
-      if (val !== undefined && val !== null) {
-        p.set(key, String(val));
-      }
-    }
+for (const [key, val] of Object.entries(telemetry)) {
+  if (val !== undefined && val !== null) {
+    p.set(key, String(val));
+  }
+}
 
     return `${explainPath}?${p.toString()}`;
   }, [
@@ -147,7 +144,7 @@ export function SmartExplainer({
     contexts,
   } = useStream({
     url,
-    forceSSE: true,
+    forceSSE: false,
     stallMs: 20000,
     heartbeatMs: 2000,
     onNotifyAction: (message, type) => setToast({ message, type }),
