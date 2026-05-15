@@ -11,6 +11,8 @@ import {
     type RagClientStatus,
 } from "@/app/lib/ragClientApi";
 
+import {UUID} from "node:crypto";
+
 type LoadState = "idle" | "loading" | "ready" | "error";
 
 export default function DashboardClient() {
@@ -64,7 +66,7 @@ export default function DashboardClient() {
         };
     }, [state, ids]);
 
-    async function onConnect(id: string) {
+    async function onConnect(id: UUID) {
         setConnectingId(id);
         try {
             await connectRagClient(id);
