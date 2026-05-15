@@ -60,7 +60,6 @@ OLLAMA_BASE_URL="http://ollama:11434"
 
 ROOT = Path(__file__).resolve().parents[1]
 
-SOURCE_ROOT = ROOT / "source_docs"
 
 
 
@@ -163,7 +162,7 @@ def recreate_collection(client: QdrantClient, name: str, vec_size: int):
 
 
 def seed_usecase(uc:UsecaseConfig):
-    src_folder = SOURCE_ROOT / uc.source_dir
+    src_folder = ROOT / uc.source_dir
     if not src_folder.exists():
         raise SystemExit(f"source folder not found: {src_folder}")
 
@@ -226,7 +225,7 @@ def main():
     collection = "mesh_daq_fault_docs"
     uc_id = str(uuid.uuid4())
 
-    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="source_docs")
+    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="../source_docs")
 
     seed_usecase(uc)
 
