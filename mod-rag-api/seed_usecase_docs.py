@@ -46,17 +46,22 @@ def _env_int(name: str) -> int:
         raise SystemExit(f"[FATAL] Env var {name} must be int, got: {v!r}")
 
 
-QDRANT_URL = _env("QDRANT_URL")
-OLLAMA_BASE_URL = _env("OLLAMA_BASE_URL")
-OLLAMA_EMBED_MODEL = _env("OLLAMA_EMBED_MODEL")
-EMBED_BATCH = _env_int("EMBED_BATCH")
-CHUNK_SIZE_CHARS = _env_int("CHUNK_SIZE_CHARS")
+
+EMBED_PROVIDER="ollama"
+OLLAMA_EMBED_MODEL="nomic-embed-text"
+EMBED_BATCH =16
+CHUNK_SIZE_CHARS = 1000
+CHUNK_OVERLAP_CHARS=200
+
+# Internal service URLs (compose service names)
+QDRANT_URL="http://qdrant:6333"
+OLLAMA_BASE_URL="http://ollama:11434"
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_DIR = ROOT / "config"
+
 SOURCE_ROOT = ROOT / "source_docs"
-USECASES_PATH = CONFIG_DIR / "usecases.json"
+
 
 
 @dataclass
@@ -219,10 +224,9 @@ def main():
 
 
     collection = "mesh_daq_fault_docs"
-    source_dir = SOURCE_ROOT / "source_docs"
     uc_id = str(uuid.uuid4())
 
-    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir=source_dir)
+    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="source_docs")
 
     seed_usecase(uc)
 
