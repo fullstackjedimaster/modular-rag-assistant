@@ -1,7 +1,7 @@
 // /ai-ui/src/hooks/useStream.ts
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 export type ProgressInfo = {
     elapsed: number;
@@ -63,9 +63,9 @@ const toMessage = (err: unknown): string => {
 
 
 export function useStream(opts: UseStreamOptions): UseStreamReturn {
-    const {
+   const {
         url,
-        forceSSE = true,
+        forceSSE = false,
         stallMs = 15000,
         heartbeatMs = 2000,
         onNotifyAction,
@@ -163,22 +163,18 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
 
         onDataActivity();
 
-        // Prefer SSE; append sse=1
-        const sep = url.includes("?") ? "&" : "?";
-        const sseUrl = `${url}${sep}sse=1`;
-
         // Try SSE first
         if (forceSSE) {
             let es: EventSource | null = null;
             try {
-                es = new EventSource(sseUrl, { withCredentials: false });
+                es = new EventSource(url, { withCredentials: false });
             } catch {
                 // fall through to fetch
             }
 
             if (es) {
                 es.addEventListener("open", () => {
-                    setBanner("connected (SSE) …");
+                    setBanner("connected  …");
                     updateProgress({ status: "connected" });
                     onDataActivity();
                 });
@@ -251,7 +247,10 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
             try {
                 const res = await fetch(url, {
                     method: "GET",
-                    headers: { Accept: "text/plain" },
+                    headers: {
+                        Accept: "text/plain",
+                        Cache: "no-cache",
+                        },
                     signal,
                 });
                 if (!res.ok || !res.body) {
