@@ -234,6 +234,8 @@ RETURN jsonb_build_object(
         'collection', v_client->>'collection',
         'llm_model', v_client->>'llm_model',
         'embed_model', v_client->>'embed_model',
+        'prompt', v_client->>'prompt',
+        'chaining_mode', v_client->>'chaining_mode',
         'telemetry_messages', COALESCE(
                     (SELECT jsonb_agg(jsonb_build_object(
                             'id', tm.id,
