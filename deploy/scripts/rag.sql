@@ -231,9 +231,9 @@ RETURN jsonb_build_object(
         'id', (v_client->>'id')::uuid,
         'name', v_client->>'name',
         'host_url', v_client->>'host_url',
-        'collection', v-client->>'collection',
-        'llm_model', v-client->>'llm_model',
-        'embed_model', v-client->>'embed_model',
+        'collection', v_client->>'collection',
+        'llm_model', v_client->>'llm_model',
+        'embed_model', v_client->>'embed_model',
         'content_docs', COALESCE(
                 (SELECT jsonb_agg(jsonb_build_object(
                         'id', cd.id,
