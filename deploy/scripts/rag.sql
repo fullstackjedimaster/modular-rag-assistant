@@ -1,5 +1,7 @@
 -- schema: rag
 CREATE SCHEMA IF NOT EXISTS rag;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Prompt chaining mode
 DO $$
@@ -14,7 +16,7 @@ END$$;
 -- =========================
 
 CREATE TABLE IF NOT EXISTS rag.rag_client (
-                                              id          SERIAL PRIMARY KEY,
+                                              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                               name        TEXT NOT NULL UNIQUE,         -- formerly FRAME_ID
                                               host_url    TEXT NOT NULL,                -- URL/URI of host app including iframe URI
                                               colleclion TEXT NOT NULL,
@@ -29,8 +31,8 @@ CREATE TABLE IF NOT EXISTS rag.rag_client (
 
 
 CREATE TABLE IF NOT EXISTS rag.content_doc (
-                                               id                 SERIAL PRIMARY KEY,
-                                               rag_client_id  INT NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
+                                              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                               rag_client_id  uuid NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
     doc_name           TEXT NOT NULL,
     file_path          TEXT NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -39,8 +41,8 @@ CREATE TABLE IF NOT EXISTS rag.content_doc (
     );
 
 CREATE TABLE IF NOT EXISTS rag.telemetry_message (
-                                                     id                 SERIAL PRIMARY KEY,
-                                                     rag_client_id  INT NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
+                                                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                                     rag_client_id  uuid NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
     message_name       TEXT NOT NULL,
     message_value      TEXT NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -89,16 +91,16 @@ END$$;
 -- =========================
 
 CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name TEXT, p_host_url TEXT, p_colleclion TEXT, p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
-RETURNS INT AS $$
+RETURNS uuid AS $$
 DECLARE
-v_id INT;
+v_id uuid;
 BEGIN
 INSERT INTO rag.rag_client (name, host_url, collection,  llm_model, embed_model,prompt ,  chaining_mode )
 VALUES (p_name, p_host_url, p_colleclion, p_llm_model, p_embed_model, p_prompt ,  p_chaining_mode)
     RETURNING id INTO v_id;
 
 
-CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id INT, p_name TEXT, p_host_url TEXT, p_collection TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id uuid, p_name TEXT, p_host_url TEXT, p_collection TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
 RETURNS VOID AS $$
 BEGIN
 UPDATE rag.rag_client
@@ -114,7 +116,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION rag.delete_rag_client(p_id INT)
+CREATE OR REPLACE FUNCTION rag.delete_rag_client(p_id uuid)
 RETURNS VOID AS $$
 BEGIN
 DELETE FROM rag.rag_client WHERE id = p_id;
@@ -122,7 +124,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION rag.list_rag_clients()
-RETURNS TABLE (id INT, name TEXT, host_url TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ) AS $$
+RETURNS TABLE (id uuid, name TEXT, host_url TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ) AS $$
 BEGIN
 RETURN QUERY
 SELECT rc.id, rc.name, rc.host_url, rc.created_at, rc.updated_at
@@ -135,11 +137,11 @@ $$ LANGUAGE plpgsql;
 -- CRUD: content_doc
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_content_doc(p_rag_client_id INT, p_doc_name TEXT, p_file_path TEXT)
-RETURNS INT AS $$
+CREATE OR REPLACE FUNCTION rag.create_content_doc(p_rag_client_id uuid, p_doc_name TEXT, p_file_path TEXT)
+RETURNS uuid AS $$
 DECLARE
 
-    v_id INT;
+    v_id uuid;
 BEGIN
 
 
@@ -151,7 +153,7 @@ RETURN v_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rag.update_content_doc(p_id INT, p_doc_name TEXT, p_file_path TEXT)
+CREATE OR REPLACE FUNCTION rag.update_content_doc(p_id uuid, p_doc_name TEXT, p_file_path TEXT)
 RETURNS VOID AS $$
 BEGIN
 UPDATE rag.content_doc
@@ -161,7 +163,7 @@ WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rag.delete_content_doc(p_id INT)
+CREATE OR REPLACE FUNCTION rag.delete_content_doc(p_id uuid)
 RETURNS VOID AS $$
 BEGIN
 DELETE FROM rag.content_doc WHERE id = p_id;
@@ -172,11 +174,11 @@ $$ LANGUAGE plpgsql;
 -- CRUD: telemetry_message
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_telemetry_message(p_rag_client_id INT, p_message_name TEXT, p_message_value TEXT)
-RETURNS INT AS $$
+CREATE OR REPLACE FUNCTION rag.create_telemetry_message(p_rag_client_id uuid, p_message_name TEXT, p_message_value TEXT)
+RETURNS uuid AS $$
 DECLARE
 
-    v_id INT;
+    v_id uuid;
 BEGIN
 
 
@@ -188,7 +190,7 @@ RETURN v_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rag.update_telemetry_message(p_id INT, p_message_name TEXT, p_message_value TEXT)
+CREATE OR REPLACE FUNCTION rag.update_telemetry_message(p_id uuid, p_message_name TEXT, p_message_value TEXT)
 RETURNS VOID AS $$
 BEGIN
 UPDATE rag.telemetry_message
@@ -198,7 +200,7 @@ WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rag.delete_telemetry_message(p_id INT)
+CREATE OR REPLACE FUNCTION rag.delete_telemetry_message(p_id uuid)
 RETURNS VOID AS $$
 BEGIN
 DELETE FROM rag.telemetry_message WHERE id = p_id;
@@ -207,7 +209,7 @@ $$ LANGUAGE plpgsql;
 
 
 
-CREATE OR REPLACE FUNCTION rag.get_rag_client_json(p_rag_client_id INT)
+CREATE OR REPLACE FUNCTION rag.get_rag_client_json(p_rag_client_id uuid)
 RETURNS JSONB AS $$
 DECLARE
 v_client JSONB;
@@ -224,7 +226,7 @@ END IF;
 
 
 RETURN jsonb_build_object(
-        'id', (v_client->>'id')::int,
+        'id', (v_client->>'id')::uuid,
         'name', v_client->>'name',
         'host_url', v_client->>'host_url',
         'collection', v-client->>'collection',
