@@ -92,16 +92,13 @@ async def call_rows(request: Request, fn: str, *args: Any) -> List[Dict[str, Any
 
 
 async def call_val(request: Request, fn: str, *args: Any) -> Any:
-    """
-    Call a SQL function that returns a single scalar.
-    """
     pool = _pool_from_request(request)
     sql = f"SELECT {fn}({', '.join(f'${i}' for i in range(1, len(args) + 1))}) AS v;"
 
     try:
         async with pool.acquire() as conn:
             row = await conn.fetchrow(sql, *args)
-            return None if row is None else row["v"]
+            return None if row is None else row[0]
     except asyncpg.PostgresError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
