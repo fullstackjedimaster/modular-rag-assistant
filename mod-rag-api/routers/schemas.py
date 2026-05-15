@@ -6,6 +6,7 @@ from typing import List, Optional, Literal, Any
 
 from pydantic import BaseModel, Field
 
+from uuid import UUID
 
 # ---------------------------
 # Runtime status
@@ -27,7 +28,7 @@ class ConnectResponse(BaseModel):
 # ---------------------------
 
 class RagClientRow(BaseModel):
-    id: str
+    id: UUID
     name: str
     host_url: str
     created_at: Optional[datetime] = None
@@ -35,7 +36,7 @@ class RagClientRow(BaseModel):
 
 
 class ContentDocRow(BaseModel):
-    id: str
+    id: UUID
     doc_name: str
     file_path: str
     created_at: Optional[datetime] = None
@@ -43,7 +44,7 @@ class ContentDocRow(BaseModel):
 
 
 class TelemetryMessageRow(BaseModel):
-    id: str
+    id: UUID
     message_name: str
     message_value: str
     created_at: Optional[datetime] = None
@@ -85,7 +86,7 @@ class TelemetryMessageIn(BaseModel):
 
 
 class RagClientFull(BaseModel):
-    id: str
+    id: UUID
     name: str
     host_url: str
     collection:str
