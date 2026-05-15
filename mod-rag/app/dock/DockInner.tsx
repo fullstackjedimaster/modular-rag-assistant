@@ -13,9 +13,7 @@ function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(`[dock] ${msg}`);
 }
 
-function requireAllowlist(
-  usecase: { telemetry_keys?: unknown } | undefined
-): string[] {
+function requireAllowlist(usecase: { telemetry_keys?: unknown } | undefined): string[] {
   const keys = usecase?.telemetry_keys;
 
   assert(Array.isArray(keys), "usecase.telemetry_keys must exist and be an array.");
@@ -33,9 +31,11 @@ function pickRequiredAttrs(attrs: Attrs, allow: string[]) {
 
   for (const key of allow) {
     const v = attrs[key];
+
     assert(v !== null && v !== undefined, `missing required attr "${key}" in TARGET_SELECTED.attrs.`);
 
     const t = typeof v;
+
     assert(
       t === "string" || t === "number" || t === "boolean",
       `attr "${key}" must be string|number|boolean, got ${t}.`
@@ -49,10 +49,7 @@ function pickRequiredAttrs(attrs: Attrs, allow: string[]) {
 
 export default function DockInner() {
   const params = useSearchParams();
-  const forcedUsecase = params.get("usecase") || undefined;
   const forcedClient = params.get("client") || undefined;
-
-  const { selected, loaded, setSelectedId } = useUseCase();
 
   const [subjectId, setSubjectId] = useState<string | undefined>(undefined);
   const [attrs, setAttrs] = useState<Attrs>({});
@@ -62,12 +59,7 @@ export default function DockInner() {
   const [clientLabel, setClientLabel] = useState<string | undefined>(undefined);
   const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (!loaded) return;
-    if (!forcedUsecase) return;
-
-    setSelectedId(forcedUsecase);
-  }, [loaded, forcedUsecase, setSelectedId]);
+  const { selected, loaded } = useUseCase(clientId);
 
   useEffect(() => {
     const onMsg = (ev: MessageEvent<unknown>) => {
@@ -78,11 +70,6 @@ export default function DockInner() {
           setClientId(msg.client);
           setClientLabel(msg.label);
           setClientHostUrl(msg.hostUrl);
-
-          if (!forcedUsecase && msg.defaultUsecase) {
-            setSelectedId(msg.defaultUsecase);
-          }
-
           setDockError(null);
           return;
         }
@@ -91,6 +78,7 @@ export default function DockInner() {
           setSubjectId(msg.id);
 
           const a = (msg.attrs ?? {}) as Attrs;
+
           assert(a && typeof a === "object", "TARGET_SELECTED.attrs must be an object when provided.");
 
           setAttrs(a);
@@ -106,8 +94,11 @@ export default function DockInner() {
     };
 
     window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
-  }, [forcedUsecase, setSelectedId]);
+
+    return () => {
+      window.removeEventListener("message", onMsg);
+    };
+  }, []);
 
   const forwardedAttrs = useMemo(() => {
     if (!loaded || !selected) return {};
@@ -118,7 +109,7 @@ export default function DockInner() {
   }, [attrs, loaded, selected, subjectId]);
 
   if (!loaded) {
-    return <div className="p-3 text-sm text-gray-500">Loading dock?</div>;
+    return <div className="p-3 text-sm text-gray-500">Loading dock...</div>;
   }
 
   return (
@@ -132,7 +123,7 @@ export default function DockInner() {
       <div className="mb-3 rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-sm">
         <div>
           <span className="font-medium text-gray-800">Client:</span>{" "}
-          {clientId ?? "waiting?"}
+          {clientId ?? "waiting..."}
         </div>
 
         {clientLabel && (
@@ -148,8 +139,13 @@ export default function DockInner() {
         )}
 
         <div>
-          <span className="font-medium text-gray-800">Use case:</span>{" "}
-          {selected?.id ?? forcedUsecase ?? "waiting?"}
+          <span className="font-medium text-gray-800">RAG config:</span>{" "}
+          {selected?.label ?? "waiting..."}
+        </div>
+
+        <div>
+          <span className="font-medium text-gray-800">Collection:</span>{" "}
+          {selected?.collection ?? "waiting..."}
         </div>
 
         <div>
@@ -158,15 +154,21 @@ export default function DockInner() {
         </div>
       </div>
 
-      {!selected && (
+      {!clientId && (
         <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          Waiting for explainer configuration?
+          Waiting for a RAG client selection...
+        </div>
+      )}
+
+      {clientId && !selected && (
+        <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Waiting for explainer configuration...
         </div>
       )}
 
       {selected && !subjectId && (
         <div className="mb-3 rounded border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-          Waiting for a selection from the target demo?
+          Waiting for a selection from the target demo...
         </div>
       )}
 
@@ -180,7 +182,7 @@ export default function DockInner() {
         />
       ) : (
         <div className="rounded border border-gray-200 bg-white px-3 py-4 text-sm text-gray-600 shadow-sm">
-          The dock is loaded, but no explainer use case has been resolved yet.
+          The dock is loaded, but no RAG client configuration has been resolved yet.
         </div>
       )}
     </div>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ExplanationPanel, Telemetry, UseCaseContext } from "@/app/components/ExplanationPanel";
+import { useEffect, useMemo, useState } from "react";
+import { ExplanationPanel, type Telemetry } from "@/app/components/ExplanationPanel";
 import { useStream } from "@/app/hooks/useStream";
 import { useAIConfig } from "@/app/hooks/useAIConfig";
 import Toast from "@/app/components/Toast";
 import { settings } from "@/app/lib/settings";
+import type { UseCaseConfig } from "@/app/hooks/useUseCase";
 
 type AttrValue = string | number | boolean | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -13,7 +14,7 @@ type Attrs = Record<string, AttrValue>;
 interface SmartExplainerProps {
   subjectId?: string;
   attrs?: Attrs;
-  usecase: UseCaseContext;
+  usecase: UseCaseConfig;
   showControls?: boolean;
   showPanel?: boolean;
 }
@@ -22,51 +23,34 @@ export function SmartExplainer({
   subjectId,
   attrs = {},
   usecase,
-  showControls = false,
-  showPanel = false,
 }: SmartExplainerProps) {
-  const effectiveId = subjectId;
-
   const [query, setQuery] = useState<string>(usecase.default_query || "");
-  const [setTelemetry] = useState<Telemetry>({});
-  const [log, setLog] = useState<string>("");
   const [contextsOpen, setContextsOpen] = useState<boolean>(false);
   const [toast, setToast] = useState<{
     message: string;
     type?: "info" | "success" | "error";
   } | null>(null);
 
-  const [llmModels, setLlmModels] = useState<Record<"ollama" | "openai", string[]>>({
-    ollama: ["phi3:mini"],
-    openai: ["gpt-4o", "gpt-3.5-turbo"],
-  });
-
-  const [embedChoices, setEmbedChoices] = useState<string[]>([
-    "BAAI/bge-small-en-v1.5",
-    "intfloat/multilingual-e5-small",
-    "local/cpp-embedder",
-  ]);
-
-  const { cfg, onChange } = useAIConfig({
+  const { cfg } = useAIConfig({
     local_model: usecase.llm_model,
     embed_model: usecase.embed_model,
   });
 
   const telemetry = useMemo<Telemetry>(() => {
-  const t: Telemetry = {};
+    const t: Telemetry = {};
 
-  if (Array.isArray(usecase.telemetry_keys) && usecase.telemetry_keys.length > 0) {
-    for (const key of usecase.telemetry_keys) {
-      const v = attrs?.[key];
+    if (Array.isArray(usecase.telemetry_keys)) {
+      for (const key of usecase.telemetry_keys) {
+        const v = attrs?.[key];
 
-      if (typeof v === "string" || typeof v === "number") {
-        t[key] = v;
+        if (typeof v === "string" || typeof v === "number") {
+          t[key] = v;
+        }
       }
     }
-  }
 
-  return t;
-}, [attrs, usecase.telemetry_keys]);
+    return t;
+  }, [attrs, usecase.telemetry_keys]);
 
   const base = (settings.AI_CORE_BASE || "https://ai-core.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
@@ -75,21 +59,22 @@ export function SmartExplainer({
     const p = new URLSearchParams({
       q: query,
       usecase: usecase.id,
-      model: cfg.local_model,
-      embed_model: cfg.embed_model,
+      collection: usecase.collection,
+      model: cfg.local_model || usecase.llm_model,
+      llm_model: cfg.local_model || usecase.llm_model,
+      embed_model: cfg.embed_model || usecase.embed_model,
       provider: cfg.provider,
+      prompt_template: usecase.prompt_template,
+      chaining_mode: usecase.chaining_mode,
     });
 
-    if (effectiveId) {
-      p.set("subject", effectiveId);
+    if (subjectId) {
+      p.set("subject", subjectId);
     }
 
-    if (Array.isArray(usecase.telemetry_keys)) {
-      for (const key of usecase.telemetry_keys) {
-        const val = telemetry[key];
-        if (val != null) {
-          p.set(key, String(val));
-        }
+    for (const [key, val] of Object.entries(telemetry)) {
+      if (val !== undefined) {
+        p.set(key, String(val));
       }
     }
 
@@ -98,11 +83,15 @@ export function SmartExplainer({
     query,
     telemetry,
     usecase.id,
-    usecase.telemetry_keys,
+    usecase.collection,
+    usecase.llm_model,
+    usecase.embed_model,
+    usecase.prompt_template,
+    usecase.chaining_mode,
     cfg.local_model,
     cfg.embed_model,
     cfg.provider,
-    effectiveId,
+    subjectId,
     explainPath,
   ]);
 
@@ -131,7 +120,9 @@ export function SmartExplainer({
   useEffect(() => {
     if (!answer || !cfg.heatmap) return;
 
-    (async () => {
+    let cancelled = false;
+
+    async function loadHeatmap() {
       try {
         const resp = await fetch(`${base}/diagnostics/heatmap`, {
           method: "POST",
@@ -139,107 +130,40 @@ export function SmartExplainer({
           body: JSON.stringify({
             answer,
             context: (contexts || []).join("\n"),
-            embed_model: cfg.embed_model,
+            embed_model: cfg.embed_model || usecase.embed_model,
           }),
         });
 
-        if (resp.ok) {
-          const data = await resp.json();
-          setHeatmapData(data.scores || []);
-        } else {
+        if (!resp.ok) {
           console.warn("Heatmap fetch failed:", resp.status);
+          return;
+        }
+
+        const data = await resp.json();
+
+        if (!cancelled) {
+          setHeatmapData(data.scores || []);
         }
       } catch (err) {
         console.warn("Heatmap analysis error:", err);
       }
-    })();
-  }, [answer, cfg.heatmap, cfg.embed_model, contexts, base]);
+    }
 
-  const seeder = useRef<EventSource | null>(null);
-  const [seeding, setSeeding] = useState(false);
+    void loadHeatmap();
 
-  const onApplyAnalyze = () => {
+    return () => {
+      cancelled = true;
+    };
+  }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, usecase.embed_model]);
+
+  const onExplain = () => {
     setContextsOpen(false);
     reset();
     start();
   };
 
-  const onSeedNow = async () => {
-    if (seeding) return;
-
-    setLog("");
-    setSeeding(true);
-
-    const sep = base.includes("?") ? "&" : "?";
-    const urlSSE = `${base}/admin/reseed_stream${sep}usecase=${encodeURIComponent(
-      usecase.id
-    )}&embed_model=${encodeURIComponent(cfg.embed_model)}`;
-
-    try {
-      const es = new EventSource(urlSSE);
-      seeder.current = es;
-
-      const append = (line: string) =>
-        setLog((prev) => (prev ? prev + "\n" + line : line));
-
-      es.addEventListener("open", () => append("[reseed] connected"));
-      es.addEventListener("line", (ev: MessageEvent) => append(ev.data));
-      es.addEventListener("progress", (ev: MessageEvent) => {
-        try {
-          const { note } = JSON.parse(ev.data);
-          append(`[progress] ${note ?? ""}`);
-        } catch {
-          append("[progress]");
-        }
-      });
-
-      es.addEventListener("done", () => {
-        append("[reseed] done • starting analyze…");
-        setSeeding(false);
-
-        try {
-          es.close();
-        } catch {}
-
-        setContextsOpen(true);
-        setToast({ message: "✅ Reseed completed successfully", type: "success" });
-        reset();
-        start();
-      });
-
-      es.addEventListener("error", () => {
-        append("[reseed] error");
-        setSeeding(false);
-        setToast({ message: "❌ Reseed failed", type: "error" });
-
-        try {
-          es.close();
-        } catch {}
-      });
-    } catch {
-      setLog("[reseed] failed to connect");
-      setSeeding(false);
-      setToast({ message: "❌ Reseed connection failed", type: "error" });
-    }
-  };
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await fetch(`${base}/admin/models`);
-        if (resp.ok) {
-          const data = await resp.json();
-          setLlmModels((prev) => data.llm_models ?? prev);
-          setEmbedChoices((prev) => data.embed_models ?? prev);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch /admin/models:", err);
-      }
-    })();
-  }, [base]);
-
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 space-y-6">
+    <div className="space-y-6 rounded-lg bg-white p-4 shadow dark:bg-gray-900">
       <ExplanationPanel
         usecase={usecase}
         query={query}
@@ -250,7 +174,7 @@ export function SmartExplainer({
         answer={answer}
         progress={progress}
         error={error}
-        onExplain={start}
+        onExplain={onExplain}
         onCancel={cancel}
         onReset={reset}
         contexts={contexts}
@@ -258,13 +182,13 @@ export function SmartExplainer({
         heatmapData={heatmapData}
       />
 
-        {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onCloseAction={() => setToast(null)}
-                />
-            )}
-        </div>
-    );
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onCloseAction={() => setToast(null)}
+        />
+      )}
+    </div>
+  );
 }

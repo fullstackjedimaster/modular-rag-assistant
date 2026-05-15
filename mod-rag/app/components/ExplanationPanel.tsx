@@ -1,218 +1,217 @@
-// /ai-ui/src/components/ExplanationPanel.tsx
+"use client";
+
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import GroupBox from "@/app/components/GroupBox";
 import SaliencyHeatmap from "@/app/components/SaliencyHeatmap";
 
-
 export type Telemetry = Record<string, string | number | undefined>;
 
 export type ProgressInfo = {
-    elapsed: number;
-    chars: number;
-    approx_tokens: number;
-    rate_cps: number;
-    status?: string;
-    note?: string;
-    done?: boolean;
+  elapsed: number;
+  chars: number;
+  approx_tokens: number;
+  rate_cps: number;
+  status?: string;
+  note?: string;
+  done?: boolean;
 };
 
-export type UseCaseContext = {
-    id: string;
-    label: string;
-    description: string;
-    collection: string;
-    prompt_template: string;
-    telemetry_keys: string[];
-    llm_model: string;
-    embed_model: string;
-    groupbox_title: string;
-    default_query: string;
+type ExplanationPanelUsecase = {
+  id: string;
+  label: string;
+  telemetry_keys: string[];
+  groupbox_title: string;
 };
 
 export type ExplanationPanelProps = {
-    usecase: UseCaseContext;
-    query: string;
-    setQuery: (v: string) => void;
-    telemetry: Telemetry;
-    streaming: boolean;
-    banner: string;
-    answer: string;
-    progress: ProgressInfo | null;
-    error: string | null;
-    onExplain: () => void;
-    onCancel: () => void;
-    onReset: () => void;
-    contexts?: string[];
-    contextsOpen?: boolean;
-    heatmapData?: { idx: number; sentence: string; score: number }[] | null; // ✅ NEW
+  usecase: ExplanationPanelUsecase;
+  query: string;
+  setQuery: (v: string) => void;
+  telemetry: Telemetry;
+  streaming: boolean;
+  banner: string;
+  answer: string;
+  progress: ProgressInfo | null;
+  error: string | null;
+  onExplain: () => void;
+  onCancel: () => void;
+  onReset: () => void;
+  contexts?: string[];
+  contextsOpen?: boolean;
+  heatmapData?: { idx: number; sentence: string; score: number }[] | null;
 };
 
-
 export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
-                                                                      usecase,
-                                                                      query,
-                                                                      setQuery,
-                                                                      telemetry,
-                                                                      streaming,
-                                                                      banner,
-                                                                      answer,
-                                                                      progress,
-                                                                      error,
-                                                                      onExplain,
-                                                                      onCancel,
-                                                                      onReset,
-                                                                      contexts,
-                                                                      contextsOpen = false,
-                                                                      heatmapData,
-                                                                  }) => {
-    const copyAnswer = useCallback(async () => {
-        if (!answer) return;
-        try {
-            await navigator.clipboard.writeText(answer);
-        } catch {
-            // no-op
-        }
-    }, [answer]);
+  usecase,
+  query,
+  setQuery,
+  telemetry,
+  streaming,
+  banner,
+  answer,
+  progress,
+  error,
+  onExplain,
+  onCancel,
+  onReset,
+  contexts,
+  contextsOpen = false,
+  heatmapData,
+}) => {
+  const copyAnswer = useCallback(async () => {
+    if (!answer) return;
 
-    const statusColor = useMemo(() => {
-        const s = (progress?.status || "").toLowerCase();
-        if (s.includes("error") || s.includes("stall")) return "text-red-500";
-        if (s.includes("done")) return "text-green-600";
-        if (s.includes("stream")) return "text-blue-600";
-        if (s.includes("connect")) return "text-amber-600";
-        return "text-gray-600";
-    }, [progress?.status]);
+    try {
+      await navigator.clipboard.writeText(answer);
+    } catch {
+      // no-op
+    }
+  }, [answer]);
 
-    // Auto-open the contexts drawer when instructed and contexts are present
-    const contextsRef = useRef<HTMLDetailsElement>(null);
-    useEffect(() => {
-        if (contextsOpen && contexts && contexts.length && contextsRef.current) {
-            contextsRef.current.open = true;
-        }
-    }, [contextsOpen, contexts?.length, contexts]);
+  const statusColor = useMemo(() => {
+    const s = (progress?.status || "").toLowerCase();
 
-    return (
-        <GroupBox title={usecase.groupbox_title}>
-            <div className="space-y-4 mb-4">
-                {usecase.telemetry_keys.length > 0 && (
-                    <div className="text-xs dark:text-gray-300 font-mono">
-                        {usecase.telemetry_keys.map((key) => (
-                            <div key={key}>
-                                {key}: {telemetry?.[key] ?? "—"}
-                            </div>
-                        ))}
-                    </div>
-                )}
+    if (s.includes("error") || s.includes("stall")) return "text-red-500";
+    if (s.includes("done")) return "text-green-600";
+    if (s.includes("stream")) return "text-blue-600";
+    if (s.includes("connect")) return "text-amber-600";
 
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !streaming) onExplain();
-                        }}
-                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white"
-                        placeholder={`Ask about ${usecase.label.toLowerCase()}…`}
-                        aria-label="Query input"
-                    />
-                </div>
+    return "text-gray-600";
+  }, [progress?.status]);
 
-                <div className="flex gap-2">
-                    <button
-                        onClick={onExplain}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-60"
-                        disabled={streaming}
-                        aria-label="Explain"
-                    >
-                        {streaming ? "⏳ Working…" : "🔍 Explain"}
-                    </button>
-                    <button
-                        onClick={onCancel}
-                        className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded disabled:opacity-60"
-                        disabled={!streaming}
-                        aria-label="Cancel"
-                    >
-                        ✖ Cancel
-                    </button>
-                    <button
-                        onClick={onReset}
-                        className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded"
-                        aria-label="Reset"
-                    >
-                        ⟲ Reset
-                    </button>
-                </div>
+  const contextsRef = useRef<HTMLDetailsElement>(null);
 
-                {/* Progress HUD */}
-                <div
-                    className={`text-xs font-mono ${statusColor}`}
-                    aria-live="polite"
-                    aria-atomic="true"
-                    role="status"
-                >
-                    {progress
-                        ? `⏱ ${progress.elapsed.toFixed(2)}s • chars=${progress.chars} • ~tok=${progress.approx_tokens} • rate=${progress.rate_cps.toFixed(
-                            1
-                        )}c/s${progress.status ? " • " + progress.status : ""}${progress.note ? " • " + progress.note : ""}${
-                            progress.done ? " • done" : ""
-                        }`
-                        : "idle"}
-                    {error ? ` • error: ${error}` : ""}
-                </div>
+  useEffect(() => {
+    if (contextsOpen && contexts && contexts.length && contextsRef.current) {
+      contextsRef.current.open = true;
+    }
+  }, [contextsOpen, contexts]);
 
-                {/* Streaming banner + contexts */}
-                {(banner || (contexts && contexts.length)) && (
-                    <div className="text-xs space-y-2">
-                        {banner && (
-                            <pre className="whitespace-pre-wrap text-gray-500 dark:text-gray-400">
+  return (
+    <GroupBox title={usecase.groupbox_title}>
+      <div className="mb-4 space-y-4">
+        {usecase.telemetry_keys.length > 0 && (
+          <div className="font-mono text-xs dark:text-gray-300">
+            {usecase.telemetry_keys.map((key) => (
+              <div key={key}>
+                {key}: {telemetry?.[key] ?? "?"}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !streaming) onExplain();
+            }}
+            className="w-full rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            placeholder={`Ask about ${usecase.label.toLowerCase()}...`}
+            aria-label="Query input"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onExplain}
+            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-500 disabled:opacity-60"
+            disabled={streaming}
+            aria-label="Explain"
+          >
+            {streaming ? "Working..." : "Explain"}
+          </button>
+
+          <button
+            onClick={onCancel}
+            className="rounded bg-gray-200 px-3 py-2 text-black disabled:opacity-60 dark:bg-gray-700 dark:text-white"
+            disabled={!streaming}
+            aria-label="Cancel"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={onReset}
+            className="rounded bg-gray-200 px-3 py-2 text-black dark:bg-gray-700 dark:text-white"
+            aria-label="Reset"
+          >
+            Reset
+          </button>
+        </div>
+
+        <div
+          className={`font-mono text-xs ${statusColor}`}
+          aria-live="polite"
+          aria-atomic="true"
+          role="status"
+        >
+          {progress
+            ? `${progress.elapsed.toFixed(2)}s | chars=${progress.chars} | ~tok=${progress.approx_tokens} | rate=${progress.rate_cps.toFixed(
+                1
+              )}c/s${progress.status ? " | " + progress.status : ""}${progress.note ? " | " + progress.note : ""}${
+                progress.done ? " | done" : ""
+              }`
+            : "idle"}
+
+          {error ? ` | error: ${error}` : ""}
+        </div>
+
+        {(banner || (contexts && contexts.length > 0)) && (
+          <div className="space-y-2 text-xs">
+            {banner && (
+              <pre className="whitespace-pre-wrap text-gray-500 dark:text-gray-400">
                 {banner}
               </pre>
-                        )}
-                        {contexts && contexts.length > 0 && (
-                            <details ref={contextsRef}>
-                                <summary className="cursor-pointer text-gray-500 dark:text-gray-400">
-                                    Retrieved contexts ({contexts.length})
-                                </summary>
-                                <div className="mt-2 space-y-2">
-                                    {contexts.map((c, i) => (
-                                        <pre
-                                            key={i}
-                                            className="text-[11px] whitespace-pre-wrap rounded border border-gray-200 dark:border-gray-700 p-2"
-                                        >
+            )}
+
+            {contexts && contexts.length > 0 && (
+              <details ref={contextsRef}>
+                <summary className="cursor-pointer text-gray-500 dark:text-gray-400">
+                  Retrieved contexts ({contexts.length})
+                </summary>
+
+                <div className="mt-2 space-y-2">
+                  {contexts.map((c, i) => (
+                    <pre
+                      key={i}
+                      className="whitespace-pre-wrap rounded border border-gray-200 p-2 text-[11px] dark:border-gray-700"
+                    >
                       {c}
                     </pre>
-                                    ))}
-                                </div>
-                            </details>
-                        )}
-                    </div>
-                )}
-
-                {/* Answer box */}
-                <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                        Answer
-                    </h4>
-                    <button
-                        onClick={copyAnswer}
-                        className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
-                        disabled={!answer}
-                    >
-                        Copy
-                    </button>
+                  ))}
                 </div>
-                <div className="rounded border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 p-3 font-sans text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap min-h-[96px]">
-                    {answer || (streaming ? "…" : "—")}
-                </div>
-                {/* === Context Support Heatmap === */}
-                {heatmapData && heatmapData.length > 0 && (
-                    <div className="mt-4">
-                        <SaliencyHeatmap title="Context Support Heatmap" sentences={heatmapData} />
-                    </div>
-                )}
+              </details>
+            )}
+          </div>
+        )}
 
-            </div>
-        </GroupBox>
-    );
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+            Answer
+          </h4>
+
+          <button
+            onClick={copyAnswer}
+            className="rounded border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:hover:bg-gray-700"
+            disabled={!answer}
+          >
+            Copy
+          </button>
+        </div>
+
+        <div className="min-h-[96px] whitespace-pre-wrap rounded border border-gray-200 bg-white/70 p-3 font-sans text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100">
+          {answer || (streaming ? "Working..." : "")}
+        </div>
+
+        {heatmapData && heatmapData.length > 0 && (
+          <div className="mt-4">
+            <SaliencyHeatmap title="Context Support Heatmap" sentences={heatmapData} />
+          </div>
+        )}
+      </div>
+    </GroupBox>
+  );
 };
