@@ -2,7 +2,10 @@
 
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { DEMO_TARGETS } from "@/app/lib/demoTargets";
+import {
+  listRagClients,
+  type RagClientRow,
+} from "@/app/lib/ragClientApi";
 import {
   parseSelectionMessage,
   type RagClientSelectedMsg,
@@ -17,29 +20,65 @@ function DebugTapMount() {
 }
 
 export default function HomePage() {
-  const [selectedKey, setSelectedKey] = useState<string>(DEMO_TARGETS[0]?.key ?? "");
+  const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [loadingClients, setLoadingClients] = useState<boolean>(true);
+  const [clientError, setClientError] = useState<string | null>(null);
+
   const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
   const dockFrameRef = useRef<HTMLIFrameElement | null>(null);
 
-  const selectedTarget = useMemo(
-    () => DEMO_TARGETS.find((t) => t.key === selectedKey) ?? DEMO_TARGETS[0],
-    [selectedKey]
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClients() {
+      setLoadingClients(true);
+      setClientError(null);
+
+      try {
+        const rows = await listRagClients();
+
+        if (cancelled) return;
+
+        setRagClients(rows);
+        setSelectedClientId((prev) => prev || rows[0]?.id || "");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err || "Unknown error");
+
+        if (!cancelled) {
+          setRagClients([]);
+          setSelectedClientId("");
+          setClientError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingClients(false);
+        }
+      }
+    }
+
+    void loadClients();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedClient = useMemo(
+    () => ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0],
+    [ragClients, selectedClientId]
   );
 
   const dockUrl = useMemo(() => {
-    if (!selectedTarget) return "/dock";
+    if (!selectedClient) return "/dock";
 
     const params = new URLSearchParams({
-      client: selectedTarget.ragClientId,
+      client: selectedClient.id,
       collapsed: "1",
     });
 
-    if (selectedTarget.defaultUsecaseId) {
-      params.set("usecase", selectedTarget.defaultUsecaseId);
-    }
-
     return `/dock?${params.toString()}`;
-  }, [selectedTarget]);
+  }, [selectedClient]);
 
   useEffect(() => {
     const onMessage = (ev: MessageEvent<unknown>) => {
@@ -58,30 +97,84 @@ export default function HomePage() {
     };
 
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
   }, []);
 
   useEffect(() => {
     const dockWindow = dockFrameRef.current?.contentWindow;
-    if (!dockWindow || !selectedTarget) return;
+    if (!dockWindow || !selectedClient) return;
 
     const msg: RagClientSelectedMsg = {
       type: "RAG_CLIENT_SELECTED",
-      client: selectedTarget.ragClientId,
-      hostUrl: selectedTarget.targetUrl,
-      label: selectedTarget.label,
-      defaultUsecase: selectedTarget.defaultUsecaseId ?? null,
+      client: selectedClient.id,
+      hostUrl: selectedClient.host_url,
+      label: selectedClient.name,
+      defaultUsecase: null,
     };
 
     debugPostMessage(dockWindow, msg, "*", "host -> dock RAG_CLIENT_SELECTED");
-  }, [selectedTarget]);
+  }, [selectedClient]);
 
-  if (!selectedTarget) {
+  if (loadingClients) {
     return (
       <main className="min-h-screen bg-slate-50 text-gray-900">
         <div className="mx-auto max-w-5xl p-6">
           <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
-          <p className="mt-2 text-sm text-red-600">No demo targets are configured.</p>
+          <p className="mt-2 text-sm text-gray-600">Loading RAG clients...</p>
+
+          <Suspense fallback={null}>
+            <DebugTapMount />
+          </Suspense>
+        </div>
+      </main>
+    );
+  }
+
+  if (clientError) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-gray-900">
+        <div className="mx-auto max-w-5xl p-6">
+          <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+
+          <div className="mt-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            Failed to load RAG clients: {clientError}
+          </div>
+
+          <div className="mt-4">
+            <Link
+              href="/clients"
+              className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+            >
+              Manage RAG Clients
+            </Link>
+          </div>
+
+          <Suspense fallback={null}>
+            <DebugTapMount />
+          </Suspense>
+        </div>
+      </main>
+    );
+  }
+
+  if (!selectedClient) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-gray-900">
+        <div className="mx-auto max-w-5xl p-6">
+          <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+          <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
+
+          <div className="mt-4">
+            <Link
+              href="/clients"
+              className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+            >
+              Manage RAG Clients
+            </Link>
+          </div>
 
           <Suspense fallback={null}>
             <DebugTapMount />
@@ -99,7 +192,7 @@ export default function HomePage() {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
               <p className="max-w-3xl text-sm text-gray-600">
-                Select a dockable project demo, then explore it side-by-side with the
+                Select a RAG client host, then explore it side-by-side with the
                 SmartExplainer controller. The host relays runtime target selections from the
                 target app into the dock automatically.
               </p>
@@ -117,41 +210,45 @@ export default function HomePage() {
 
           <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
             <label
-              htmlFor="demo-target"
+              htmlFor="rag-client"
               className="mb-2 block text-sm font-medium text-gray-800"
             >
-              Select Project Demo
+              Select RAG Client
             </label>
 
             <select
-              id="demo-target"
-              value={selectedKey}
-              onChange={(e) => setSelectedKey(e.target.value)}
+              id="rag-client"
+              value={selectedClient.id}
+              onChange={(e) => setSelectedClientId(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 md:max-w-md"
             >
-              {DEMO_TARGETS.filter((t) => t.dockable).map((target) => (
-                <option key={target.key} value={target.key}>
-                  {target.label}
+              {ragClients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
                 </option>
               ))}
             </select>
 
-            <p className="mt-3 text-sm text-gray-600">{selectedTarget.description}</p>
+            <p className="mt-3 text-sm text-gray-600">
+              {selectedClient.host_url}
+            </p>
           </div>
         </header>
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
           <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
             <div className="border-b border-gray-200 px-4 py-3">
-              <h2 className="text-base font-semibold text-gray-900">{selectedTarget.label}</h2>
-              <p className="text-xs text-gray-500">{selectedTarget.targetUrl}</p>
+              <h2 className="text-base font-semibold text-gray-900">
+                {selectedClient.name}
+              </h2>
+              <p className="text-xs text-gray-500">{selectedClient.host_url}</p>
             </div>
 
             <div className="h-[72vh] min-h-[560px]">
               <iframe
                 ref={targetFrameRef}
-                title={`${selectedTarget.label} target demo`}
-                src={selectedTarget.targetUrl}
+                title={`${selectedClient.name} target host`}
+                src={selectedClient.host_url}
                 className="h-full w-full border-0"
               />
             </div>
@@ -163,7 +260,7 @@ export default function HomePage() {
                 SmartExplainer Controller
               </h2>
               <p className="text-xs text-gray-500">
-                Project: {selectedTarget.label} · Client: {selectedTarget.ragClientId}
+                Client: {selectedClient.id}
               </p>
             </div>
 
