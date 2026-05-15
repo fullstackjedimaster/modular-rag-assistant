@@ -18,7 +18,7 @@ from routers.schemas import (
     TelemetryMessageRow,
     UpdateRagClientIn,
 )
-from status_registry import REGISTRY
+from routers.status_registry import REGISTRY
 
 router = APIRouter(prefix="/api/rag-clients", tags=["rag-clients"])
 
