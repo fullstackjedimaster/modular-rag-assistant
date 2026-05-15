@@ -24,7 +24,6 @@ type ExplanationPanelUsecase = {
 };
 
 export type ExplanationPanelProps = {
-  usecase: ExplanationPanelUsecase;
   query: string;
   setQuery: (v: string) => void;
   telemetry: Telemetry;
@@ -42,7 +41,6 @@ export type ExplanationPanelProps = {
 };
 
 export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
-  usecase,
   query,
   setQuery,
   telemetry,
@@ -88,9 +86,9 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
   }, [contextsOpen, contexts]);
 
   return (
-    <GroupBox title={usecase.groupbox_title}>
+    <GroupBox title={groupbox_title}>
       <div className="mb-4 space-y-4">
-        {usecase.telemetry_keys.length > 0 && (
+        {telemetry_keys.length > 0 && (
           <div className="font-mono text-xs dark:text-gray-300">
             {usecase.telemetry_keys.map((key) => (
               <div key={key}>

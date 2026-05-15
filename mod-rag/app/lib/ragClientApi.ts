@@ -1,12 +1,15 @@
-// app/lib/ragClientApi.ts
+// app/lib/ragClientApi.tS
+
+import {UUID} from "node:crypto";
+
 export type RagClientRow = {
-    id: string;
+    id: UUID;
     name: string;
     host_url: string;
 }
 
 export type RagClientFull = {
-    id: string;
+    id: UUID;
     name: string;
     host_url: string;
     collection:string;
@@ -14,7 +17,6 @@ export type RagClientFull = {
     embed_model: string;
     prompt: string;
     chaining_mode: PromptChainingMode;
-    content_docs:ContentDoc[];
     telemetry_messages: TelemetryMessage[];
 };
 
@@ -25,13 +27,13 @@ export type RagClientStatus = {
 };
 
 export type ContentDoc = {
-    id: string;
+    id: UUID;
     doc_name: string;
     file_path: string;
 };
 
 export type TelemetryMessage = {
-    id: string;
+    id: UUID;
     message_name: string;
     message_value: string;
 };
@@ -80,20 +82,20 @@ export async function listRagClients(): Promise<RagClientRow[]> {
 }
 
 // Full single client (nested context/docs/messages/prompts)
-export async function getRagClient(id: string): Promise<RagClientFull> {
+export async function getRagClient(id: UUID): Promise<RagClientFull> {
     return apiFetch<RagClientFull>(`/api/rag-clients/${id}`);
 }
 
 // Create
-export async function createRagClient(body: CreateRagClientIn): Promise<{ id: string }> {
-    return apiFetch<{ id: string }>(`/api/rag-clients`, {
+export async function createRagClient(body: CreateRagClientIn): Promise<{ id: UUID }> {
+    return apiFetch<{ id: UUID }>(`/api/rag-clients`, {
         method: "POST",
         body: JSON.stringify(body),
     });
 }
 
 // Update
-export async function updateRagClient(id: string, body: UpdateRagClientIn): Promise<{ ok: true }> {
+export async function updateRagClient(id: UUID, body: UpdateRagClientIn): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -101,22 +103,22 @@ export async function updateRagClient(id: string, body: UpdateRagClientIn): Prom
 }
 
 // Delete
-export async function deleteRagClient(id: string): Promise<{ ok: true }> {
+export async function deleteRagClient(id: UUID): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}`, { method: "DELETE" });
 }
 
 // Status map by ID
-export async function getRagClientStatuses(ids: string[]): Promise<Record<string, RagClientStatus>> {
+export async function getRagClientStatuses(ids: UUID[]): Promise<Record<string, RagClientStatus>> {
     const q = ids.map((x) => `id=${encodeURIComponent(String(x))}`).join("&");
-    return apiFetch<Record<string, RagClientStatus>>(`/api/rag-clients/status?${q}`);
+    return apiFetch<Record<UUID, RagClientStatus>>(`/api/rag-clients/status?${q}`);
 }
 
 // Trigger dock injection / connect
-export async function connectRagClient(id: string): Promise<{ ok: true }> {
+export async function connectRagClient(id: UUID): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}/connect`, { method: "POST" });
 }
 
 // Disconnect
-export async function disconnectRagClient(id: string): Promise<{ ok: true }> {
+export async function disconnectRagClient(id: UUID): Promise<{ ok: true }> {
     return apiFetch<{ ok: true }>(`/api/rag-clients/${id}/disconnect`, { method: "POST" });
 }

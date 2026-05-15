@@ -6,7 +6,8 @@ import { useStream } from "@/app/hooks/useStream";
 import { useAIConfig } from "@/app/hooks/useAIConfig";
 import Toast from "@/app/components/Toast";
 import { settings } from "@/app/lib/settings";
-import type { UseCaseConfig } from "@/app/hooks/useUseCase";
+import type { TelemetryMessage } from "@/app/lib/ragClientApi";
+import { PromptChainingMode } from "@/app/lib/ragClientApi";
 
 type AttrValue = string | number | boolean | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -14,17 +15,51 @@ type Attrs = Record<string, AttrValue>;
 interface SmartExplainerProps {
   subjectId?: string;
   attrs?: Attrs;
-  usecase: UseCaseConfig;
+  collection: string;
+  llm_model: string;
+  embed_model: string;
+  prompt: string;
+  chaining_mode: PromptChainingMode;
+  telemetry_messages?: TelemetryMessage[];
   showControls?: boolean;
   showPanel?: boolean;
+}
+
+function getTelemetryKey(message: TelemetryMessage): string | null {
+  if (!message) return null;
+
+  const raw = message.message_name;
+
+  if (typeof raw !== "string") return null;
+
+  const trimmed = raw.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function coerceTelemetryValue(value: AttrValue): string | number | undefined {
+  if (typeof value === "string" || typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
+  return undefined;
 }
 
 export function SmartExplainer({
   subjectId,
   attrs = {},
-  usecase,
+  collection,
+  llm_model,
+  embed_model,
+  prompt,
+  chaining_mode,
+  telemetry_messages = [],
 }: SmartExplainerProps) {
-  const [query, setQuery] = useState<string>(usecase.default_query || "");
+  const [query, setQuery] = useState<string>(prompt || "");
   const [contextsOpen, setContextsOpen] = useState<boolean>(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -32,25 +67,29 @@ export function SmartExplainer({
   } | null>(null);
 
   const { cfg } = useAIConfig({
-    local_model: usecase.llm_model,
-    embed_model: usecase.embed_model,
+    local_model: llm_model,
+    embed_model,
   });
+
+  const telemetryKeys = useMemo<string[]>(() => {
+    return telemetry_messages
+      .map(getTelemetryKey)
+      .filter((key): key is string => Boolean(key));
+  }, [telemetry_messages]);
 
   const telemetry = useMemo<Telemetry>(() => {
     const t: Telemetry = {};
 
-    if (Array.isArray(usecase.telemetry_keys)) {
-      for (const key of usecase.telemetry_keys) {
-        const v = attrs?.[key];
+    for (const key of telemetryKeys) {
+      const value = coerceTelemetryValue(attrs?.[key]);
 
-        if (typeof v === "string" || typeof v === "number") {
-          t[key] = v;
-        }
+      if (value !== undefined) {
+        t[key] = value;
       }
     }
 
     return t;
-  }, [attrs, usecase.telemetry_keys]);
+  }, [attrs, telemetryKeys]);
 
   const base = (settings.AI_CORE_BASE || "https://ai-core.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
@@ -58,14 +97,15 @@ export function SmartExplainer({
   const url = useMemo(() => {
     const p = new URLSearchParams({
       q: query,
-      usecase: usecase.id,
-      collection: usecase.collection,
-      model: cfg.local_model || usecase.llm_model,
-      llm_model: cfg.local_model || usecase.llm_model,
-      embed_model: cfg.embed_model || usecase.embed_model,
+      collection,
+      model: cfg.local_model || llm_model,
+      llm_model: cfg.local_model || llm_model,
+      embed_model: cfg.embed_model || embed_model,
       provider: cfg.provider,
-      prompt_template: usecase.prompt_template,
-      chaining_mode: usecase.chaining_mode,
+      prompt,
+      chaining_mode,
+      telemetry_messages: telemetryKeys.join(","),
+      sse: "1",
     });
 
     if (subjectId) {
@@ -73,7 +113,7 @@ export function SmartExplainer({
     }
 
     for (const [key, val] of Object.entries(telemetry)) {
-      if (val !== undefined) {
+      if (val !== undefined && val !== null) {
         p.set(key, String(val));
       }
     }
@@ -82,12 +122,12 @@ export function SmartExplainer({
   }, [
     query,
     telemetry,
-    usecase.id,
-    usecase.collection,
-    usecase.llm_model,
-    usecase.embed_model,
-    usecase.prompt_template,
-    usecase.chaining_mode,
+    telemetryKeys,
+    collection,
+    llm_model,
+    embed_model,
+    prompt,
+    chaining_mode,
     cfg.local_model,
     cfg.embed_model,
     cfg.provider,
@@ -130,7 +170,7 @@ export function SmartExplainer({
           body: JSON.stringify({
             answer,
             context: (contexts || []).join("\n"),
-            embed_model: cfg.embed_model || usecase.embed_model,
+            embed_model: cfg.embed_model || embed_model,
           }),
         });
 
@@ -154,7 +194,7 @@ export function SmartExplainer({
     return () => {
       cancelled = true;
     };
-  }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, usecase.embed_model]);
+  }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, embed_model]);
 
   const onExplain = () => {
     setContextsOpen(false);
@@ -165,7 +205,6 @@ export function SmartExplainer({
   return (
     <div className="space-y-6 rounded-lg bg-white p-4 shadow dark:bg-gray-900">
       <ExplanationPanel
-        usecase={usecase}
         query={query}
         setQuery={setQuery}
         telemetry={telemetry}
