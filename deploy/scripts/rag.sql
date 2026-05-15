@@ -234,16 +234,6 @@ RETURN jsonb_build_object(
         'collection', v_client->>'collection',
         'llm_model', v_client->>'llm_model',
         'embed_model', v_client->>'embed_model',
-        'content_docs', COALESCE(
-                (SELECT jsonb_agg(jsonb_build_object(
-                        'id', cd.id,
-                        'doc_name', cd.doc_name,
-                        'file_path', cd.file_path
-                                  ) ORDER BY cd.doc_name)
-                 FROM rag.content_doc cd
-                 WHERE cd.rag_client_id = v_client_id),
-                '[]'::jsonb
-                        ),
         'telemetry_messages', COALESCE(
                     (SELECT jsonb_agg(jsonb_build_object(
                             'id', tm.id,
@@ -251,7 +241,7 @@ RETURN jsonb_build_object(
                             'message_value', tm.message_value
                                       ) ORDER BY tm.message_name)
                      FROM rag.telemetry_message tm
-                     WHERE tm.rag_client_id = v_client_id),
+                     WHERE tm.rag_client_id = p_rag_client_id),
                     '[]'::jsonb
                                   )
        );
