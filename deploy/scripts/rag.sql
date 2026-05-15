@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS rag.rag_client (
                                               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                               name        TEXT NOT NULL UNIQUE,         -- formerly FRAME_ID
                                               host_url    TEXT NOT NULL,                -- URL/URI of host app including iframe URI
-                                              colleclion TEXT NOT NULL,
+                                              collection TEXT NOT NULL,
                                               llm_model TEXT NOT NULL DEFAULT 'llama3.2',
                                               embed_model text NOT NULL DEFAULT 'nomic-embed-text',
                                               prompt    TEXT NOT NULL,
@@ -90,13 +90,13 @@ END$$;
 -- CRUD: rag_client
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name uuid, p_host_url TEXT, p_colleclion TEXT, p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name uuid, p_host_url TEXT, p_collection TEXT, p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
 RETURNS uuid AS $$
 DECLARE
 v_id uuid;
 BEGIN
 INSERT INTO rag.rag_client (name, host_url, collection,  llm_model, embed_model,prompt ,  chaining_mode )
-VALUES (p_name, p_host_url, p_colleclion, p_llm_model, p_embed_model, p_prompt ,  p_chaining_mode)
+VALUES (p_name, p_host_url, p_collection, p_llm_model, p_embed_model, p_prompt ,  p_chaining_mode)
     RETURNING id INTO v_id;
 RETURN v_id;
 END;
