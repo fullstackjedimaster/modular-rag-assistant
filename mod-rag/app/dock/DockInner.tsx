@@ -3,27 +3,54 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SmartExplainer } from "@/app/components/SmartExplainer";
-import { useUseCase } from "@/app/hooks/useUseCase";
 import { parseDockMessage } from "@/app/lib/messages";
+import {
+  getRagClient,
+  type RagClientFull,
+  type TelemetryMessage,
+} from "@/app/lib/ragClientApi";
 
 type AttrValue = string | number | boolean | null | undefined;
 type Attrs = Record<string, AttrValue>;
+type RagClientId = RagClientFull["id"];
 
 function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(`[dock] ${msg}`);
 }
 
-function requireAllowlist(usecase: { telemetry_keys?: unknown } | undefined): string[] {
-  const keys = usecase?.telemetry_keys;
+function isRagClientId(value: string | undefined | null): value is RagClientId {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+      value
+    )
+  );
+}
 
-  assert(Array.isArray(keys), "usecase.telemetry_keys must exist and be an array.");
-  assert(keys.length > 0, "usecase.telemetry_keys must be non-empty.");
+function telemetryKey(message: TelemetryMessage): string | null {
+  const key = message?.message_name;
 
-  for (const k of keys) {
-    assert(typeof k === "string" && k.length > 0, "usecase.telemetry_keys contains an invalid key.");
+  if (typeof key !== "string") return null;
+
+  const trimmed = key.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function requireAllowlist(telemetryMessages?: TelemetryMessage[]): string[] {
+  const messages = telemetryMessages || [];
+
+  if (messages.length === 0) {
+    return [];
   }
 
-  return keys as string[];
+  const keys = messages
+    .map(telemetryKey)
+    .filter((key): key is string => Boolean(key));
+
+  assert(keys.length === messages.length, "telemetry_messages contains an invalid message_name.");
+
+  return keys;
 }
 
 function pickRequiredAttrs(attrs: Attrs, allow: string[]) {
@@ -59,7 +86,58 @@ export default function DockInner() {
   const [clientLabel, setClientLabel] = useState<string | undefined>(undefined);
   const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(undefined);
 
-  const { selected, loaded } = useUseCase(clientId);
+  const [client, setClient] = useState<RagClientFull | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const activeClientId = useMemo<RagClientId | null>(() => {
+    return isRagClientId(clientId) ? clientId : null;
+  }, [clientId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClient() {
+      setLoaded(false);
+      setClient(null);
+
+      if (!clientId) {
+        setLoaded(true);
+        return;
+      }
+
+      if (!activeClientId) {
+        setDockError(`Invalid RAG client id: ${clientId}`);
+        setLoaded(true);
+        return;
+      }
+
+      try {
+        const loadedClient = await getRagClient(activeClientId);
+
+        if (cancelled) return;
+
+        setClient(loadedClient);
+        setClientLabel((prev) => prev || loadedClient.name);
+        setClientHostUrl((prev) => prev || loadedClient.host_url);
+        setDockError(null);
+      } catch (err: unknown) {
+        if (cancelled) return;
+
+        setClient(null);
+        setDockError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      }
+    }
+
+    void loadClient();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, activeClientId]);
 
   useEffect(() => {
     const onMsg = (ev: MessageEvent<unknown>) => {
@@ -101,12 +179,17 @@ export default function DockInner() {
   }, []);
 
   const forwardedAttrs = useMemo(() => {
-    if (!loaded || !selected) return {};
+    if (!loaded || !client) return {};
     if (!subjectId) return {};
 
-    const allow = requireAllowlist(selected);
+    const allow = requireAllowlist(client.telemetry_messages);
+
+    if (allow.length === 0) {
+      return {};
+    }
+
     return pickRequiredAttrs(attrs, allow);
-  }, [attrs, loaded, selected, subjectId]);
+  }, [attrs, loaded, client, subjectId]);
 
   if (!loaded) {
     return <div className="p-3 text-sm text-gray-500">Loading dock...</div>;
@@ -140,12 +223,12 @@ export default function DockInner() {
 
         <div>
           <span className="font-medium text-gray-800">RAG config:</span>{" "}
-          {selected?.label ?? "waiting..."}
+          {client?.name ?? "waiting..."}
         </div>
 
         <div>
           <span className="font-medium text-gray-800">Collection:</span>{" "}
-          {selected?.collection ?? "waiting..."}
+          {client?.collection ?? "waiting..."}
         </div>
 
         <div>
@@ -160,23 +243,28 @@ export default function DockInner() {
         </div>
       )}
 
-      {clientId && !selected && (
+      {clientId && !client && (
         <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           Waiting for explainer configuration...
         </div>
       )}
 
-      {selected && !subjectId && (
+      {client && !subjectId && (
         <div className="mb-3 rounded border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600">
           Waiting for a selection from the target demo...
         </div>
       )}
 
-      {selected ? (
+      {client ? (
         <SmartExplainer
           subjectId={subjectId}
           attrs={forwardedAttrs}
-          usecase={selected}
+          collection={client.collection}
+          llm_model={client.llm_model}
+          embed_model={client.embed_model}
+          prompt={client.prompt}
+          chaining_mode={client.chaining_mode}
+          telemetry_messages={client.telemetry_messages}
           showControls={false}
           showPanel={true}
         />
