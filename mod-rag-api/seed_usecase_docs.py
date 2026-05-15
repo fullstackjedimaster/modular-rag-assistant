@@ -54,8 +54,8 @@ CHUNK_SIZE_CHARS = 1000
 CHUNK_OVERLAP_CHARS=200
 
 # Internal service URLs (compose service names)
-QDRANT_URL="http://qdrant:6333"
-OLLAMA_BASE_URL="http://ollama:11434"
+QDRANT_URL="http://127.0.0.1:6333"
+OLLAMA_BASE_URL="http://127.0.0.1:11434"
 
 
 ROOT = Path(__file__).resolve()
