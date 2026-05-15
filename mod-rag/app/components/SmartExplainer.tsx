@@ -94,18 +94,23 @@ export function SmartExplainer({
   const base = (settings.AI_CORE_BASE || "https://ai-core.fullstackjedi.dev").replace(/\/$/, "");
   const explainPath = `${base}/rag/explain`;
 
-  const p = new URLSearchParams({
-  q: query,
-  collection,
-  model: cfg.local_model || llm_model,
-  llm_model: cfg.local_model || llm_model,
-  embed_model: cfg.embed_model || embed_model,
-  provider: cfg.provider,
-  prompt,
-  chaining_mode,
-});
+  const url = useMemo(() => {
+    const p = new URLSearchParams({
+      q: query,
+      collection,
+      model: cfg.local_model || llm_model,
+      llm_model: cfg.local_model || llm_model,
+      embed_model: cfg.embed_model || embed_model,
+      provider: cfg.provider,
+      prompt,
+      chaining_mode,
+    });
 
-if (telemetryKeys.length > 0) {
+    if (subjectId) {
+      p.set("subject", subjectId);
+    }
+
+    if (telemetryKeys.length > 0) {
   p.set("telemetry_messages", telemetryKeys.join(","));
 }
 
