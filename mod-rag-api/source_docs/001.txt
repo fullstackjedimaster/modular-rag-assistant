@@ -1,0 +1,52 @@
+The normal voltage for a panel in this system is 39.0 volts and the normal current is 7.5 amps.
+
+Fault Categories:
+
+1. OPEN_CIRCUIT
+   - Trigger: Panel power output near zero while irradiance is sufficient
+   - Thresholds:
+     - Po_mean < 0.02 * P_proj
+     - Irradiance_mean > 400 W/m²
+
+2. SNAPPED_DIODE
+   - Trigger: Voltage ratios indicate missing diode contribution
+   - Thresholds:
+     - Vo_mean deviates by ~3.5% steps from inverter voltage
+     - Proportional to number of diodes (1, 2, or 3 typically)
+
+3. POWER_DROP
+   - Trigger: Significant loss in panel output compared to expectations
+   - Thresholds:
+     - Po_mean or percent_loss < 95%
+     - Not an open circuit or snapped diode
+
+4. DEAD_PANEL
+   - Trigger: Avg panel voltage is too low
+   - Thresholds:
+     - Avg_voltage < 1.5 V
+
+5. LOW_VOLTAGE
+   - Trigger: Panel/system voltage is below operating range
+   - Thresholds:
+     - Voltage < 20 V
+
+6. LOW_POWER
+   - Trigger: Low average power output
+   - Thresholds:
+     - Power < 10 W
+
+7. GROSS_POWER_DROP
+   - Trigger: Severe drop in output
+   - Thresholds:
+     - Power loss > 50%
+     - Often due to shade or weather
+
+8. SHADING
+   - Trigger: Intermittent or clustered power drop
+   - Contextual
+
+9. INVERTER_OFFLINE / STRING_OFFLINE
+   - Trigger: Loss of data or link with inverter or string node
+   - Contextual / Missing heartbeats
+
+
