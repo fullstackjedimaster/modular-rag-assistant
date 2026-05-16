@@ -43,7 +43,7 @@ async def list_clients_json(request: Request) -> Any:
 
 
 @router.post("", response_model=Dict[str, str])
-async def create_client(request: Request, body: CreateRagClientIn) -> Dict[str, int]:
+async def create_client(request: Request, body: CreateRagClientIn) -> dict[str, str]:
     try:
         new_id = await call_val(request, "rag.create_rag_client", body.name, body.host_url)
         return {"id": str(new_id)}
@@ -51,28 +51,28 @@ async def create_client(request: Request, body: CreateRagClientIn) -> Dict[str, 
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{client_id}", response_model=Dict[str, bool])
-async def update_client(request: Request, client_id: str, body: UpdateRagClientIn) -> Dict[str, bool]:
+@router.put("/{rag_client_id}", response_model=Dict[str, bool])
+async def update_client(request: Request, rag_client_id: str, body: UpdateRagClientIn) -> Dict[str, bool]:
     try:
-        await call_val(request, "rag.update_rag_client", client_id, body.name, body.host_url)
+        await call_val(request, "rag.update_rag_client", rag_client_id, body.name, body.host_url)
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/{client_id}", response_model=Dict[str, bool])
-async def delete_client(request: Request, client_id: int) -> Dict[str, bool]:
+@router.delete("/{rag_client_id}", response_model=Dict[str, bool])
+async def delete_client(request: Request, rag_client_id: int) -> Dict[str, bool]:
     try:
-        await call_val(request, "rag.delete_rag_client", client_id)
-        REGISTRY.set_connected(client_id, False, detail="deleted")
+        await call_val(request, "rag.delete_rag_client", rag_client_id)
+        REGISTRY.set_connected(rag_client_id, False, detail="deleted")
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{client_id}", response_model=RagClientFull)
-async def get_client_full(request: Request, client_id: str) -> RagClientFull:
-    obj = await call_jsonb(request, "rag.get_rag_client_json", client_id)
+@router.get("/{rag_client_id}", response_model=RagClientFull)
+async def get_client_full(request: Request, rag_client_id: str) -> RagClientFull:
+    obj = await call_jsonb(request, "rag.get_rag_client_json", rag_client_id)
     if obj is None:
         raise HTTPException(status_code=404, detail="rag_client not found")
     return RagClientFull(**obj)
@@ -82,9 +82,9 @@ async def get_client_full(request: Request, client_id: str) -> RagClientFull:
 # Runtime status (dashboard)
 # ---------------------------
 
-@router.get("/status", response_model=Dict[int, RagClientStatus])
-async def get_statuses(id: List[str] = Query(default=[])) -> Dict[str, RagClientStatus]:
-    snap = REGISTRY.snapshot(id)
+@router.get("/status", response_model=Dict[str, RagClientStatus])
+async def get_statuses(ragClientId: List[str] = Query(default=[])) -> Dict[str, RagClientStatus]:
+    snap = REGISTRY.snapshot(ragClientId)
     out: Dict[str, RagClientStatus] = {}
     for cid, st in snap.items():
         out[cid] = RagClientStatus(
@@ -95,25 +95,25 @@ async def get_statuses(id: List[str] = Query(default=[])) -> Dict[str, RagClient
     return out
 
 
-@router.post("/{client_id}/ping", response_model=Dict[str, bool])
-async def ping_client(client_id: str, detail: str = "") -> Dict[str, bool]:
-    REGISTRY.touch(client_id, detail=detail)
+@router.post("/{rag_client_id}/ping", response_model=Dict[str, bool])
+async def ping_client(rag_client_id: str, detail: str = "") -> Dict[str, bool]:
+    REGISTRY.touch(rag_client_id, detail=detail)
     return {"ok": True}
 
 
-@router.post("/{client_id}/connect", response_model=ConnectResponse)
-async def connect_client(request: Request, client_id: str) -> ConnectResponse:
-    obj = await call_jsonb(request, "rag.get_rag_client_json", client_id)
+@router.post("/{rag_client_id}/connect", response_model=ConnectResponse)
+async def connect_client(request: Request, rag_client_id: str) -> ConnectResponse:
+    obj = await call_jsonb(request, "rag.get_rag_client_json", rag_client_id)
     if obj is None:
         raise HTTPException(status_code=404, detail="rag_client not found")
 
-    REGISTRY.set_connected(client_id, True, detail="connect requested")
+    REGISTRY.set_connected(rag_client_id, True, detail="connect requested")
     return ConnectResponse(ok=True, detail="connect requested")
 
 
-@router.post("/{client_id}/disconnect", response_model=ConnectResponse)
-async def disconnect_client(client_id: str) -> ConnectResponse:
-    REGISTRY.set_connected(client_id, False, detail="disconnected")
+@router.post("/{rag_client_id}/disconnect", response_model=ConnectResponse)
+async def disconnect_client(rag_client_id: str) -> ConnectResponse:
+    REGISTRY.set_connected(rag_client_id, False, detail="disconnected")
     return ConnectResponse(ok=True, detail="disconnected")
 
 
@@ -121,34 +121,34 @@ async def disconnect_client(client_id: str) -> ConnectResponse:
 # Content Docs CRUD + list by client
 # ---------------------------
 
-@router.get("/{client_id}/content-docs", response_model=List[ContentDocRow])
-async def list_content_docs(request: Request, client_id: str) -> List[ContentDocRow]:
-    rows = await call_rows(request, "rag.list_content_docs_by_client", client_id)
+@router.get("/{rag_client_id}/content-docs", response_model=List[ContentDocRow])
+async def list_content_docs(request: Request, rag_client_id: str) -> List[ContentDocRow]:
+    rows = await call_rows(request, "rag.list_content_docs_by_client", rag_client_id)
     return [ContentDocRow(**r) for r in rows]
 
 
-@router.post("/{client_id}/content-docs", response_model=Dict[str, str])
-async def add_content_doc(request: Request, client_id: str, body: ContentDocIn) -> Dict[str, int]:
+@router.post("/{rag_client_id}/content-docs", response_model=Dict[str, str])
+async def add_content_doc(request: Request, rag_client_id: str, body: ContentDocIn) -> dict[str, str]:
     try:
-        new_id = await call_val(request, "rag.create_content_doc", client_id, body.doc_name, body.file_path)
-        return {"id": str(new_id)}
+        new_id = await call_val(request, "rag.create_content_doc", rag_client_id, body.doc_name, body.file_path)
+        return {"ragClientId": str(new_id)}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{client_id}/content-docs/{doc_id}", response_model=Dict[str, bool])
-async def update_content_doc(request: Request, client_id: str, doc_id: str, body: ContentDocIn) -> Dict[str, bool]:
+@router.put("/{rag_client_id}/content-docs/{doc_id}", response_model=Dict[str, bool])
+async def update_content_doc(request: Request, rag_client_id: str, doc_id: str, body: ContentDocIn) -> Dict[str, bool]:
     try:
-        await call_val(request, "rag.update_content_doc_by_client", client_id, doc_id, body.doc_name, body.file_path)
+        await call_val(request, "rag.update_content_doc_by_client", rag_client_id, doc_id, body.doc_name, body.file_path)
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/{client_id}/content-docs/{doc_id}", response_model=Dict[str, bool])
-async def delete_content_doc(request: Request, client_id: str, doc_id: str) -> Dict[str, bool]:
+@router.delete("/{rag_client_id}/content-docs/{doc_id}", response_model=Dict[str, bool])
+async def delete_content_doc(request: Request, rag_client_id: str, doc_id: str) -> Dict[str, bool]:
     try:
-        await call_val(request, "rag.delete_content_doc_by_client", client_id, doc_id)
+        await call_val(request, "rag.delete_content_doc_by_client", rag_client_id, doc_id)
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -158,31 +158,31 @@ async def delete_content_doc(request: Request, client_id: str, doc_id: str) -> D
 # Telemetry Messages CRUD + list by client
 # ---------------------------
 
-@router.get("/{client_id}/telemetry-messages", response_model=List[TelemetryMessageRow])
-async def list_telemetry_messages(request: Request, client_id: str) -> List[TelemetryMessageRow]:
-    rows = await call_rows(request, "rag.list_telemetry_messages_by_client", client_id)
+@router.get("/{rag_client_id}/telemetry-messages", response_model=List[TelemetryMessageRow])
+async def list_telemetry_messages(request: Request, rag_client_id: str) -> List[TelemetryMessageRow]:
+    rows = await call_rows(request, "rag.list_telemetry_messages_by_client", rag_client_id)
     return [TelemetryMessageRow(**r) for r in rows]
 
 
-@router.post("/{client_id}/telemetry-messages", response_model=Dict[str, int])
-async def add_telemetry_message(request: Request, client_id: str, body: TelemetryMessageIn) -> Dict[str, str]:
+@router.post("/{rag_client_id}/telemetry-messages", response_model=Dict[str, int])
+async def add_telemetry_message(request: Request, rag_client_id: str, body: TelemetryMessageIn) -> Dict[str, str]:
     try:
         new_id = await call_val(
             request,
             "rag.create_telemetry_message",
-            client_id,
+            rag_client_id,
             body.message_name,
             body.message_value,
         )
-        return {"id": str(new_id)}
+        return {"ragClientId": str(new_id)}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{client_id}/telemetry-messages/{msg_id}", response_model=Dict[str, bool])
+@router.put("/{rag_client_id}/telemetry-messages/{msg_id}", response_model=Dict[str, bool])
 async def update_telemetry_message(
     request: Request,
-    client_id: str,
+    rag_client_id: str,
     msg_id: str,
     body: TelemetryMessageIn,
 ) -> Dict[str, bool]:
@@ -190,7 +190,7 @@ async def update_telemetry_message(
         await call_val(
             request,
             "rag.update_telemetry_message_by_client",
-            client_id,
+            rag_client_id,
             msg_id,
             body.message_name,
             body.message_value,
@@ -200,10 +200,10 @@ async def update_telemetry_message(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/{client_id}/telemetry-messages/{msg_id}", response_model=Dict[str, bool])
-async def delete_telemetry_message(request: Request, client_id: str, msg_id: str) -> Dict[str, bool]:
+@router.delete("/{rag_client_id}/telemetry-messages/{msg_id}", response_model=Dict[str, bool])
+async def delete_telemetry_message(request: Request, rag_client_id: str, msg_id: str) -> Dict[str, bool]:
     try:
-        await call_val(request, "rag.delete_telemetry_message_by_client", client_id, msg_id)
+        await call_val(request, "rag.delete_telemetry_message_by_client", rag_client_id, msg_id)
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

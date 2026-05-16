@@ -17,9 +17,9 @@ def _source_docs_dir() -> Path:
     config_dir =  str(here / "config")
     return  str(config_dir / "source_docs")
 
-def _client_dir(client_id: int) -> Path:
+def _client_dir(rag_client_id: int) -> Path:
     base = _source_docs_dir()
-    return base / f"client_{int(client_id)}"
+    return base / f"client_{int(rag_client_id)}"
 
 def _safe_filename(name: str) -> str:
     # Keep only the name portion; prevent path tricks.
@@ -29,25 +29,25 @@ def _safe_filename(name: str) -> str:
 router = APIRouter(prefix="/rag-clients", tags=["client-docs"])
 
 
-@router.get("/{client_id}/docs/list")
-async def list_client_docs(client_id: int):
-    d = _client_dir(client_id)
+@router.get("/{rag_client_id}/docs/list")
+async def list_client_docs(rag_client_id: int):
+    d = _client_dir(rag_client_id)
     if not d.exists():
-        return {"client_id": int(client_id), "files": []}
+        return {"rag_client_id": int(rag_client_id), "files": []}
 
     if not d.is_dir():
         raise HTTPException(status_code=500, detail=f"Client docs path is not a directory: {d}")
 
     files = sorted([p.name for p in d.iterdir() if p.is_file()])
-    return {"client_id": int(client_id), "files": files}
+    return {"rag_client_id": int(rag_client_id), "files": files}
 
 
-@router.post("/{client_id}/docs/upload")
-async def upload_client_docs(client_id: int, files: List[UploadFile] = File(...)):
+@router.post("/{rag_client_id}/docs/upload")
+async def upload_client_docs(rag_client_id: int, files: List[UploadFile] = File(...)):
     if not files:
-        return {"client_id": int(client_id), "saved": []}
+        return {"rag_client_id": int(rag_client_id), "saved": []}
 
-    d = _client_dir(client_id)
+    d = _client_dir(rag_client_id)
     d.mkdir(parents=True, exist_ok=True)
 
     saved: List[str] = []
@@ -64,4 +64,4 @@ async def upload_client_docs(client_id: int, files: List[UploadFile] = File(...)
         out_path.write_bytes(data)
         saved.append(name)
 
-    return {"client_id": int(client_id), "saved": saved}
+    return {"rag_client_id": int(rag_client_id), "saved": saved}

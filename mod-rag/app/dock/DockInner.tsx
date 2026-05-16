@@ -117,7 +117,7 @@ export default function DockInner() {
     const params = useSearchParams();
 
     const forcedClient =
-        params.get("client_id") || params.get("client") || undefined;
+        params.get("ragClientId") || params.get("rag_client_id") || undefined;
 
     const [subjectId, setSubjectId] = useState<string | undefined>(undefined);
     const [attrs, setAttrs] = useState<Attrs>({});
@@ -126,7 +126,7 @@ export default function DockInner() {
     const [sessionToken, setSessionToken] = useState<string | undefined>(undefined);
     const [sessionExp, setSessionExp] = useState<number | undefined>(undefined);
 
-    const [clientId, setClientId] = useState<string | undefined>(forcedClient);
+    const [ragClientId, setRagClientId] = useState<string | undefined>(forcedClient);
     const [clientLabel, setClientLabel] = useState<string | undefined>(undefined);
     const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(
         undefined
@@ -136,12 +136,12 @@ export default function DockInner() {
     const [loaded, setLoaded] = useState(false);
 
     const activeClientId = useMemo<RagClientId | null>(() => {
-        return isRagClientId(clientId) ? clientId : null;
-    }, [clientId]);
+        return isRagClientId(ragClientId) ? ragClientId : null;
+    }, [ragClientId]);
 
     useEffect(() => {
         if (forcedClient) {
-            setClientId(forcedClient);
+            setRagClientId(forcedClient);
         }
     }, [forcedClient]);
 
@@ -152,13 +152,13 @@ export default function DockInner() {
             setLoaded(false);
             setClient(null);
 
-            if (!clientId) {
+            if (!ragClientId) {
                 setLoaded(true);
                 return;
             }
 
             if (!activeClientId) {
-                setDockError(`Invalid RAG client id: ${clientId}`);
+                setDockError(`Invalid RAG client id: ${ragClientId}`);
                 setLoaded(true);
                 return;
             }
@@ -189,7 +189,7 @@ export default function DockInner() {
         return () => {
             cancelled = true;
         };
-    }, [clientId, activeClientId]);
+    }, [ragClientId, activeClientId]);
 
     useEffect(() => {
         const onMsg = (ev: MessageEvent<unknown>) => {
@@ -224,7 +224,7 @@ export default function DockInner() {
                 const msg = parseDockMessage(ev.data);
 
                 if (msg.type === "RAG_CLIENT_SELECTED") {
-                    setClientId(msg.client);
+                    setRagClientId(msg.client);
                     setClientLabel(msg.label);
                     setClientHostUrl(msg.hostUrl);
                     setDockError(null);
@@ -296,7 +296,7 @@ export default function DockInner() {
             <div className="mb-3 rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-sm">
                 <div>
                     <span className="font-medium text-gray-800">Client:</span>{" "}
-                    {clientId ?? "waiting..."}
+                    {ragClientId ?? "waiting..."}
                 </div>
 
                 {clientLabel && (
@@ -335,13 +335,13 @@ export default function DockInner() {
                 </div>
             </div>
 
-            {!clientId && (
+            {!ragClientId && (
                 <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     Waiting for a RAG client selection...
                 </div>
             )}
 
-            {clientId && !client && (
+            {ragClientId && !client && (
                 <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     Waiting for explainer configuration...
                 </div>

@@ -22,22 +22,22 @@ class StatusRegistry:
         self._lock = threading.Lock()
         self._m: Dict[int, _Status] = {}
 
-    def touch(self, client_id: int, detail: str = "") -> None:
+    def touch(self, rag_client_id: int, detail: str = "") -> None:
         with self._lock:
-            st = self._m.get(client_id) or _Status()
+            st = self._m.get(rag_client_id) or _Status()
             st.last_seen_at = _now_iso()
             if detail:
                 st.detail = detail
-            self._m[client_id] = st
+            self._m[rag_client_id] = st
 
-    def set_connected(self, client_id: str, connected: bool, detail: str = "") -> None:
+    def set_connected(self, rag_client_id: str, connected: bool, detail: str = "") -> None:
         with self._lock:
-            st = self._m.get(client_id) or _Status()
+            st = self._m.get(rag_client_id) or _Status()
             st.connected = connected
             st.last_seen_at = _now_iso()
             if detail:
                 st.detail = detail
-            self._m[client_id] = st
+            self._m[rag_client_id] = st
 
     def snapshot(self, only_ids: Iterable[str] | None = None) -> Dict[str, _Status]:
         with self._lock:
