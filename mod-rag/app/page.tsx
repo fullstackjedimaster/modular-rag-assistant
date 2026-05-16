@@ -1,9 +1,19 @@
 "use client";
 
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { listRagClients, type RagClientRow } from "@/app/lib/ragClientApi";
-import { parseSelectionMessage, type RagClientSelectedMsg } from "@/app/lib/messages";
+import {
+  parseSelectionMessage,
+  type RagClientSelectedMsg,
+} from "@/app/lib/messages";
 import PostMessageTap from "@/app/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/app/components/debug/useDebugFlags";
 import { debugPostMessage } from "@/app/lib/debugPostMessage";
@@ -11,6 +21,12 @@ import { debugPostMessage } from "@/app/lib/debugPostMessage";
 function DebugTapMount() {
   const { msgdebug } = useDebugFlags();
   return <PostMessageTap enabled={msgdebug} label="mod-rag-host" />;
+}
+
+function withRagClientId(hostUrl: string, ragClientId: string): string {
+  const url = new URL(hostUrl);
+  url.searchParams.set("ragClientId", ragClientId);
+  return url.toString();
 }
 
 export default function HomePage() {
@@ -60,7 +76,10 @@ export default function HomePage() {
   }, []);
 
   const selectedClient = useMemo(() => {
-    return ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0];
+    return (
+      ragClients.find((client) => client.id === selectedClientId) ??
+      ragClients[0]
+    );
   }, [ragClients, selectedClientId]);
 
   const ragClientSelectedMsg = useMemo<RagClientSelectedMsg | null>(() => {
@@ -72,6 +91,11 @@ export default function HomePage() {
       hostUrl: selectedClient.host_url,
       label: selectedClient.name,
     };
+  }, [selectedClient]);
+
+  const targetUrl = useMemo(() => {
+    if (!selectedClient) return "";
+    return withRagClientId(selectedClient.host_url, selectedClient.id);
   }, [selectedClient]);
 
   const dockUrl = useMemo(() => {
@@ -120,7 +144,12 @@ export default function HomePage() {
 
       try {
         const msg = parseSelectionMessage(ev.data);
-        debugPostMessage(dockWindow, msg, "*", "host relay TARGET_SELECTED -> dock");
+        debugPostMessage(
+          dockWindow,
+          msg,
+          "*",
+          "host relay TARGET_SELECTED -> dock"
+        );
       } catch {
         // Ignore unrelated messages from the target iframe.
       }
@@ -184,7 +213,9 @@ export default function HomePage() {
       <main className="min-h-screen bg-slate-50 text-gray-900">
         <div className="mx-auto max-w-5xl p-6">
           <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
-          <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
+          <p className="mt-2 text-sm text-red-600">
+            No RAG clients are configured.
+          </p>
 
           <div className="mt-4">
             <Link
@@ -213,8 +244,8 @@ export default function HomePage() {
 
               <p className="max-w-3xl text-sm text-gray-600">
                 Select a RAG client host, then explore it side-by-side with the
-                SmartExplainer controller. The host relays runtime target selections from
-                the target app into the dock automatically.
+                SmartExplainer controller. The host relays runtime target
+                selections from the target app into the dock automatically.
               </p>
             </div>
 
@@ -249,7 +280,9 @@ export default function HomePage() {
               ))}
             </select>
 
-            <p className="mt-3 text-sm text-gray-600">{selectedClient.host_url}</p>
+            <p className="mt-3 text-sm text-gray-600">
+              {selectedClient.host_url}
+            </p>
           </div>
         </header>
 
@@ -266,7 +299,7 @@ export default function HomePage() {
               <iframe
                 ref={targetFrameRef}
                 title={`${selectedClient.name} target host`}
-                src={selectedClient.host_url}
+                src={targetUrl}
                 className="h-full w-full border-0"
                 onLoad={sendRagClientSelected}
               />
