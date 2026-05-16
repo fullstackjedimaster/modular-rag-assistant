@@ -103,16 +103,15 @@ function requireAllowlist(telemetryMessages?: TelemetryMessage[]): string[] {
     return keys;
 }
 
-function pickRequiredAttrs(attrs: Attrs, allow: string[]) {
+function pickAllowedAttrs(attrs: Attrs, allow: string[]) {
     const out: Record<string, string | number | boolean> = {};
 
     for (const key of allow) {
         const v = attrs[key];
 
-        assert(
-            v !== null && v !== undefined,
-            `missing required attr "${key}" in TARGET_SELECTED.attrs.`
-        );
+        if (v === null || v === undefined) {
+            continue;
+        }
 
         const t = typeof v;
 
@@ -266,7 +265,7 @@ export default function DockInner() {
             return {};
         }
 
-        return pickRequiredAttrs(attrs, allow);
+      return pickAllowedAttrs(attrs, allow);
     }, [attrs, loaded, client, subjectId]);
 
     if (!loaded) {
