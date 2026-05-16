@@ -1,4 +1,3 @@
-// app/components/dashboard/DashboardClient.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -11,11 +10,21 @@ import {
     type RagClientStatus,
 } from "@/app/lib/ragClientApi";
 
-import {UUID} from "node:crypto";
-
 type LoadState = "idle" | "loading" | "ready" | "error";
 
-export default function DashboardClient() {
+type DashboardClientProps = {
+    selectedRagClientId?: string;
+    onSelectClient?: (client: RagClientRow) => void;
+    onConnectClient?: (client: RagClientRow) => void;
+    compact?: boolean;
+};
+
+export default function DashboardClient({
+    selectedRagClientId,
+    onSelectClient,
+    onConnectClient,
+    compact = false,
+}: DashboardClientProps) {
     const [state, setState] = useState<LoadState>("idle");
     const [err, setErr] = useState<string>("");
 
@@ -28,6 +37,7 @@ export default function DashboardClient() {
     async function boot() {
         setState("loading");
         setErr("");
+
         try {
             const list = await listRagClients();
             setRows(list);
@@ -41,49 +51,59 @@ export default function DashboardClient() {
 
     useEffect(() => {
         void boot();
-
     }, []);
 
-    // Poll connection statuses
     useEffect(() => {
         if (state !== "ready" || ids.length === 0) return;
 
-        let canceled = false;
+        let cancelled = false;
+
         const tick = async () => {
             try {
                 const statuses = await getRagClientStatuses(ids);
-                if (!canceled) setStatusById(statuses);
+
+                if (!cancelled) {
+                    setStatusById(statuses);
+                }
             } catch {
                 // Status polling should not hard-fail dashboard.
             }
         };
 
         void tick();
+
         const t = window.setInterval(tick, 2000);
+
         return () => {
-            canceled = true;
+            cancelled = true;
             window.clearInterval(t);
         };
     }, [state, ids]);
 
-    async function onConnect(id: UUID) {
-        setConnectingId(id);
+    async function onConnect(row: RagClientRow) {
+        setConnectingId(row.id);
+
         try {
-            await connectRagClient(id);
+            await connectRagClient(row.id);
+
             const statuses = await getRagClientStatuses(ids);
             setStatusById(statuses);
+
+            onConnectClient?.(row);
+            onSelectClient?.(row);
         } finally {
             setConnectingId(null);
         }
     }
 
+    function onSelect(row: RagClientRow) {
+        onSelectClient?.(row);
+    }
+
     if (state === "loading" || state === "idle") {
         return (
             <GroupBox title="Configured Host Apps">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm">Loading…</div>
-
-                </div>
+                <div className="text-sm text-gray-600">Loading...</div>
             </GroupBox>
         );
     }
@@ -91,12 +111,15 @@ export default function DashboardClient() {
     if (state === "error") {
         return (
             <GroupBox title="Configured Host Apps">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm text-red-600 whitespace-pre-wrap">{err || "Failed to load."}</div>
-
+                <div className="text-sm text-red-600 whitespace-pre-wrap">
+                    {err || "Failed to load."}
                 </div>
 
-                <button className="mt-3 border rounded px-3 py-2 text-sm" onClick={() => void boot()} type="button">
+                <button
+                    className="mt-3 border rounded px-3 py-2 text-sm hover:bg-gray-50"
+                    onClick={() => void boot()}
+                    type="button"
+                >
                     Retry
                 </button>
             </GroupBox>
@@ -105,12 +128,11 @@ export default function DashboardClient() {
 
     return (
         <GroupBox title="Configured Host Apps">
-            <div className="flex items-center justify-between gap-3 mb-3">
-                <div className="text-xs text-gray-600">
-                    Click a client to manage its context (docs, messages, prompt).
+            {!compact && (
+                <div className="mb-3 text-xs text-gray-600">
+                    Select a host app to load it in the demo frame. Connect marks the active RAG client for dock messaging.
                 </div>
-
-            </div>
+            )}
 
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -122,43 +144,65 @@ export default function DashboardClient() {
                         <th className="py-2 pr-3">Actions</th>
                     </tr>
                     </thead>
+
                     <tbody>
-                    {rows.map((r) => {
-                        const st = statusById[r.id];
+                    {rows.map((row) => {
+                        const st = statusById[row.id];
                         const connected = Boolean(st?.connected);
-                        const busy = connectingId === r.id;
+                        const busy = connectingId === row.id;
+                        const selected = selectedRagClientId === row.id;
 
                         return (
-                            <tr key={r.id} className="border-b hover:bg-gray-50">
+                            <tr
+                                key={row.id}
+                                className={[
+                                    "border-b hover:bg-gray-50",
+                                    selected ? "bg-blue-50" : "",
+                                ].join(" ")}
+                            >
                                 <td className="py-2 pr-3">
-                                    <a className="underline" href={`/hosts/${r.id}`}>
-                                        {r.name}
-                                    </a>
+                                    <button
+                                        type="button"
+                                        className="underline text-left"
+                                        onClick={() => onSelect(row)}
+                                    >
+                                        {row.name}
+                                    </button>
                                 </td>
-                                <td className="py-2 pr-3 font-mono text-xs break-all">{r.host_url}</td>
-                                <td className="py-2 pr-3">
-                    <span
-                        className={[
-                            "inline-flex items-center px-2 py-1 rounded text-xs border",
-                            connected ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200",
-                        ].join(" ")}
-                        title={st?.detail || ""}
-                    >
-                      {connected ? "Connected" : "Not connected"}
-                    </span>
+
+                                <td className="py-2 pr-3 font-mono text-xs break-all">
+                                    {row.host_url}
                                 </td>
+
                                 <td className="py-2 pr-3">
-                                    <div className="flex gap-2">
+                                    <span
+                                        className={[
+                                            "inline-flex items-center px-2 py-1 rounded text-xs border",
+                                            connected
+                                                ? "bg-green-50 border-green-200"
+                                                : "bg-gray-50 border-gray-200",
+                                        ].join(" ")}
+                                        title={st?.detail || ""}
+                                    >
+                                        {connected ? "Connected" : "Not connected"}
+                                    </span>
+                                </td>
+
+                                <td className="py-2 pr-3">
+                                    <div className="flex flex-wrap gap-2">
                                         <button
-                                            className="border rounded px-3 py-2 text-sm disabled:opacity-50"
+                                            className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
                                             type="button"
-                                            disabled={connected || busy}
-                                            onClick={() => void onConnect(r.id)}
+                                            disabled={busy}
+                                            onClick={() => void onConnect(row)}
                                         >
-                                            {busy ? "Connecting…" : "Connect"}
+                                            {busy ? "Connecting..." : connected ? "Reconnect" : "Connect"}
                                         </button>
 
-                                        <a className="border rounded px-3 py-2 text-sm" href={`/hosts/${r.id}`}>
+                                        <a
+                                            className="border rounded px-3 py-2 text-sm hover:bg-gray-50"
+                                            href={`/hosts/${row.id}`}
+                                        >
                                             Manage
                                         </a>
                                     </div>
@@ -167,13 +211,13 @@ export default function DashboardClient() {
                         );
                     })}
 
-                    {rows.length === 0 ? (
+                    {rows.length === 0 && (
                         <tr>
                             <td className="py-3 text-sm text-gray-600" colSpan={4}>
                                 No host apps configured yet.
                             </td>
                         </tr>
-                    ) : null}
+                    )}
                     </tbody>
                 </table>
             </div>
