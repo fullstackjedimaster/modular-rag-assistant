@@ -1,15 +1,9 @@
 "use client";
 
-import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  listRagClients,
-  type RagClientRow,
-} from "@/app/lib/ragClientApi";
-import {
-  parseSelectionMessage,
-  type RagClientSelectedMsg,
-} from "@/app/lib/messages";
+import { listRagClients, type RagClientRow } from "@/app/lib/ragClientApi";
+import { parseSelectionMessage, type RagClientSelectedMsg } from "@/app/lib/messages";
 import PostMessageTap from "@/app/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/app/components/debug/useDebugFlags";
 import { debugPostMessage } from "@/app/lib/debugPostMessage";
@@ -43,7 +37,8 @@ export default function HomePage() {
         setRagClients(rows);
         setSelectedClientId((prev) => prev || rows[0]?.id || "");
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err || "Unknown error");
+        const message =
+          err instanceof Error ? err.message : String(err || "Unknown error");
 
         if (!cancelled) {
           setRagClients([]);
@@ -64,21 +59,56 @@ export default function HomePage() {
     };
   }, []);
 
-  const selectedClient = useMemo(
-    () => ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0],
-    [ragClients, selectedClientId]
-  );
+  const selectedClient = useMemo(() => {
+    return ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0];
+  }, [ragClients, selectedClientId]);
+
+  const ragClientSelectedMsg = useMemo<RagClientSelectedMsg | null>(() => {
+    if (!selectedClient) return null;
+
+    return {
+      type: "RAG_CLIENT_SELECTED",
+      ragClientId: selectedClient.id,
+      hostUrl: selectedClient.host_url,
+      label: selectedClient.name,
+    };
+  }, [selectedClient]);
 
   const dockUrl = useMemo(() => {
     if (!selectedClient) return "/dock";
 
     const params = new URLSearchParams({
-      client: selectedClient.id,
+      ragClientId: selectedClient.id,
       collapsed: "1",
     });
 
     return `/dock?${params.toString()}`;
   }, [selectedClient]);
+
+  const sendRagClientSelected = useCallback(() => {
+    if (!ragClientSelectedMsg) return;
+
+    const targetWindow = targetFrameRef.current?.contentWindow;
+    const dockWindow = dockFrameRef.current?.contentWindow;
+
+    if (targetWindow) {
+      debugPostMessage(
+        targetWindow,
+        ragClientSelectedMsg,
+        "*",
+        "host -> target RAG_CLIENT_SELECTED"
+      );
+    }
+
+    if (dockWindow) {
+      debugPostMessage(
+        dockWindow,
+        ragClientSelectedMsg,
+        "*",
+        "host -> dock RAG_CLIENT_SELECTED"
+      );
+    }
+  }, [ragClientSelectedMsg]);
 
   useEffect(() => {
     const onMessage = (ev: MessageEvent<unknown>) => {
@@ -104,19 +134,8 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const dockWindow = dockFrameRef.current?.contentWindow;
-    if (!dockWindow || !selectedClient) return;
-
-    const msg: RagClientSelectedMsg = {
-      type: "RAG_CLIENT_SELECTED",
-      client: selectedClient.id,
-      hostUrl: selectedClient.host_url,
-      label: selectedClient.name,
-      defaultUsecase: null,
-    };
-
-    debugPostMessage(dockWindow, msg, "*", "host -> dock RAG_CLIENT_SELECTED");
-  }, [selectedClient]);
+    sendRagClientSelected();
+  }, [sendRagClientSelected]);
 
   if (loadingClients) {
     return (
@@ -191,10 +210,11 @@ export default function HomePage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="space-y-2">
               <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+
               <p className="max-w-3xl text-sm text-gray-600">
                 Select a RAG client host, then explore it side-by-side with the
-                SmartExplainer controller. The host relays runtime target selections from the
-                target app into the dock automatically.
+                SmartExplainer controller. The host relays runtime target selections from
+                the target app into the dock automatically.
               </p>
             </div>
 
@@ -229,9 +249,7 @@ export default function HomePage() {
               ))}
             </select>
 
-            <p className="mt-3 text-sm text-gray-600">
-              {selectedClient.host_url}
-            </p>
+            <p className="mt-3 text-sm text-gray-600">{selectedClient.host_url}</p>
           </div>
         </header>
 
@@ -250,6 +268,7 @@ export default function HomePage() {
                 title={`${selectedClient.name} target host`}
                 src={selectedClient.host_url}
                 className="h-full w-full border-0"
+                onLoad={sendRagClientSelected}
               />
             </div>
           </div>
@@ -260,7 +279,7 @@ export default function HomePage() {
                 SmartExplainer Controller
               </h2>
               <p className="text-xs text-gray-500">
-                Client: {selectedClient.id}
+                RAG Client: {selectedClient.id}
               </p>
             </div>
 
@@ -270,6 +289,7 @@ export default function HomePage() {
                 title="SmartExplainer controller"
                 src={dockUrl}
                 className="h-full w-full border-0"
+                onLoad={sendRagClientSelected}
               />
             </div>
           </div>

@@ -9,8 +9,11 @@
 
     var origin = (scriptEl && scriptEl.dataset && scriptEl.dataset.origin) || "";
     origin = String(origin).trim().replace(/\/$/, "");
+
     var visible = (scriptEl && scriptEl.dataset && scriptEl.dataset.visible) || "1";
     var heightPx = (scriptEl && scriptEl.dataset && scriptEl.dataset.height) || "360";
+    var ragClientId =
+        (scriptEl && scriptEl.dataset && scriptEl.dataset.ragClientId) || "";
 
     if (!origin) {
         console.error("[dock/boot] Missing data-origin. Refusing to inject iframe.");
@@ -20,7 +23,6 @@
     var frameId = scriptEl.dataset.frameId || "iframe-1";
     var containerId = "dock-wrapper-" + frameId;
 
-    // Create (or reuse) wrapper
     var wrapper = document.getElementById(containerId);
     if (!wrapper) {
         wrapper = document.createElement("div");
@@ -28,12 +30,11 @@
         wrapper.style.width = "100%";
         wrapper.style.maxWidth = "760px";
         wrapper.style.margin = "0 auto";
-        wrapper.style.padding = "0"; // important: avoid layout growth
+        wrapper.style.padding = "0";
         wrapper.style.border = "0";
         scriptEl.parentNode.insertBefore(wrapper, scriptEl.nextSibling);
     }
 
-    // Create (or reuse) iframe
     var iframe = document.getElementById(frameId);
     if (!iframe) {
         iframe = document.createElement("iframe");
@@ -48,28 +49,55 @@
         wrapper.appendChild(iframe);
     }
 
-    // Stable height applier
     var lastApplied = parseInt(heightPx, 10) || 360;
+
     function applyHeight(h) {
         if (!iframe) return;
+
         var clamped = Math.max(160, Math.min(2400, Math.round(h)));
-        if (Math.abs(clamped - lastApplied) < 8) return; // ignore tiny jitter
+
+        if (Math.abs(clamped - lastApplied) < 8) return;
+
         lastApplied = clamped;
         iframe.style.height = clamped + "px";
     }
 
-    // Mount the dock app
-    var qs = "?frameId=" + encodeURIComponent(frameId) + "&dock=1";
-    iframe.src = origin.replace(/\/$/, "") + "/dock" + qs;
+    function buildDockSrc(nextRagClientId) {
+        var qs =
+            "?frameId=" +
+            encodeURIComponent(frameId) +
+            "&dock=1";
 
+        if (nextRagClientId) {
+            qs += "&ragClientId=" + encodeURIComponent(nextRagClientId);
+        }
 
+        return origin.replace(/\/$/, "") + "/dock" + qs;
+    }
 
+    function setRagClientId(nextRagClientId) {
+        ragClientId = String(nextRagClientId || "").trim();
+        iframe.src = buildDockSrc(ragClientId);
+    }
 
-    // Height listener
+    iframe.src = buildDockSrc(ragClientId);
+
     window.addEventListener("message", function (ev) {
         var data = ev.data || {};
-        if (data.type !== "EMBED_HEIGHT") return;
-        if (data.frameId && data.frameId !== frameId) return;
-        applyHeight(data.height);
+
+        if (data.type === "EMBED_HEIGHT") {
+            if (data.frameId && data.frameId !== frameId) return;
+            applyHeight(data.height);
+            return;
+        }
+
+        if (data.type === "RAG_CLIENT_SELECTED") {
+            if (typeof data.ragClientId !== "string" || !data.ragClientId.trim()) {
+                console.error("[dock/boot] RAG_CLIENT_SELECTED missing ragClientId.", data);
+                return;
+            }
+
+            setRagClientId(data.ragClientId);
+        }
     });
 })();

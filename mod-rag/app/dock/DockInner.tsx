@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SmartExplainer } from "@/app/components/SmartExplainer";
-import { parseDockMessage } from "@/app/lib/messages";
 import {
     getRagClient,
     type RagClientFull,
@@ -28,6 +27,13 @@ type RawRagSessionMessage = {
     exp?: number;
 };
 
+type RawRagClientSelectedMessage = {
+    type: "RAG_CLIENT_SELECTED";
+    ragClientId: string;
+    label?: string;
+    hostUrl?: string;
+};
+
 function assert(condition: unknown, msg: string): asserts condition {
     if (!condition) throw new Error(`[dock] ${msg}`);
 }
@@ -39,7 +45,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function isRagClientId(value: string | undefined | null): value is RagClientId {
     return (
         typeof value === "string" &&
-        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
             value
         )
     );
@@ -58,6 +64,14 @@ function isRawRagSessionMessage(value: unknown): value is RawRagSessionMessage {
     if (!isObject(value)) return false;
 
     return value.type === "RAG_SESSION" && typeof value.token === "string";
+}
+
+function isRawRagClientSelectedMessage(
+    value: unknown
+): value is RawRagClientSelectedMessage {
+    if (!isObject(value)) return false;
+
+    return value.type === "RAG_CLIENT_SELECTED" && typeof value.ragClientId === "string";
 }
 
 function telemetryKey(message: TelemetryMessage): string | null {
@@ -116,8 +130,7 @@ function pickRequiredAttrs(attrs: Attrs, allow: string[]) {
 export default function DockInner() {
     const params = useSearchParams();
 
-    const forcedClient =
-        params.get("ragClientId") || params.get("rag_client_id") || undefined;
+    const forcedRagClientId = params.get("ragClientId") || undefined;
 
     const [subjectId, setSubjectId] = useState<string | undefined>(undefined);
     const [attrs, setAttrs] = useState<Attrs>({});
@@ -126,7 +139,10 @@ export default function DockInner() {
     const [sessionToken, setSessionToken] = useState<string | undefined>(undefined);
     const [sessionExp, setSessionExp] = useState<number | undefined>(undefined);
 
-    const [ragClientId, setRagClientId] = useState<string | undefined>(forcedClient);
+    const [ragClientId, setRagClientId] = useState<string | undefined>(
+        forcedRagClientId
+    );
+
     const [clientLabel, setClientLabel] = useState<string | undefined>(undefined);
     const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(
         undefined
@@ -135,15 +151,15 @@ export default function DockInner() {
     const [client, setClient] = useState<RagClientFull | null>(null);
     const [loaded, setLoaded] = useState(false);
 
-    const activeClientId = useMemo<RagClientId | null>(() => {
+    const activeRagClientId = useMemo<RagClientId | null>(() => {
         return isRagClientId(ragClientId) ? ragClientId : null;
     }, [ragClientId]);
 
     useEffect(() => {
-        if (forcedClient) {
-            setRagClientId(forcedClient);
+        if (forcedRagClientId) {
+            setRagClientId(forcedRagClientId);
         }
-    }, [forcedClient]);
+    }, [forcedRagClientId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -157,14 +173,14 @@ export default function DockInner() {
                 return;
             }
 
-            if (!activeClientId) {
-                setDockError(`Invalid RAG client id: ${ragClientId}`);
+            if (!activeRagClientId) {
+                setDockError(`Invalid ragClientId: ${ragClientId}`);
                 setLoaded(true);
                 return;
             }
 
             try {
-                const loadedClient = await getRagClient(activeClientId);
+                const loadedClient = await getRagClient(activeRagClientId);
 
                 if (cancelled) return;
 
@@ -189,7 +205,7 @@ export default function DockInner() {
         return () => {
             cancelled = true;
         };
-    }, [ragClientId, activeClientId]);
+    }, [ragClientId, activeRagClientId]);
 
     useEffect(() => {
         const onMsg = (ev: MessageEvent<unknown>) => {
@@ -199,6 +215,14 @@ export default function DockInner() {
                     setSessionExp(
                         typeof ev.data.exp === "number" ? ev.data.exp : undefined
                     );
+                    setDockError(null);
+                    return;
+                }
+
+                if (isRawRagClientSelectedMessage(ev.data)) {
+                    setRagClientId(ev.data.ragClientId);
+                    setClientLabel(ev.data.label);
+                    setClientHostUrl(ev.data.hostUrl);
                     setDockError(null);
                     return;
                 }
@@ -218,45 +242,9 @@ export default function DockInner() {
                     setSubjectId(nextSubjectId);
                     setAttrs(a);
                     setDockError(null);
-                    return;
-                }
-
-                const msg = parseDockMessage(ev.data);
-
-                if (msg.type === "RAG_CLIENT_SELECTED") {
-                    setRagClientId(msg.client);
-                    setClientLabel(msg.label);
-                    setClientHostUrl(msg.hostUrl);
-                    setDockError(null);
-                    return;
-                }
-
-                if (msg.type === "TARGET_SELECTED") {
-                    const nextSubjectId =
-                        "id" in msg && typeof msg.id === "string"
-                            ? msg.id
-                            : "subject_id" in msg && typeof msg.subject_id === "string"
-                              ? msg.subject_id
-                              : undefined;
-
-                    assert(nextSubjectId, "TARGET_SELECTED missing id/subject_id.");
-
-                    const a = (msg.attrs ?? {}) as Attrs;
-
-                    assert(
-                        a && typeof a === "object",
-                        "TARGET_SELECTED.attrs must be an object when provided."
-                    );
-
-                    setSubjectId(nextSubjectId);
-                    setAttrs(a);
-                    setDockError(null);
                 }
             } catch (err: unknown) {
                 const text = err instanceof Error ? err.message : String(err || "");
-
-                if (text.includes("invalid message type")) return;
-
                 setDockError(text || "Unknown dock error.");
             }
         };
@@ -295,7 +283,7 @@ export default function DockInner() {
 
             <div className="mb-3 rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-sm">
                 <div>
-                    <span className="font-medium text-gray-800">Client:</span>{" "}
+                    <span className="font-medium text-gray-800">RAG Client:</span>{" "}
                     {ragClientId ?? "waiting..."}
                 </div>
 
