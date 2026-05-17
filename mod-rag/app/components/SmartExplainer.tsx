@@ -111,14 +111,14 @@ export function SmartExplainer({
     }
 
     if (telemetryKeys.length > 0) {
-  p.set("telemetry_messages", telemetryKeys.join(","));
-}
+      p.set("telemetry_messages", telemetryKeys.join(","));
+    }
 
-for (const [key, val] of Object.entries(telemetry)) {
-  if (val !== undefined && val !== null) {
-    p.set(key, String(val));
-  }
-}
+    for (const [key, val] of Object.entries(telemetry)) {
+      if (val !== undefined && val !== null) {
+        p.set(key, String(val));
+      }
+    }
 
     return `${explainPath}?${p.toString()}`;
   }, [
@@ -205,7 +205,128 @@ for (const [key, val] of Object.entries(telemetry)) {
   };
 
   return (
-    <div className="space-y-6 rounded-lg bg-white p-4 shadow dark:bg-gray-900">
+    <div className="mesh-daq-smart-explainer">
+      <style jsx global>{`
+        .mesh-daq-smart-explainer {
+          width: 100%;
+          margin: 0;
+          padding: 3px;
+          color: #000;
+          font-family: Orbitron, system-ui, sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          background: transparent;
+          overflow: hidden;
+        }
+
+        .mesh-daq-smart-explainer * {
+          box-sizing: border-box;
+          min-height: 0;
+        }
+
+        .mesh-daq-smart-explainer > div,
+        .mesh-daq-smart-explainer section,
+        .mesh-daq-smart-explainer article {
+          max-width: 100%;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .mesh-daq-smart-explainer .rounded,
+        .mesh-daq-smart-explainer .rounded-lg,
+        .mesh-daq-smart-explainer .rounded-xl,
+        .mesh-daq-smart-explainer .shadow,
+        .mesh-daq-smart-explainer .shadow-sm,
+        .mesh-daq-smart-explainer .shadow-md,
+        .mesh-daq-smart-explainer .shadow-lg {
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .mesh-daq-smart-explainer input,
+        .mesh-daq-smart-explainer textarea,
+        .mesh-daq-smart-explainer select {
+          width: 100%;
+          max-width: 100%;
+          font-family: Orbitron, system-ui, sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          color: #000;
+          background: #fff;
+          border: thick inset #c0c0c0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          outline: none;
+        }
+
+        .mesh-daq-smart-explainer textarea {
+          min-height: 76px;
+          resize: vertical;
+        }
+
+        .mesh-daq-smart-explainer button {
+          font-family: Orbitron, system-ui, sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          color: #000;
+          background: #d9d9d9;
+          border: 2px outset #c0c0c0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          padding: 4px 8px;
+        }
+
+        .mesh-daq-smart-explainer button:active {
+          border-style: inset !important;
+        }
+
+        .mesh-daq-smart-explainer pre,
+        .mesh-daq-smart-explainer code {
+          max-width: 100%;
+          white-space: pre-wrap;
+          word-break: break-word;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 11px;
+        }
+
+        .mesh-daq-smart-explainer [class*="bg-white"],
+        .mesh-daq-smart-explainer [class*="dark:bg"],
+        .mesh-daq-smart-explainer [class*="bg-gray"],
+        .mesh-daq-smart-explainer [class*="bg-slate"] {
+          background: transparent !important;
+        }
+
+        .mesh-daq-smart-explainer [class*="border"] {
+          border-color: #777 !important;
+        }
+
+        .mesh-daq-smart-explainer [class*="text-gray"],
+        .mesh-daq-smart-explainer [class*="text-slate"] {
+          color: #000 !important;
+        }
+
+        .mesh-daq-smart-explainer .space-y-6 > :not([hidden]) ~ :not([hidden]),
+        .mesh-daq-smart-explainer .space-y-4 > :not([hidden]) ~ :not([hidden]),
+        .mesh-daq-smart-explainer .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+          margin-top: 6px !important;
+        }
+
+        .mesh-daq-smart-explainer .p-4,
+        .mesh-daq-smart-explainer .p-6 {
+          padding: 4px !important;
+        }
+
+        .mesh-daq-smart-explainer .px-4 {
+          padding-left: 4px !important;
+          padding-right: 4px !important;
+        }
+
+        .mesh-daq-smart-explainer .py-4 {
+          padding-top: 4px !important;
+          padding-bottom: 4px !important;
+        }
+      `}</style>
+
       <ExplanationPanel
         query={query}
         setQuery={setQuery}

@@ -9,14 +9,11 @@ import React, {
     useState,
 } from "react";
 import Link from "next/link";
-import {
-    listRagClients,
-    type RagClientRow,
-} from "@/app/lib/ragClientApi";
+import { listRagClients, type RagClientRow } from "@/app/lib/ragClientApi";
 import {
     parseSelectionMessage,
-    type RagDockConnectMsg,
-    type RagDockDisconnectMsg,
+    type RagDockConnectMessage,
+    type RagDockDisconnectMessage,
 } from "@/app/lib/messages";
 import DashboardClient from "@/app/components/dashboard/DashboardClient";
 import PostMessageTap from "@/app/components/debug/PostMessageTap";
@@ -42,12 +39,17 @@ function dockUrlFor(ragClientId: string): string {
     return url.toString();
 }
 
+function clampHeight(height: number): number {
+    return Math.max(900, Math.min(height, 5000));
+}
+
 export default function HomePage() {
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
     const [clientError, setClientError] = useState<string | null>(null);
     const [hostFrameLoaded, setHostFrameLoaded] = useState(false);
+    const [hostFrameHeight, setHostFrameHeight] = useState(1400);
     const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
@@ -90,10 +92,7 @@ export default function HomePage() {
     }, []);
 
     const selectedClient = useMemo(() => {
-        return (
-            ragClients.find((client) => client.id === selectedClientId) ??
-            ragClients[0]
-        );
+        return ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0];
     }, [ragClients, selectedClientId]);
 
     const targetUrl = useMemo(() => {
@@ -112,14 +111,9 @@ export default function HomePage() {
     }, [selectedClient]);
 
     const sendMessageToTarget = useCallback(
-        (msg: RagDockConnectMsg | RagDockDisconnectMsg) => {
+        (msg: RagDockConnectMessage | RagDockDisconnectMessage) => {
             const targetWindow = targetFrameRef.current?.contentWindow;
             if (!targetWindow) return;
-
-            console.log("[mod-rag-host] postMessage -> target", {
-                targetOrigin,
-                msg,
-            });
 
             targetWindow.postMessage(msg, targetOrigin);
         },
@@ -128,7 +122,7 @@ export default function HomePage() {
 
     const sendDockConnect = useCallback(
         (client: RagClientRow) => {
-            const msg: RagDockConnectMsg = {
+            const msg: RagDockConnectMessage = {
                 type: "RAG_DOCK_CONNECT",
                 ragClientId: client.id,
                 dockUrl: dockUrlFor(client.id),
@@ -143,7 +137,7 @@ export default function HomePage() {
 
     const sendDockDisconnect = useCallback(
         (client?: RagClientRow) => {
-            const msg: RagDockDisconnectMsg = {
+            const msg: RagDockDisconnectMessage = {
                 type: "RAG_DOCK_DISCONNECT",
                 ragClientId: client?.id,
             };
@@ -159,6 +153,20 @@ export default function HomePage() {
 
             if (!targetWindow) return;
             if (ev.source !== targetWindow) return;
+
+            const data = ev.data;
+
+            if (
+                data &&
+                typeof data === "object" &&
+                "type" in data &&
+                data.type === "HOST_APP_HEIGHT" &&
+                "height" in data &&
+                typeof data.height === "number"
+            ) {
+                setHostFrameHeight(clampHeight(data.height));
+                return;
+            }
 
             try {
                 const msg = parseSelectionMessage(ev.data);
@@ -178,6 +186,7 @@ export default function HomePage() {
     function handleSelectClient(client: RagClientRow) {
         setSelectedClientId(client.id);
         setHostFrameLoaded(false);
+        setHostFrameHeight(1400);
         setLastSelection("");
     }
 
@@ -279,14 +288,12 @@ export default function HomePage() {
                             ) : null}
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <Link
-                                href="/client/new"
-                                className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                            >
-                                Configure New Client
-                            </Link>
-                        </div>
+                        <Link
+                            href="/client/new"
+                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                            Configure New Client
+                        </Link>
                     </div>
 
                     <DashboardClient
@@ -306,16 +313,18 @@ export default function HomePage() {
                         <p className="text-xs text-gray-500">{targetUrl}</p>
                     </div>
 
-                    <div className="h-[78vh] min-h-[640px]">
-                        <iframe
-                            key={selectedClient.id}
-                            ref={targetFrameRef}
-                            title={`${selectedClient.name} target host`}
-                            src={targetUrl}
-                            className="h-full w-full border-0"
-                            onLoad={() => setHostFrameLoaded(true)}
-                        />
-                    </div>
+                    <iframe
+                        key={selectedClient.id}
+                        ref={targetFrameRef}
+                        title={`${selectedClient.name} target host`}
+                        src={targetUrl}
+                        className="block w-full border-0 overflow-hidden"
+                        style={{
+                            height: `${hostFrameHeight}px`,
+                            overflow: "hidden",
+                        }}
+                        onLoad={() => setHostFrameLoaded(true)}
+                    />
                 </section>
             </div>
 

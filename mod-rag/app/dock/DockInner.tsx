@@ -66,9 +66,7 @@ function isRawRagSessionMessage(value: unknown): value is RawRagSessionMessage {
     return value.type === "RAG_SESSION" && typeof value.token === "string";
 }
 
-function isRawRagClientSelectedMessage(
-    value: unknown
-): value is RawRagClientSelectedMessage {
+function isRawRagClientSelectedMessage(value: unknown): value is RawRagClientSelectedMessage {
     if (!isObject(value)) return false;
 
     return value.type === "RAG_CLIENT_SELECTED" && typeof value.ragClientId === "string";
@@ -126,6 +124,29 @@ function pickAllowedAttrs(attrs: Attrs, allow: string[]) {
     return out;
 }
 
+function postDockHeight() {
+    if (typeof window === "undefined") return;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    const height = Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight
+    );
+
+    window.parent.postMessage(
+        {
+            type: "RAG_DOCK_RESIZE",
+            height: height + 8,
+        },
+        "*"
+    );
+}
+
 export default function DockInner() {
     const params = useSearchParams();
 
@@ -143,9 +164,7 @@ export default function DockInner() {
     );
 
     const [clientLabel, setClientLabel] = useState<string | undefined>(undefined);
-    const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(
-        undefined
-    );
+    const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(undefined);
 
     const [client, setClient] = useState<RagClientFull | null>(null);
     const [loaded, setLoaded] = useState(false);
@@ -255,6 +274,32 @@ export default function DockInner() {
         };
     }, []);
 
+    useEffect(() => {
+        postDockHeight();
+
+        const observer = new ResizeObserver(() => {
+            postDockHeight();
+        });
+
+        observer.observe(document.body);
+
+        window.addEventListener("load", postDockHeight);
+        window.addEventListener("resize", postDockHeight);
+
+        const timer = window.setInterval(postDockHeight, 500);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener("load", postDockHeight);
+            window.removeEventListener("resize", postDockHeight);
+            window.clearInterval(timer);
+        };
+    }, []);
+
+    useEffect(() => {
+        postDockHeight();
+    }, [loaded, dockError, client, subjectId, attrs, sessionToken, sessionExp]);
+
     const forwardedAttrs = useMemo(() => {
         if (!loaded || !client) return {};
         if (!subjectId) return {};
@@ -265,78 +310,36 @@ export default function DockInner() {
             return {};
         }
 
-      return pickAllowedAttrs(attrs, allow);
+        return pickAllowedAttrs(attrs, allow);
     }, [attrs, loaded, client, subjectId]);
 
     if (!loaded) {
-        return <div className="p-3 text-sm text-gray-500">Loading dock...</div>;
+        return <div className="p-2 text-sm">Loading AI explanation...</div>;
     }
 
     return (
-        <div className="m-0 bg-transparent p-3">
+        <main className="m-0 w-full overflow-hidden bg-transparent p-0">
             {dockError && (
-                <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
                     {dockError}
                 </div>
             )}
 
-            <div className="mb-3 rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-sm">
-                <div>
-                    <span className="font-medium text-gray-800">RAG Client:</span>{" "}
-                    {ragClientId ?? "waiting..."}
-                </div>
-
-                {clientLabel && (
-                    <div>
-                        <span className="font-medium text-gray-800">Project:</span>{" "}
-                        {clientLabel}
-                    </div>
-                )}
-
-                {clientHostUrl && (
-                    <div className="truncate">
-                        <span className="font-medium text-gray-800">Host:</span>{" "}
-                        {clientHostUrl}
-                    </div>
-                )}
-
-                <div>
-                    <span className="font-medium text-gray-800">RAG config:</span>{" "}
-                    {client?.name ?? "waiting..."}
-                </div>
-
-                <div>
-                    <span className="font-medium text-gray-800">Collection:</span>{" "}
-                    {client?.collection ?? "waiting..."}
-                </div>
-
-                <div>
-                    <span className="font-medium text-gray-800">Selected target:</span>{" "}
-                    {subjectId ?? "none"}
-                </div>
-
-                <div>
-                    <span className="font-medium text-gray-800">Session:</span>{" "}
-                    {sessionToken ? "received" : "waiting..."}
-                    {sessionExp ? ` · exp ${sessionExp}` : ""}
-                </div>
-            </div>
-
             {!ragClientId && (
-                <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
                     Waiting for a RAG client selection...
                 </div>
             )}
 
             {ragClientId && !client && (
-                <div className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
                     Waiting for explainer configuration...
                 </div>
             )}
 
             {client && !subjectId && (
-                <div className="mb-3 rounded border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                    Waiting for a selection from the target demo...
+                <div className="mb-2 border border-gray-500 bg-gray-100 px-2 py-1 text-xs">
+                    Waiting for a panel selection...
                 </div>
             )}
 
@@ -354,10 +357,17 @@ export default function DockInner() {
                     showPanel={true}
                 />
             ) : (
-                <div className="rounded border border-gray-200 bg-white px-3 py-4 text-sm text-gray-600 shadow-sm">
+                <div className="border border-gray-500 bg-white px-2 py-3 text-sm">
                     The dock is loaded, but no RAG client configuration has been resolved yet.
                 </div>
             )}
-        </div>
+
+            <div className="hidden">
+                {clientLabel}
+                {clientHostUrl}
+                {sessionToken}
+                {sessionExp}
+            </div>
+        </main>
     );
 }

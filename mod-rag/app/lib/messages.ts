@@ -2,7 +2,7 @@
 
 export type Attrs = Record<string, string | number | boolean | null | undefined>;
 
-export type TargetSelectedMsg = {
+export type TargetSelectedMessage= {
   type: "TARGET_SELECTED";
   id: string;
   subject_id?: string;
@@ -10,14 +10,14 @@ export type TargetSelectedMsg = {
   source?: string;
 };
 
-export type RagClientSelectedMsg = {
+export type RagClientSelectedMessage = {
   type: "RAG_CLIENT_SELECTED";
   ragClientId: string;
   hostUrl?: string;
   label?: string;
 };
 
-export type RagDockConnectMsg = {
+export type RagDockConnectMessage = {
   type: "RAG_DOCK_CONNECT";
   ragClientId: string;
   dockUrl: string;
@@ -25,22 +25,22 @@ export type RagDockConnectMsg = {
   label?: string;
 };
 
-export type RagDockDisconnectMsg = {
+export type RagDockDisconnectMessage = {
   type: "RAG_DOCK_DISCONNECT";
   ragClientId?: string;
 };
 
 export type DockMessage =
-  | TargetSelectedMsg
-  | RagClientSelectedMsg
-  | RagDockConnectMsg
-  | RagDockDisconnectMsg;
+  | TargetSelectedMessage
+  | RagClientSelectedMessage
+  | RagDockConnectMessage
+  | RagDockDisconnectMessage;
 
 function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(`[messages] ${msg}`);
 }
 
-export function parseSelectionMessage(v: unknown): TargetSelectedMsg {
+export function parseSelectionMessage(v: unknown): TargetSelectedMessage {
   assert(v && typeof v === "object", "selection message must be an object.");
 
   const o = v as Record<string, unknown>;
@@ -80,7 +80,7 @@ export function parseSelectionMessage(v: unknown): TargetSelectedMsg {
   };
 }
 
-export function parseRagClientSelectedMessage(v: unknown): RagClientSelectedMsg {
+export function parseRagClientSelectedMessage(v: unknown): RagClientSelectedMessage {
   assert(v && typeof v === "object", "rag client message must be an object.");
 
   const o = v as Record<string, unknown>;
@@ -103,7 +103,7 @@ export function parseRagClientSelectedMessage(v: unknown): RagClientSelectedMsg 
   };
 }
 
-export function parseRagDockConnectMessage(v: unknown): RagDockConnectMsg {
+export function parseRagDockConnectMessage(v: unknown): RagDockConnectMessage {
   assert(v && typeof v === "object", "dock connect message must be an object.");
 
   const o = v as Record<string, unknown>;
@@ -132,7 +132,7 @@ export function parseRagDockConnectMessage(v: unknown): RagDockConnectMsg {
   };
 }
 
-export function parseRagDockDisconnectMessage(v: unknown): RagDockDisconnectMsg {
+export function parseRagDockDisconnectMessage(v: unknown): RagDockDisconnectMessage {
   assert(v && typeof v === "object", "dock disconnect message must be an object.");
 
   const o = v as Record<string, unknown>;
