@@ -15,20 +15,29 @@ import {
 } from "@/app/lib/ragClientApi";
 import {
     parseSelectionMessage,
-    type RagClientSelectedMsg,
+    type RagDockConnectMsg,
+    type RagDockDisconnectMsg,
 } from "@/app/lib/messages";
 import DashboardClient from "@/app/components/dashboard/DashboardClient";
 import PostMessageTap from "@/app/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/app/components/debug/useDebugFlags";
-import { debugPostMessage } from "@/app/lib/debugPostMessage";
 
 function DebugTapMount() {
     const { msgdebug } = useDebugFlags();
     return <PostMessageTap enabled={msgdebug} label="mod-rag-host" />;
 }
 
-function withRagClientId(hostUrl: string, ragClientId: string): string {
-    const url = new URL(hostUrl);
+function safeOrigin(url: string): string {
+    return new URL(url).origin;
+}
+
+function dockUrlFor(ragClientId: string): string {
+    const origin =
+        typeof window !== "undefined"
+            ? window.location.origin
+            : "https://rag.fullstackjedi.dev";
+
+    const url = new URL("/dock", origin);
     url.searchParams.set("ragClientId", ragClientId);
     return url.toString();
 }
@@ -38,6 +47,8 @@ export default function HomePage() {
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
     const [clientError, setClientError] = useState<string | null>(null);
+    const [hostFrameLoaded, setHostFrameLoaded] = useState(false);
+    const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -85,36 +96,62 @@ export default function HomePage() {
         );
     }, [ragClients, selectedClientId]);
 
-    const ragClientSelectedMsg = useMemo<RagClientSelectedMsg | null>(() => {
-        if (!selectedClient) return null;
-
-        return {
-            type: "RAG_CLIENT_SELECTED",
-            ragClientId: selectedClient.id,
-            hostUrl: selectedClient.host_url,
-            label: selectedClient.name,
-        };
-    }, [selectedClient]);
-
     const targetUrl = useMemo(() => {
         if (!selectedClient) return "";
-        return withRagClientId(selectedClient.host_url, selectedClient.id);
+        return selectedClient.host_url;
     }, [selectedClient]);
 
-    const sendRagClientSelected = useCallback(() => {
-        if (!ragClientSelectedMsg) return;
+    const targetOrigin = useMemo(() => {
+        if (!selectedClient) return "*";
 
-        const targetWindow = targetFrameRef.current?.contentWindow;
-
-        if (targetWindow) {
-            debugPostMessage(
-                targetWindow,
-                ragClientSelectedMsg,
-                "*",
-                "host -> target RAG_CLIENT_SELECTED"
-            );
+        try {
+            return safeOrigin(selectedClient.host_url);
+        } catch {
+            return "*";
         }
-    }, [ragClientSelectedMsg]);
+    }, [selectedClient]);
+
+    const sendMessageToTarget = useCallback(
+        (msg: RagDockConnectMsg | RagDockDisconnectMsg) => {
+            const targetWindow = targetFrameRef.current?.contentWindow;
+            if (!targetWindow) return;
+
+            console.log("[mod-rag-host] postMessage -> target", {
+                targetOrigin,
+                msg,
+            });
+
+            targetWindow.postMessage(msg, targetOrigin);
+        },
+        [targetOrigin]
+    );
+
+    const sendDockConnect = useCallback(
+        (client: RagClientRow) => {
+            const msg: RagDockConnectMsg = {
+                type: "RAG_DOCK_CONNECT",
+                ragClientId: client.id,
+                dockUrl: dockUrlFor(client.id),
+                hostUrl: client.host_url,
+                label: client.name,
+            };
+
+            sendMessageToTarget(msg);
+        },
+        [sendMessageToTarget]
+    );
+
+    const sendDockDisconnect = useCallback(
+        (client?: RagClientRow) => {
+            const msg: RagDockDisconnectMsg = {
+                type: "RAG_DOCK_DISCONNECT",
+                ragClientId: client?.id,
+            };
+
+            sendMessageToTarget(msg);
+        },
+        [sendMessageToTarget]
+    );
 
     useEffect(() => {
         const onMessage = (ev: MessageEvent<unknown>) => {
@@ -124,7 +161,8 @@ export default function HomePage() {
             if (ev.source !== targetWindow) return;
 
             try {
-                parseSelectionMessage(ev.data);
+                const msg = parseSelectionMessage(ev.data);
+                setLastSelection(msg.id);
             } catch {
                 // Ignore unrelated messages from the target iframe.
             }
@@ -137,16 +175,22 @@ export default function HomePage() {
         };
     }, []);
 
-    useEffect(() => {
-        sendRagClientSelected();
-    }, [sendRagClientSelected]);
-
     function handleSelectClient(client: RagClientRow) {
         setSelectedClientId(client.id);
+        setHostFrameLoaded(false);
+        setLastSelection("");
     }
 
     function handleConnectClient(client: RagClientRow) {
         setSelectedClientId(client.id);
+
+        window.setTimeout(() => {
+            sendDockConnect(client);
+        }, hostFrameLoaded ? 0 : 300);
+    }
+
+    function handleDisconnectClient(client: RagClientRow) {
+        sendDockDisconnect(client);
     }
 
     if (loadingClients) {
@@ -224,9 +268,15 @@ export default function HomePage() {
                             <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
 
                             <p className="max-w-3xl text-sm text-gray-600">
-                                Select or connect a RAG client host, then use the embedded target app.
-                                The target app owns its own bottom dock.
+                                Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
                             </p>
+
+                            {lastSelection ? (
+                                <p className="text-xs text-gray-500">
+                                    Latest target selection from host:{" "}
+                                    <span className="font-mono">{lastSelection}</span>
+                                </p>
+                            ) : null}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -243,6 +293,7 @@ export default function HomePage() {
                         selectedRagClientId={selectedClient.id}
                         onSelectClient={handleSelectClient}
                         onConnectClient={handleConnectClient}
+                        onDisconnectClient={handleDisconnectClient}
                         compact
                     />
                 </header>
@@ -257,11 +308,12 @@ export default function HomePage() {
 
                     <div className="h-[78vh] min-h-[640px]">
                         <iframe
+                            key={selectedClient.id}
                             ref={targetFrameRef}
                             title={`${selectedClient.name} target host`}
                             src={targetUrl}
                             className="h-full w-full border-0"
-                            onLoad={sendRagClientSelected}
+                            onLoad={() => setHostFrameLoaded(true)}
                         />
                     </div>
                 </section>

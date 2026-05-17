@@ -16,13 +16,29 @@ type DashboardClientProps = {
     selectedRagClientId?: string;
     onSelectClient?: (client: RagClientRow) => void;
     onConnectClient?: (client: RagClientRow) => void;
+    onDisconnectClient?: (client: RagClientRow) => void;
     compact?: boolean;
 };
+
+async function disconnectRagClient(ragClientId: string): Promise<void> {
+    const res = await fetch(`/api/rag-clients/${encodeURIComponent(ragClientId)}/disconnect`, {
+        method: "POST",
+        cache: "no-store",
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(
+            `disconnectRagClient failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`
+        );
+    }
+}
 
 export default function DashboardClient({
     selectedRagClientId,
     onSelectClient,
     onConnectClient,
+    onDisconnectClient,
     compact = false,
 }: DashboardClientProps) {
     const [state, setState] = useState<LoadState>("idle");
@@ -30,9 +46,19 @@ export default function DashboardClient({
 
     const [rows, setRows] = useState<RagClientRow[]>([]);
     const [statusById, setStatusById] = useState<Record<string, RagClientStatus>>({});
-    const [connectingId, setConnectingId] = useState<string | null>(null);
+    const [busyId, setBusyId] = useState<string | null>(null);
 
     const ids = useMemo(() => rows.map((r) => r.id), [rows]);
+
+    async function refreshStatuses(nextIds = ids) {
+        if (nextIds.length === 0) {
+            setStatusById({});
+            return;
+        }
+
+        const statuses = await getRagClientStatuses(nextIds);
+        setStatusById(statuses);
+    }
 
     async function boot() {
         setState("loading");
@@ -42,6 +68,10 @@ export default function DashboardClient({
             const list = await listRagClients();
             setRows(list);
             setState("ready");
+
+            if (list.length > 0) {
+                await refreshStatuses(list.map((r) => r.id));
+            }
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
             setErr(msg);
@@ -81,18 +111,27 @@ export default function DashboardClient({
     }, [state, ids]);
 
     async function onConnect(row: RagClientRow) {
-        setConnectingId(row.id);
+        setBusyId(row.id);
 
         try {
             await connectRagClient(row.id);
-
-            const statuses = await getRagClientStatuses(ids);
-            setStatusById(statuses);
-
+            await refreshStatuses();
             onConnectClient?.(row);
             onSelectClient?.(row);
         } finally {
-            setConnectingId(null);
+            setBusyId(null);
+        }
+    }
+
+    async function onDisconnect(row: RagClientRow) {
+        setBusyId(row.id);
+
+        try {
+            await disconnectRagClient(row.id);
+            await refreshStatuses();
+            onDisconnectClient?.(row);
+        } finally {
+            setBusyId(null);
         }
     }
 
@@ -130,7 +169,7 @@ export default function DashboardClient({
         <GroupBox title="Configured Host Apps">
             {!compact && (
                 <div className="mb-3 text-xs text-gray-600">
-                    Select a host app to load it in the demo frame. Connect marks the active RAG client for dock messaging.
+                    Select a host app to load it in the demo frame. Connect attaches the RAG dock inside that host app.
                 </div>
             )}
 
@@ -149,7 +188,7 @@ export default function DashboardClient({
                     {rows.map((row) => {
                         const st = statusById[row.id];
                         const connected = Boolean(st?.connected);
-                        const busy = connectingId === row.id;
+                        const busy = busyId === row.id;
                         const selected = selectedRagClientId === row.id;
 
                         return (
@@ -196,7 +235,16 @@ export default function DashboardClient({
                                             disabled={busy}
                                             onClick={() => void onConnect(row)}
                                         >
-                                            {busy ? "Connecting..." : connected ? "Reconnect" : "Connect"}
+                                            {busy ? "Working..." : connected ? "Reconnect" : "Connect"}
+                                        </button>
+
+                                        <button
+                                            className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
+                                            type="button"
+                                            disabled={busy || !connected}
+                                            onClick={() => void onDisconnect(row)}
+                                        >
+                                            Disconnect
                                         </button>
 
                                         <a
