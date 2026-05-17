@@ -40,7 +40,7 @@ function dockUrlFor(ragClientId: string): string {
 }
 
 function clampHeight(height: number): number {
-    return Math.max(900, Math.min(height, 5000));
+    return Math.max(520, Math.min(height, 2600));
 }
 
 export default function HomePage() {
