@@ -4,7 +4,7 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Iterable, Optional
-
+from uuid import UUID
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -22,7 +22,7 @@ class StatusRegistry:
         self._lock = threading.Lock()
         self._m: Dict[str, _Status] = {}
 
-    def touch(self, rag_client_id: str, detail: str = "") -> None:
+    def touch(self, rag_client_id: UUID, detail: str = "") -> None:
         key = str(rag_client_id)
 
         with self._lock:
@@ -34,7 +34,7 @@ class StatusRegistry:
 
             self._m[key] = st
 
-    def set_connected(self, rag_client_id: str, connected: bool, detail: str = "") -> None:
+    def set_connected(self, rag_client_id: UUID, connected: bool, detail: str = "") -> None:
         key = str(rag_client_id)
 
         with self._lock:
@@ -47,7 +47,7 @@ class StatusRegistry:
 
             self._m[key] = st
 
-    def snapshot(self, only_ids: Iterable[str] | None = None) -> Dict[str, _Status]:
+    def snapshot(self, only_ids: Iterable[UUID] | None = None) -> Dict[str, _Status]:
         with self._lock:
             if only_ids:
                 ids = {str(x) for x in only_ids}
