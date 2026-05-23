@@ -9,19 +9,19 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-}: {
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body>
-        <Suspense fallback={null}>
-          <DebugToolsWrapper />
-        </Suspense>
+      <html lang="en">
+      <body className="bg-white text-gray-900 antialiased">
+      <Suspense fallback={null}>
+        <DebugToolsWrapper />
+      </Suspense>
 
-        {children}
+      {children}
       </body>
-    </html>
+      </html>
   );
 }
