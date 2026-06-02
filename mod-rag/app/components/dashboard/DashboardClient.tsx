@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/app/components/GroupBox";
 import {
     connectRagClient,
@@ -14,9 +14,9 @@ type LoadState = "idle" | "loading" | "ready" | "error";
 
 type DashboardClientProps = {
     selectedRagClientId?: string;
-    onSelectClient?: (client: RagClientRow) => void;
-    onConnectClient?: (client: RagClientRow) => void;
-    onDisconnectClient?: (client: RagClientRow) => void;
+    onSelectClientAction?: (client: RagClientRow) => void;
+    onConnectClientAction?: (client: RagClientRow) => void;
+    onDisconnectClientAction?: (client: RagClientRow) => void;
     compact?: boolean;
 };
 
@@ -36,9 +36,9 @@ async function disconnectRagClient(ragClientId: string): Promise<void> {
 
 export default function DashboardClient({
     selectedRagClientId,
-    onSelectClient,
-    onConnectClient,
-    onDisconnectClient,
+    onSelectClientAction,
+    onConnectClientAction,
+    onDisconnectClientAction,
     compact = false,
 }: DashboardClientProps) {
     const [state, setState] = useState<LoadState>("idle");
@@ -50,22 +50,26 @@ export default function DashboardClient({
 
     const ids = useMemo(() => rows.map((r) => r.id), [rows]);
 
-    async function refreshStatuses(nextIds = ids) {
-        if (nextIds.length === 0) {
-            setStatusById({});
-            return;
-        }
+    const refreshStatuses = useCallback(
+        async (nextIds = ids) => {
+            if (nextIds.length === 0) {
+                setStatusById({});
+                return;
+            }
 
-        const statuses = await getRagClientStatuses(nextIds);
-        setStatusById(statuses);
-    }
+            const statuses = await getRagClientStatuses(nextIds);
+            setStatusById(statuses);
+        },
+        [ids]
+    );
 
-    async function boot() {
+    const boot = useCallback(async () => {
         setState("loading");
         setErr("");
 
         try {
             const list = await listRagClients();
+
             setRows(list);
             setState("ready");
 
@@ -74,14 +78,15 @@ export default function DashboardClient({
             }
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
+
             setErr(msg);
             setState("error");
         }
-    }
+    }, [refreshStatuses]);
 
     useEffect(() => {
         void boot();
-    }, []);
+    }, [boot]);
 
     useEffect(() => {
         if (state !== "ready" || ids.length === 0) return;
@@ -116,8 +121,8 @@ export default function DashboardClient({
         try {
             await connectRagClient(row.id);
             await refreshStatuses();
-            onConnectClient?.(row);
-            onSelectClient?.(row);
+            onConnectClientAction?.(row);
+            onSelectClientAction?.(row);
         } finally {
             setBusyId(null);
         }
@@ -129,14 +134,14 @@ export default function DashboardClient({
         try {
             await disconnectRagClient(row.id);
             await refreshStatuses();
-            onDisconnectClient?.(row);
+            onDisconnectClientAction?.(row);
         } finally {
             setBusyId(null);
         }
     }
 
     function onSelect(row: RagClientRow) {
-        onSelectClient?.(row);
+        onSelectClientAction?.(row);
     }
 
     if (state === "loading" || state === "idle") {

@@ -298,9 +298,9 @@ export default function HomePage() {
 
                     <DashboardClient
                         selectedRagClientId={selectedClient.id}
-                        onSelectClient={handleSelectClient}
-                        onConnectClient={handleConnectClient}
-                        onDisconnectClient={handleDisconnectClient}
+                        onSelectClientAction={handleSelectClient}
+                        onConnectClientAction={handleConnectClient}
+                        onDisconnectClientAction={handleDisconnectClient}
                         compact
                     />
                 </header>
