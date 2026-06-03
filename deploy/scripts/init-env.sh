@@ -5,11 +5,9 @@ set -euo pipefail
 # Always regenerates deploy/env/*.env from *.env.example (clean slate every run).
 # Generates a fresh POSTGRES_PASSWORD and writes DATABASE_URL deterministically.
 # Resolve deploy dir from this script's location
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
 ENV_DIR="/opt/stacks/modular-rag-assistant/deploy/env"
-SHARED_PORTFOLIO_ENV_DIR="$(
-    cd "$(dirname "${BASH_SOURCE[0]}")/../../portfolio/deploy/shared/env" && pwd
-)"
+SHARED_PORTFOLIO_ENV_DIR="/opt/stacks/portfolio/deploy/shared/env"
 
 
 
