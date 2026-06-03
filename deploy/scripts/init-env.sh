@@ -7,7 +7,9 @@ set -euo pipefail
 # Resolve deploy dir from this script's location
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ENV_DIR="/opt/stacks/modular-rag-assistant/deploy/env"
-
+SHARED_PORTFOLIO_ENV_DIR="$(
+    cd "$(dirname "${BASH_SOURCE[0]}")/../../portfolio/deploy/shared/env" && pwd
+)"
 
 
 
@@ -60,11 +62,16 @@ main() {
     "postgres.env"
     "mod-rag-api.env"
     "mod-rag.env"
+    "embed.env"
   )
 
   log "Copying examples (fresh)..."
   for f in "${files[@]}"; do
-    local example="${ENV_DIR}/${f}.example"
+    if f is "embed.env"; then
+         local example="${SHARED_PORTFOLIO_ENV_DIR}/${f}.example"
+        else
+          local example="${ENV_DIR}/${f}.example"
+        fi
     local target="${ENV_DIR}/${f}"
     [[ -f "$example" ]] || err "Missing example file: $example"
     copy_example "$example" "$target"

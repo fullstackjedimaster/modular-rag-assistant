@@ -14,8 +14,7 @@ docker compose \
   -f "$DEPLOY_DIR"/compose.yml \
   down -v --remove-orphans
 
-echo "[up] Initializing shared env"
-bash "$PORTFOLIO_DEPLOY/shared/scripts/init-shared-env.sh"
+
 
 echo "[up] Generating env + secrets"
 bash "$DEPLOY_DIR/scripts/init-env.sh"
