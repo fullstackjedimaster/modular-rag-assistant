@@ -72,6 +72,8 @@ services:
     image: mod-rag:local
     env_file:
       - ./env/mod-rag.env
+    environment:
+      PORTFOLIO_LOCK_ENABLED: "true"
     restart: unless-stopped
 
     ports:
