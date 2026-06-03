@@ -60,20 +60,22 @@ main() {
     "postgres.env"
     "mod-rag-api.env"
     "mod-rag.env"
-    "embed.env"
+
   )
 
   log "Copying examples (fresh)..."
   for f in "${files[@]}"; do
-    if f is "embed.env"; then
-         local example="${SHARED_PORTFOLIO_ENV_DIR}/${f}.example"
-        else
-          local example="${ENV_DIR}/${f}.example"
-        fi
+    local example="${ENV_DIR}/${f}.example"
+
     local target="${ENV_DIR}/${f}"
     [[ -f "$example" ]] || err "Missing example file: $example"
     copy_example "$example" "$target"
   done
+
+  local example="${SHARED_PORTFOLIO_ENV_DIR}/embed.env.example"
+  local target="${ENV_DIR}/embed.env"
+  copy_example "$example" "$target"
+
 
   local pg_file="${ENV_DIR}/postgres.env"
   local mod_rag_api_file="${ENV_DIR}/mod-rag-api.env"
