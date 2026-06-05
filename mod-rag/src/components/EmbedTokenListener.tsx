@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { setEmbedToken } from "@/lib/embedTokenStore";
+import { setEmbedToken } from "@/src/lib/embedTokenStore";
 
 function looksLikeJwt(t: string): boolean {
     const s = (t || "").trim().replace(/^Bearer\s+/i, "");
