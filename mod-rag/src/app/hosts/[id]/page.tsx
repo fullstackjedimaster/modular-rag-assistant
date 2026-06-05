@@ -1,20 +1,14 @@
 // app/hosts/[id]/page.tsx
 import ManagementShell from "@/src/components/management/ManagementShell";
 
-export const metadata = {
-  title: "Manage Host",
-};
-
-type HostPageProps = {
-  params: {
+type PageProps = {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-export default function HostPage({ params }: HostPageProps) {
-  return (
-    <main className="space-y-4 p-4">
-      <ManagementShell mode="edit" clientId={params.id} />
-    </main>
-  );
+export default async function HostPage({ params }: PageProps) {
+  const { id } = await params;
+  return <ManagementShell mode="edit" clientId={id} />;
 }
+
