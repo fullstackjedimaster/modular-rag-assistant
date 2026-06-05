@@ -21,6 +21,7 @@ mod-rag/node_modules/
 
 # ---- deploy runtime secrets (never commit) ----
 
+*.env
 
 data/
 
