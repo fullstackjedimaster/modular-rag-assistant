@@ -1,11 +1,15 @@
 // app/client/[id]/page.tsx
 import ManagementShell from "@/src/components/management/ManagementShell";
 
-export const metadata = {
-    title: "Manage Client",
+
+
+type PageProps = {
+    params: Promise<{
+        id: string;
+    }>;
 };
 
-export default function ClientPage({ params }: { params: { id: string } }) {
-    const id = String(params.id);
+export default async function ClientPage({ params }: PageProps) {
+    const { id } = await params;
     return <ManagementShell mode="edit" clientId={id} />;
 }

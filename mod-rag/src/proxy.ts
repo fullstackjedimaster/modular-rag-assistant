@@ -1,4 +1,4 @@
-// daq-ui/src/middleware.ts
+// daq-ui/src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const EMBED_SECRET = process.env.EMBED_SECRET || "";
@@ -132,7 +132,7 @@ function isPublicPath(pathname: string): boolean {
     );
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
     if (!PORTFOLIO_LOCK_ENABLED) {
         return NextResponse.next();
     }
@@ -192,7 +192,7 @@ export async function middleware(req: NextRequest) {
 
         return NextResponse.next();
     } catch (e) {
-        console.error("[middleware verifyToken]", e);
+        console.error("[proxy verifyToken]", e);
         return forbidden("Invalid or expired portfolio session.");
     }
 }
