@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const EMBED_SECRET = process.env.EMBED_SECRET || "";
-const EXPECTED_AUD = "modular_rag_assistant";
+const EXPECTED_AUD = "modular-rag-assistant";
 
 const TOKEN_COOKIE = "pf_embed_token";
 const SID_COOKIE = "pf_embed_sid";

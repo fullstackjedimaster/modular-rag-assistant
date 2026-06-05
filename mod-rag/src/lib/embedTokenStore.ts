@@ -1,5 +1,5 @@
 // daq-ui/src/lib/embedTokenStore.ts
-const LS_KEY = "meshdaq_embed_token";
+const LS_KEY = "mod_rag_embed_token";
 
 export function getEmbedToken(): string {
     // 1) localStorage
