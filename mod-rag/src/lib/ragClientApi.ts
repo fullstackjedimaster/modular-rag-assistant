@@ -1,6 +1,7 @@
 // app/lib/ragClientApi.tS
 
 import {UUID} from "node:crypto";
+import { settings } from "@/src/lib/settings";
 
 export type RagClientRow = {
     id: UUID;
@@ -45,7 +46,7 @@ export type CreateRagClientIn = { name: string; host_url: string };
 export type UpdateRagClientIn = { name: string; host_url: string };
 
 function apiBase(): string {
-    const v = (process.env.NEXT_PUBLIC_AI_RAG_API_BASE || "").replace(/\/+$/, "");
+    const v = (settings.AI_RAG_API_BASE || "").replace(/\/+$/, "");
     if (typeof window !== "undefined") console.log("AI_RAG_API_BASE =", v);
     return v;
 
