@@ -222,7 +222,7 @@ def seed_usecase(uc:UsecaseConfig):
 def main():
 
 
-    collection = "mesh_daq_fault_docs"
+    collection = "iot-wireless-mesh-daq_fault_docs"
     uc_id = str(uuid.uuid4())
 
     uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="source_docs")
