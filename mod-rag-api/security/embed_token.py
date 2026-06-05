@@ -84,8 +84,11 @@ def _extract_token(request: Request) -> str:
     return ""
 
 
+
 def require_embed_token(audience: str) -> Callable[[Request], bool]:
     async def _dep(request: Request) -> bool:
+        if not PORTFOLIO_LOCK_ENABLED:
+            return True
         if not EMBED_SECRET or len(EMBED_SECRET) < 32:
             raise HTTPException(status_code=500, detail="Server misconfigured: EMBED_SECRET")
 

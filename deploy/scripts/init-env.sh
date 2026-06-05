@@ -72,7 +72,7 @@ main() {
     copy_example "$example" "$target"
   done
 
-  local example="${SHARED_PORTFOLIO_ENV_DIR}/embed.env.example"
+  local example="${SHARED_PORTFOLIO_ENV_DIR}/embed.env"
   local target="${ENV_DIR}/embed.env"
   copy_example "$example" "$target"
 
