@@ -3,6 +3,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
   addContentDoc,
   deleteContentDoc,
@@ -17,6 +18,7 @@ type ContentDocId = ContentDocRow["id"];
 
 export default function ContentDocsBox(props: { clientId: RagClientId }) {
   const { clientId } = props;
+  const { isReadOnly } = useAppMode();
 
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -46,6 +48,11 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
 
   async function onAdd() {
     setNote("");
+
+    if (isReadOnly) {
+      setNote("Demo mode is read-only. Adding content docs is disabled.");
+      return;
+    }
 
     const dn = docName.trim();
     const fp = filePath.trim();
@@ -77,6 +84,12 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
 
   async function onSaveRow(docId: ContentDocId, next: { doc_name: string; file_path: string }) {
     setNote("");
+
+    if (isReadOnly) {
+      setNote("Demo mode is read-only. Saving content docs is disabled.");
+      return;
+    }
+
     setBusy(true);
 
     try {
@@ -95,9 +108,14 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
   }
 
   async function onDelete(docId: ContentDocId) {
-    if (!confirm("Delete this content doc?")) return;
-
     setNote("");
+
+    if (isReadOnly) {
+      setNote("Demo mode is read-only. Deleting content docs is disabled.");
+      return;
+    }
+
+    if (!confirm("Delete this content doc?")) return;
     setBusy(true);
 
     try {
@@ -119,6 +137,12 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
             These are DB rows, doc_name + file_path. Upload plumbing can come later if you want.
           </div>
 
+          {isReadOnly ? (
+            <div className="rounded border bg-gray-50 px-3 py-2 text-xs text-gray-600">
+              Demo mode is read-only. You can view content docs, but edits are disabled.
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
             <div className="md:col-span-4">
               <label className="text-xs font-medium">Doc Name</label>
@@ -126,7 +150,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
                 className="w-full rounded border px-2 py-2 text-sm"
                 value={docName}
                 onChange={(e) => setDocName(e.target.value)}
-                disabled={busy}
+                disabled={busy || isReadOnly}
                 placeholder="e.g. Mesh Fault Handbook"
               />
             </div>
@@ -137,7 +161,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
                 className="w-full rounded border px-2 py-2 font-mono text-sm"
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
-                disabled={busy}
+                disabled={busy || isReadOnly}
                 placeholder="/config/source_docs/mesh/handbook.md or https://..."
               />
             </div>
@@ -147,7 +171,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
                 type="button"
                 className="w-full rounded border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
                 onClick={() => void onAdd()}
-                disabled={busy}
+                disabled={busy || isReadOnly}
               >
                 Add
               </button>
@@ -178,6 +202,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
                   key={r.id}
                   row={r}
                   busy={busy}
+                  isReadOnly={isReadOnly}
                   onSave={(next) => void onSaveRow(r.id, next)}
                   onDelete={() => void onDelete(r.id)}
                 />
@@ -193,10 +218,11 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
 function EditableDocRow(props: {
   row: ContentDocRow;
   busy: boolean;
+  isReadOnly: boolean;
   onSave: (next: { doc_name: string; file_path: string }) => void;
   onDelete: () => void;
 }) {
-  const { row, busy, onSave, onDelete } = props;
+  const { row, busy, isReadOnly, onSave, onDelete } = props;
 
   const nameRef = useRef<HTMLInputElement | null>(null);
   const pathRef = useRef<HTMLInputElement | null>(null);
@@ -216,7 +242,7 @@ function EditableDocRow(props: {
           ref={nameRef}
           className="w-full rounded border px-2 py-1 text-sm"
           defaultValue={row.doc_name}
-          disabled={busy}
+          disabled={busy || isReadOnly}
         />
       </div>
 
@@ -226,7 +252,7 @@ function EditableDocRow(props: {
           ref={pathRef}
           className="w-full rounded border px-2 py-1 font-mono text-sm"
           defaultValue={row.file_path}
-          disabled={busy}
+          disabled={busy || isReadOnly}
         />
       </div>
 
@@ -234,7 +260,7 @@ function EditableDocRow(props: {
         <button
           type="button"
           className="rounded border px-2 py-1 text-xs disabled:opacity-50"
-          disabled={busy}
+          disabled={busy || isReadOnly}
           onClick={() => onSave(readValues())}
           title="Save"
         >
@@ -244,7 +270,7 @@ function EditableDocRow(props: {
         <button
           type="button"
           className="rounded border px-2 py-1 text-xs disabled:opacity-50"
-          disabled={busy}
+          disabled={busy || isReadOnly}
           onClick={onDelete}
           title="Delete"
         >

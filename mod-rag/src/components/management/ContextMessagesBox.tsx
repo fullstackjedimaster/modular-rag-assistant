@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
     addContentDoc,
     deleteContentDoc,
@@ -13,6 +14,7 @@ import {
 
 export default function ContentDocsBox(props: { clientId: string }) {
     const { clientId } = props;
+    const { isReadOnly } = useAppMode();
 
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<string>("");
@@ -42,6 +44,11 @@ export default function ContentDocsBox(props: { clientId: string }) {
 
     async function onAdd() {
         setNote("");
+
+        if (isReadOnly) {
+            setNote("Demo mode is read-only. Adding content docs is disabled.");
+            return;
+        }
         const dn = docName.trim();
         const fp = filePath.trim();
         if (!dn) {
@@ -69,6 +76,11 @@ export default function ContentDocsBox(props: { clientId: string }) {
 
     async function onSaveRow(docId: string, next: { doc_name: string; file_path: string }) {
         setNote("");
+
+        if (isReadOnly) {
+            setNote("Demo mode is read-only. Saving content docs is disabled.");
+            return;
+        }
         setBusy(true);
         try {
             await updateContentDoc(clientId, docId, {
@@ -85,6 +97,11 @@ export default function ContentDocsBox(props: { clientId: string }) {
     }
 
     async function onDelete(docId: string) {
+        if (isReadOnly) {
+            setNote("Demo mode is read-only. Deleting content docs is disabled.");
+            return;
+        }
+
         if (!confirm("Delete this content doc?")) return;
         setNote("");
         setBusy(true);
@@ -107,6 +124,12 @@ export default function ContentDocsBox(props: { clientId: string }) {
                         These are DB rows (doc_name + file_path). Upload plumbing can come later if you want.
                     </div>
 
+                    {isReadOnly ? (
+                        <div className="rounded border bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                            Demo mode is read-only. You can view content docs, but edits are disabled.
+                        </div>
+                    ) : null}
+
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
                         <div className="md:col-span-4">
                             <label className="text-xs font-medium">Doc Name</label>
@@ -114,7 +137,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
                                 className="w-full border rounded px-2 py-2 text-sm"
                                 value={docName}
                                 onChange={(e) => setDocName(e.target.value)}
-                                disabled={busy}
+                                disabled={busy || isReadOnly}
                                 placeholder="e.g. Mesh Fault Handbook"
                             />
                         </div>
@@ -124,7 +147,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
                                 className="w-full border rounded px-2 py-2 text-sm font-mono"
                                 value={filePath}
                                 onChange={(e) => setFilePath(e.target.value)}
-                                disabled={busy}
+                                disabled={busy || isReadOnly}
                                 placeholder="/config/source_docs/mesh/handbook.md or https://..."
                             />
                         </div>
@@ -133,7 +156,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
                                 type="button"
                                 className="w-full border rounded px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
                                 onClick={() => void onAdd()}
-                                disabled={busy}
+                                disabled={busy || isReadOnly}
                             >
                                 Add
                             </button>
@@ -163,6 +186,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
                                     key={r.id}
                                     row={r}
                                     busy={busy}
+                                    isReadOnly={isReadOnly}
                                     onSave={(next) => void onSaveRow(r.id, next)}
                                     onDelete={() => void onDelete(r.id)}
                                 />
@@ -178,10 +202,11 @@ export default function ContentDocsBox(props: { clientId: string }) {
 function EditableDocRow(props: {
     row: ContentDocRow;
     busy: boolean;
+    isReadOnly: boolean;
     onSave: (next: { doc_name: string; file_path: string }) => void;
     onDelete: () => void;
 }) {
-    const { row, busy, onSave, onDelete } = props;
+    const { row, busy, isReadOnly, onSave, onDelete } = props;
     const [doc_name, setDocName] = useState(row.doc_name);
     const [file_path, setFilePath] = useState(row.file_path);
 
@@ -201,7 +226,7 @@ function EditableDocRow(props: {
                     className="w-full border rounded px-2 py-1 text-sm"
                     value={doc_name}
                     onChange={(e) => setDocName(e.target.value)}
-                    disabled={busy}
+                    disabled={busy || isReadOnly}
                 />
             </div>
             <div className="md:col-span-7">
@@ -210,14 +235,14 @@ function EditableDocRow(props: {
                     className="w-full border rounded px-2 py-1 text-sm font-mono"
                     value={file_path}
                     onChange={(e) => setFilePath(e.target.value)}
-                    disabled={busy}
+                    disabled={busy || isReadOnly}
                 />
             </div>
             <div className="md:col-span-1 flex md:justify-end gap-2 mt-5 md:mt-6">
                 <button
                     type="button"
                     className="border rounded px-2 py-1 text-xs disabled:opacity-50"
-                    disabled={busy || !dirty}
+                    disabled={busy || isReadOnly || !dirty}
                     onClick={() => onSave({ doc_name, file_path })}
                     title="Save"
                 >
@@ -226,7 +251,7 @@ function EditableDocRow(props: {
                 <button
                     type="button"
                     className="border rounded px-2 py-1 text-xs disabled:opacity-50"
-                    disabled={busy}
+                    disabled={busy || isReadOnly}
                     onClick={onDelete}
                     title="Delete"
                 >

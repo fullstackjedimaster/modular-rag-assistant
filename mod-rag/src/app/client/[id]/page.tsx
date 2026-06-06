@@ -13,4 +13,3 @@ export default async function ClientPage({ params }: PageProps) {
     const { id } = await params;
     return <ManagementShell mode="edit" clientId={id} />;
 }
-

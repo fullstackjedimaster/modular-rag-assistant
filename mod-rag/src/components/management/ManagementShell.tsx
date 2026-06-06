@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import GroupBox from "@/src/components/GroupBox";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
   connectRagClient,
   disconnectRagClient,
@@ -30,6 +31,7 @@ function isRagClientId(value: string | undefined | null): value is RagClientId {
 export default function ManagementShell(props: { mode: Mode; clientId?: string }) {
   const { mode, clientId } = props;
   const router = useRouter();
+  const { isReadOnly } = useAppMode();
 
   const activeClientId = useMemo<RagClientId | null>(() => {
     return isRagClientId(clientId) ? clientId : null;
@@ -84,6 +86,11 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
   async function onCreate() {
     setErr("");
 
+    if (isReadOnly) {
+      setErr("Demo mode is read-only. Creating clients is disabled.");
+      return;
+    }
+
     try {
       const created = await createRagClient({
         name: name.trim(),
@@ -101,6 +108,11 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
 
     setErr("");
 
+    if (isReadOnly) {
+      setErr("Demo mode is read-only. Saving changes is disabled.");
+      return;
+    }
+
     try {
       await updateRagClient(activeClientId, {
         name: name.trim(),
@@ -115,9 +127,15 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
 
   async function onDelete() {
     if (!activeClientId) return;
-    if (!confirm("Delete this client? This cannot be undone.")) return;
 
     setErr("");
+
+    if (isReadOnly) {
+      setErr("Demo mode is read-only. Deleting clients is disabled.");
+      return;
+    }
+
+    if (!confirm("Delete this client? This cannot be undone.")) return;
 
     try {
       await deleteRagClient(activeClientId);
@@ -132,6 +150,11 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
 
     setErr("");
 
+    if (isReadOnly) {
+      setErr("Demo mode is read-only. Connect actions are disabled from this screen.");
+      return;
+    }
+
     try {
       await connectRagClient(activeClientId);
     } catch (e: unknown) {
@@ -143,6 +166,11 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
     if (!activeClientId) return;
 
     setErr("");
+
+    if (isReadOnly) {
+      setErr("Demo mode is read-only. Disconnect actions are disabled from this screen.");
+      return;
+    }
 
     try {
       await disconnectRagClient(activeClientId);
@@ -192,6 +220,12 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
       <GroupBox title={title}>
         {err ? <div className="mb-3 whitespace-pre-wrap text-sm text-red-600">{err}</div> : null}
 
+        {isReadOnly ? (
+          <div className="mb-3 rounded border bg-gray-50 px-3 py-2 text-sm text-gray-700">
+            Demo mode is read-only. You can view client details, but create, edit, connect, disconnect, and delete actions are disabled here.
+          </div>
+        ) : null}
+
         <div className="grid gap-3">
           <div className="grid gap-1">
             <label className="text-sm font-medium">Client Name</label>
@@ -199,6 +233,8 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
               className="rounded border px-2 py-2 text-sm"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              readOnly={isReadOnly}
+              disabled={isReadOnly}
               placeholder="e.g. Mesh DAQ Dashboard"
             />
           </div>
@@ -209,6 +245,8 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
               className="rounded border px-2 py-2 font-mono text-sm"
               value={hostUrl}
               onChange={(e) => setHostUrl(e.target.value)}
+              readOnly={isReadOnly}
+              disabled={isReadOnly}
               placeholder="https://daq.fullstackjedi.dev"
             />
 
@@ -220,6 +258,7 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
           <div className="flex flex-wrap gap-2 pt-1">
             {mode === "create" ? (
               <>
+                {!isReadOnly ? (
                 <button
                   className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
                   type="button"
@@ -227,6 +266,7 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
                 >
                   Create Client
                 </button>
+                ) : null}
 
                 <Link className="rounded border px-3 py-2 text-sm hover:bg-gray-50" href="/mod-rag/public">
                   Cancel
@@ -234,41 +274,45 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
               </>
             ) : (
               <>
-                <button
-                  className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                  type="button"
-                  onClick={() => void onSave()}
-                  disabled={!activeClientId}
-                >
-                  Save Changes
-                </button>
+                {!isReadOnly ? (
+                  <>
+                    <button
+                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+                      type="button"
+                      onClick={() => void onSave()}
+                      disabled={!activeClientId}
+                    >
+                      Save Changes
+                    </button>
 
-                <button
-                  className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                  type="button"
-                  onClick={() => void onConnect()}
-                  disabled={!activeClientId}
-                >
-                  Connect
-                </button>
+                    <button
+                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+                      type="button"
+                      onClick={() => void onConnect()}
+                      disabled={!activeClientId}
+                    >
+                      Connect
+                    </button>
 
-                <button
-                  className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                  type="button"
-                  onClick={() => void onDisconnect()}
-                  disabled={!activeClientId}
-                >
-                  Disconnect
-                </button>
+                    <button
+                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+                      type="button"
+                      onClick={() => void onDisconnect()}
+                      disabled={!activeClientId}
+                    >
+                      Disconnect
+                    </button>
 
-                <button
-                  className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                  type="button"
-                  onClick={() => void onDelete()}
-                  disabled={!activeClientId}
-                >
-                  Delete
-                </button>
+                    <button
+                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+                      type="button"
+                      onClick={() => void onDelete()}
+                      disabled={!activeClientId}
+                    >
+                      Delete
+                    </button>
+                  </>
+                ) : null}
 
                 <Link className="rounded border px-3 py-2 text-sm hover:bg-gray-50" href="/mod-rag/public">
                   Back

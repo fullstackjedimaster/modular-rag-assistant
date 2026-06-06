@@ -47,7 +47,7 @@ export type UpdateRagClientIn = { name: string; host_url: string };
 
 function apiBase(): string {
     const v = (settings.AI_RAG_API_BASE || "").replace(/\/+$/, "");
-    if (typeof window !== "undefined") console.log("AI_RAG_API_BASE =", v);
+
     return v;
 
 }

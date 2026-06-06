@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
     connectRagClient,
     getRagClientStatuses,
@@ -41,6 +42,8 @@ export default function DashboardClient({
     onDisconnectClientAction,
     compact = false,
 }: DashboardClientProps) {
+    const { disablePolling } = useAppMode();
+
     const [state, setState] = useState<LoadState>("idle");
     const [err, setErr] = useState<string>("");
 
@@ -89,6 +92,7 @@ export default function DashboardClient({
     }, [boot]);
 
     useEffect(() => {
+        if (disablePolling) return;
         if (state !== "ready" || ids.length === 0) return;
 
         let cancelled = false;
@@ -113,7 +117,7 @@ export default function DashboardClient({
             cancelled = true;
             window.clearInterval(t);
         };
-    }, [state, ids]);
+    }, [state, ids, disablePolling]);
 
     async function onConnect(row: RagClientRow) {
         setBusyId(row.id);

@@ -3,6 +3,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 import { getSystemPrompt, saveSystemPrompt } from "@/src/lib/clientContextApi";
 import type { RagClientFull } from "@/src/lib/ragClientApi";
 
@@ -10,6 +11,7 @@ type RagClientId = RagClientFull["id"];
 
 export default function SystemPromptBox(props: { clientId: RagClientId }) {
   const { clientId } = props;
+  const { isReadOnly } = useAppMode();
 
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -41,6 +43,11 @@ export default function SystemPromptBox(props: { clientId: RagClientId }) {
   }, [refresh]);
 
   async function onSave() {
+    if (isReadOnly) {
+      setNote("Demo mode is read-only.");
+      return;
+    }
+
     setBusy(true);
     setNote("");
 
@@ -67,20 +74,29 @@ export default function SystemPromptBox(props: { clientId: RagClientId }) {
           className="min-h-[220px] w-full rounded border px-2 py-2 text-sm"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          readOnly={isReadOnly}
           disabled={busy}
           placeholder="Enter system prompt..."
         />
 
+        {isReadOnly ? (
+          <div className="rounded border bg-gray-50 px-3 py-2 text-xs text-gray-600">
+            Demo mode is read-only. You can view this prompt, but edits are disabled.
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
-            onClick={() => void onSave()}
-            disabled={busy || !hasChanges}
-            title={!hasChanges ? "No changes" : "Save changes"}
-          >
-            Save
-          </button>
+          {!isReadOnly ? (
+            <button
+              type="button"
+              className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
+              onClick={() => void onSave()}
+              disabled={busy || !hasChanges}
+              title={!hasChanges ? "No changes" : "Save changes"}
+            >
+              Save
+            </button>
+          ) : null}
 
           <button
             type="button"

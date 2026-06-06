@@ -3,6 +3,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
   connectRagClient,
   getRagClientStatuses,
@@ -18,6 +19,7 @@ export default function DockInjectionBox(props: {
   selectedId?: RagClientId;
 }) {
   const { clientId, selectedId } = props;
+  const { isReadOnly } = useAppMode();
 
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -121,6 +123,10 @@ export default function DockInjectionBox(props: {
   async function injectDock() {
     setNote("");
 
+    if (isReadOnly) {
+      return;
+    }
+
     if (!picked) {
       setNote("No host app selected.");
       return;
@@ -159,7 +165,7 @@ export default function DockInjectionBox(props: {
               className="rounded border px-2 py-2 text-sm"
               value={pickedId ?? ""}
               onChange={(e) => setPickedId(e.target.value as RagClientId)}
-              disabled={busy}
+              disabled={busy || isReadOnly}
             >
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -213,14 +219,16 @@ export default function DockInjectionBox(props: {
                     Open Host App
                   </button>
 
-                  <button
-                    type="button"
-                    className="rounded border px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-                    onClick={() => void injectDock()}
-                    disabled={busy || !pickedId}
-                  >
-                    Inject Dock
-                  </button>
+                  {!isReadOnly ? (
+                    <button
+                      type="button"
+                      className="rounded border px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                      onClick={() => void injectDock()}
+                      disabled={busy || !pickedId}
+                    >
+                      Inject Dock
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"

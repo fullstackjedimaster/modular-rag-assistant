@@ -18,16 +18,16 @@ export type ProgressInfo = {
 
 export type ExplanationPanelProps = {
   query: string;
-  setQuery: (v: string) => void;
+  setQueryAction: (v: string) => void;
   telemetry: Telemetry;
   streaming: boolean;
   banner: string;
   answer: string;
   progress: ProgressInfo | null;
   error: string | null;
-  onExplain: () => void;
-  onCancel: () => void;
-  onReset: () => void;
+  onExplainAction: () => void;
+  onCancelAction: () => void;
+  onResetAction: () => void;
   contexts?: string[];
   contextsOpen?: boolean;
   heatmapData?: { idx: number; sentence: string; score: number }[] | null;
@@ -35,16 +35,16 @@ export type ExplanationPanelProps = {
 
 export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
   query,
-  setQuery,
+  setQueryAction,
   telemetry,
   streaming,
   banner,
   answer,
   progress,
   error,
-  onExplain,
-  onCancel,
-  onReset,
+  onExplainAction,
+  onCancelAction,
+  onResetAction,
   contexts,
   contextsOpen = false,
   heatmapData,
@@ -101,9 +101,9 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => setQueryAction(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !streaming) onExplain();
+              if (e.key === "Enter" && !streaming) onExplainAction();
             }}
             className="w-full rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-800 dark:text-white"
             placeholder="Ask for an explanation..."
@@ -113,7 +113,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
         <div className="flex gap-2">
           <button
-            onClick={onExplain}
+            onClick={onExplainAction}
             className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-500 disabled:opacity-60"
             disabled={streaming}
             aria-label="Explain"
@@ -122,7 +122,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           </button>
 
           <button
-            onClick={onCancel}
+            onClick={onCancelAction}
             className="rounded bg-gray-200 px-3 py-2 text-black disabled:opacity-60 dark:bg-gray-700 dark:text-white"
             disabled={!streaming}
             aria-label="Cancel"
@@ -131,7 +131,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           </button>
 
           <button
-            onClick={onReset}
+            onClick={onResetAction}
             className="rounded bg-gray-200 px-3 py-2 text-black dark:bg-gray-700 dark:text-white"
             aria-label="Reset"
           >

@@ -18,6 +18,7 @@ import {
 import DashboardClient from "@/src/components/dashboard/DashboardClient";
 import PostMessageTap from "@/src/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/src/components/debug/useDebugFlags";
+import { useAppMode } from "@/src/contexts/AppModeContext";
 
 function DebugTapMount() {
     const { msgdebug } = useDebugFlags();
@@ -44,6 +45,7 @@ function clampHeight(height: number): number {
 }
 
 export default function HomePage() {
+    const { isDemo, isReadOnly } = useAppMode();
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
@@ -232,7 +234,7 @@ export default function HomePage() {
                             href="/clients"
                             className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
                         >
-                            Manage RAG Clients
+                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
                         </Link>
                     </div>
 
@@ -256,7 +258,7 @@ export default function HomePage() {
                             href="/clients"
                             className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
                         >
-                            Manage RAG Clients
+                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
                         </Link>
                     </div>
 
@@ -280,6 +282,12 @@ export default function HomePage() {
                                 Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
                             </p>
 
+                            {isDemo ? (
+                                <p className="max-w-3xl rounded border bg-white px-3 py-2 text-xs text-gray-600">
+                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
+                                </p>
+                            ) : null}
+
                             {lastSelection ? (
                                 <p className="text-xs text-gray-500">
                                     Latest target selection from host:{" "}
@@ -288,12 +296,14 @@ export default function HomePage() {
                             ) : null}
                         </div>
 
-                        <Link
-                            href="/client/new"
-                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                            Configure New Client
-                        </Link>
+                        {!isReadOnly ? (
+                            <Link
+                                href="/client/new"
+                                className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                            >
+                                Configure New Client
+                            </Link>
+                        ) : null}
                     </div>
 
                     <DashboardClient
