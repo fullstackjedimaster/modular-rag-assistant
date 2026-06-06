@@ -13,7 +13,7 @@ type Props = {
     setMac: (mac: string) => void;
     setTelemetry: (t: PanelTelemetry) => void;
     query: string;
-    setQuery: (q: string) => void;
+    setQueryAction: (q: string) => void;
 };
 
 // Runtime type guard for messages we care about
@@ -25,7 +25,7 @@ function isSetSelectedMessage(
     return o.type === "SET_SELECTED" && typeof o.mac === "string";
 }
 
-export default function SelectedMacListener({ setMac, setTelemetry, query, setQuery }: Props) {
+export default function SelectedMacListener({ setMac, setTelemetry, query, setQueryAction }: Props) {
     useEffect(() => {
         const onMsg = (ev: MessageEvent<unknown>) => {
             const d = ev.data;
@@ -35,7 +35,7 @@ export default function SelectedMacListener({ setMac, setTelemetry, query, setQu
             console.log("[ui-daq] received SET_SELECTED:", d);
 
             setMac(d.mac);
-            if (!query) setQuery(`Explain current status for panel ${d.mac}.`);
+            if (!query) setQueryAction(`Explain current status for panel ${d.mac}.`);
 
             if (d.telemetry && typeof d.telemetry === "object") {
                 const t = d.telemetry as PanelTelemetry;
@@ -49,7 +49,7 @@ export default function SelectedMacListener({ setMac, setTelemetry, query, setQu
 
         window.addEventListener("message", onMsg);
         return () => window.removeEventListener("message", onMsg);
-    }, [setMac, setTelemetry, query, setQuery]);
+    }, [setMac, setTelemetry, query, setQueryAction]);
 
     return null;
 }

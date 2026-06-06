@@ -329,16 +329,16 @@ export function SmartExplainer({
 
       <ExplanationPanel
         query={query}
-        setQuery={setQuery}
+        setQueryAction={setQuery}
         telemetry={telemetry}
         streaming={streaming}
         banner={banner}
         answer={answer}
         progress={progress}
         error={error}
-        onExplain={onExplain}
-        onCancel={cancel}
-        onReset={reset}
+        onExplainAction={onExplain}
+        onCancelAction={cancel}
+        onResetAction={reset}
         contexts={contexts}
         contextsOpen={contextsOpen}
         heatmapData={heatmapData}
