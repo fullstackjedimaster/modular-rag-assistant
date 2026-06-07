@@ -1,7 +1,7 @@
 // daq-ui/src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const EMBED_SECRET = process.env.EMBED_SECRET || "";
+const PORTFOLIO_LOCK_SECRET = process.env.PORTFOLIO_LOCK_SECRET || "";
 const EXPECTED_AUD = "modular-rag-assistant";
 
 const TOKEN_COOKIE = "pf_embed_token";
@@ -73,8 +73,8 @@ async function hmacSha256Base64Url(data: string, secret: string): Promise<string
 }
 
 async function verifyToken(token: string): Promise<JwtPayload> {
-    if (!EMBED_SECRET || EMBED_SECRET.length < 32) {
-        throw new Error("EMBED_SECRET is missing or too short");
+    if (!PORTFOLIO_LOCK_SECRET || PORTFOLIO_LOCK_SECRET.length < 32) {
+        throw new Error("PORTFOLIO_LOCK_SECRET is missing or too short");
     }
 
     const parts = token.split(".");
@@ -89,7 +89,7 @@ async function verifyToken(token: string): Promise<JwtPayload> {
         throw new Error("Invalid token alg");
     }
 
-    const expected = await hmacSha256Base64Url(`${headerB64}.${payloadB64}`, EMBED_SECRET);
+    const expected = await hmacSha256Base64Url(`${headerB64}.${payloadB64}`, PORTFOLIO_LOCK_SECRET);
     if (expected !== sigB64) {
         throw new Error("Invalid token signature");
     }

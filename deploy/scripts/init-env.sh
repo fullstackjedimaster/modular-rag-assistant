@@ -72,8 +72,8 @@ main() {
     copy_example "$example" "$target"
   done
 
-  local example="${SHARED_PORTFOLIO_ENV_DIR}/embed.env"
-  local target="${ENV_DIR}/embed.env"
+  local example="${SHARED_PORTFOLIO_ENV_DIR}/portfolio-lock.env"
+  local target="${ENV_DIR}/portfolio-lock.env"
   copy_example "$example" "$target"
 
 
