@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 const PORTFOLIO_LOCK_SECRET = process.env.PORTFOLIO_LOCK_SECRET || "";
 const EXPECTED_AUD = "modular-rag-assistant";
 
-const TOKEN_COOKIE = "pf_embed_token";
-const SID_COOKIE = "pf_embed_sid";
+const TOKEN_COOKIE = "pf_lock_token";
+const SID_COOKIE = "pf_lock_sid";
 
 const PORTFOLIO_LOCK_ENABLED =
     process.env.PORTFOLIO_LOCK_ENABLED !== "false";

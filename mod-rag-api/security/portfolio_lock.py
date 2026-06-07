@@ -5,7 +5,7 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 
-from security.portfolio_token import (
+from security.portfolio_lock_token import (
     SESSION_COOKIE,
     TOKEN_COOKIE,
     verify_portfolio_lock_token,
