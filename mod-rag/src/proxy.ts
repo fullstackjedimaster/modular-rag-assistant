@@ -143,7 +143,7 @@ export async function proxy(req: NextRequest) {
         return NextResponse.next();
     }
 
-    const queryToken = req.nextUrl.searchParams.get("embed_token") || "";
+    const queryToken = req.nextUrl.searchParams.get("portfolio_lock_token") || "";
     const cookieToken = req.cookies.get(TOKEN_COOKIE)?.value || "";
     const cookieSid = req.cookies.get(SID_COOKIE)?.value || "";
 
