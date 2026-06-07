@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+from security.portfolio_lock import install_portfolio_lock
 
 import os
 from pathlib import Path
@@ -39,6 +40,10 @@ app.add_middleware(
 )
 
 
+install_portfolio_lock(
+    app,
+    expected_aud="mesh-daq",
+)
 # ✅ primary DB-backed client_context API
 app.include_router(rag_clients_router)
 
