@@ -42,7 +42,7 @@ export default function EmbedTokenListener() {
 
             // Current portfolio format
             // @ts-expect-error cuz
-            if (data.kind === "portfolio-embed-token" && typeof data.token === "string") {
+            if (data.kind === "embed-token" && typeof data.token === "string") {
                 // @ts-expect-error cuz
                 const t = data.token;
                 if (looksLikeJwt(t)) setEmbedToken(t);

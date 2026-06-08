@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-from security.portfolio_lock import install_portfolio_lock
+from security.embed_lock import install_embed_lock
 
 import os
 from pathlib import Path

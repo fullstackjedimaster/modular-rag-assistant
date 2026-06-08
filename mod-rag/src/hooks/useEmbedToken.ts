@@ -12,7 +12,7 @@ export function useEmbedToken() {
             if (
                 data &&
                 typeof data === 'object' &&
-                data.kind === 'portfolio-embed-token' &&
+                data.kind === 'embed-token' &&
                 typeof data.token === 'string'
             ) {
                 setToken(data.token);

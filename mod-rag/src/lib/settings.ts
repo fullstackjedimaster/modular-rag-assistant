@@ -21,8 +21,8 @@ export const settings = {
    process.env.DATABASE_URL ||
      "",
 
-  PORTFOLIO_LOCK_ENABLED:
-      process.env.NEXT_PUBLIC_PORTFOLIO_LOCK_ENABLED ||
+  EMBED_LOCK_ENABLED:
+      process.env.NEXT_PUBLIC_EMBED_LOCK_ENABLED ||
       "true",
 
 
