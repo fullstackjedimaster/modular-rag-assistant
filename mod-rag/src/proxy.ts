@@ -8,7 +8,7 @@ const TOKEN_COOKIE = "pf_lock_token";
 const SID_COOKIE = "pf_lock_sid";
 
 const PORTFOLIO_LOCK_ENABLED =
-    process.env.PORTFOLIO_LOCK_ENABLED !== "false";
+    process.env.PORTFOLIO_LOCK_ENABLED || "true";
 
 const SESSION_SECONDS = 180;
 const SKEW_SECONDS = 30;
@@ -167,7 +167,7 @@ export async function proxy(req: NextRequest) {
 
         if (queryToken) {
             const cleanUrl = req.nextUrl.clone();
-            cleanUrl.searchParams.delete("embed_token");
+            cleanUrl.searchParams.delete("portfolio_lock_token");
 
             const res = NextResponse.redirect(cleanUrl);
 
