@@ -151,7 +151,7 @@ function isPublicPath(pathname: string): boolean {
     );
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
     console.log("[middleware]", req.method, req.nextUrl.pathname);
 
     if (!EMBED_LOCK_ENABLED) {
