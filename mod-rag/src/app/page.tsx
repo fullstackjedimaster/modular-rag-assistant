@@ -45,7 +45,7 @@ function clampHeight(height: number): number {
 }
 
 export default function HomePage() {
-    const { isDemo, isReadOnly } = useAppMode();
+    const { isDemo, isReadOnly, disablePolling} = useAppMode();
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
