@@ -1,7 +1,9 @@
 // app/layout.tsx
 import { AppModeProvider } from "@/src/contexts/AppModeContext";
+import "./globals.css";
 
-export default function RootLayout({
+
+export default function DemoLayout({
   children,
 }: {
   children: React.ReactNode;
