@@ -1,6 +1,6 @@
 // app/layout.tsx
 import { AppModeProvider } from "@/src/contexts/AppModeContext";
-import "./globals.css";
+import "@/src/app/globals.css";
 
 export default function RootLayout({
   children,
