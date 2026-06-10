@@ -179,26 +179,10 @@ export default function DashboardClient({
         );
     }
 
-    return (
-        <GroupBox title="Configured Host Apps">
-            {!compact && (
-                <div className="mb-3 text-xs text-gray-600">
-                    Select a host app to load it in the demo frame. Connect attaches the RAG dock inside that host app.
-                </div>
-            )}
-
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                    <tr className="text-left border-b">
-                        <th className="py-2 pr-3">Name</th>
-                        <th className="py-2 pr-3">Host URL</th>
-                        <th className="py-2 pr-3">Connected</th>
-                        <th className="py-2 pr-3">Actions</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
+    if (compact) {
+        return (
+            <GroupBox title="Configured Host Apps">
+                <div className="host-card-list">
                     {rows.map((row) => {
                         const st = statusById[row.id];
                         const connected = Boolean(st?.connected);
@@ -206,87 +190,40 @@ export default function DashboardClient({
                         const selected = selectedRagClientId === row.id;
 
                         return (
-                            <tr
+                            <div
                                 key={row.id}
-                                className={[
-                                    "border-b hover:bg-gray-50",
-                                    selected ? "bg-blue-50" : "",
-                                ].join(" ")}
+                                className={selected ? "host-card selected" : "host-card"}
                             >
-                                <td className="py-2 pr-3">
-                                    <button
-                                        type="button"
-                                        className="underline text-left"
-                                        onClick={() => onSelect(row)}
-                                    >
-                                        {row.name}
-                                    </button>
-                                </td>
+                                <button
+                                    type="button"
+                                    className="host-name"
+                                    onClick={() => onSelect(row)}
+                                >
+                                    {row.name}
+                                </button>
 
-                                <td className="py-2 pr-3 font-mono text-xs break-all">
-                                    {row.host_url}
-                                </td>
+                                <div className="host-url">{row.host_url}</div>
 
-                                <td className="py-2 pr-3">
-                                    <span
-                                        className={[
-                                            "inline-flex items-center px-2 py-1 rounded text-xs border",
-                                            connected
-                                                ? "bg-green-50 border-green-200"
-                                                : "bg-gray-50 border-gray-200",
-                                        ].join(" ")}
-                                        title={st?.detail || ""}
-                                    >
-                                        {connected ? "Connected" : "Not connected"}
-                                    </span>
-                                </td>
+                                <div className="host-actions">
+                                <span className={connected ? "pill connected" : "pill"}>
+                                    {connected ? "Connected" : "Not connected"}
+                                </span>
 
-                                <td className="py-2 pr-3">
-                                    <div className="flex flex-wrap gap-2">
-                                        {!isReadOnly ? (
-                                            <>
-                                                <button
-                                                    className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
-                                                    type="button"
-                                                    disabled={busy}
-                                                    onClick={() => void onConnect(row)}
-                                                >
-                                                    {busy ? "Working..." : connected ? "Reconnect" : "Connect"}
-                                                </button>
-
-                                                <button
-                                                    className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
-                                                    type="button"
-                                                    disabled={busy || !connected}
-                                                    onClick={() => void onDisconnect(row)}
-                                                >
-                                                    Disconnect
-                                                </button>
-                                            </>
-                                        ) : null}
-
-                                        <a
-                                            className="border rounded px-3 py-2 text-sm hover:bg-gray-50"
-                                            href={`/hosts/${row.id}`}
+                                    {!isReadOnly ? (
+                                        <button
+                                            type="button"
+                                            disabled={busy}
+                                            onClick={() => void onConnect(row)}
                                         >
-                                            Manage
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
+                                            {busy ? "Working..." : connected ? "Reconnect" : "Connect"}
+                                        </button>
+                                    ) : null}
+                                </div>
+                            </div>
                         );
                     })}
-
-                    {rows.length === 0 && (
-                        <tr>
-                            <td className="py-3 text-sm text-gray-600" colSpan={4}>
-                                No host apps configured yet.
-                            </td>
-                        </tr>
-                    )}
-                    </tbody>
-                </table>
-            </div>
-        </GroupBox>
-    );
+                </div>
+            </GroupBox>
+        );
+    }
 }

@@ -41,7 +41,7 @@ function dockUrlFor(ragClientId: string): string {
 }
 
 function clampHeight(height: number): number {
-    return Math.max(520, Math.min(height, 2600));
+    return Math.max(600, Math.min(height, 5000));
 }
 
 export default function DemoPage() {
@@ -99,7 +99,13 @@ export default function DemoPage() {
 
     const targetUrl = useMemo(() => {
         if (!selectedClient) return "";
-        return selectedClient.host_url;
+
+        const url = new URL(selectedClient.host_url);
+        url.searchParams.set("frameId", `host-${selectedClient.id}`);
+        url.searchParams.set("embed", "1");
+        url.searchParams.set("_t", Date.now().toString());
+
+        return url.toString();
     }, [selectedClient]);
 
     const targetOrigin = useMemo(() => {
@@ -162,7 +168,7 @@ export default function DemoPage() {
                 data &&
                 typeof data === "object" &&
                 "type" in data &&
-                data.type === "HOST_APP_HEIGHT" &&
+                (data.type === "EMBED_HEIGHT" || data.type === "HOST_APP_HEIGHT") &&
                 "height" in data &&
                 typeof data.height === "number"
             ) {
@@ -321,7 +327,13 @@ export default function DemoPage() {
                         style={{
                             height: `${hostFrameHeight}px`,
                         }}
-                        onLoad={() => setHostFrameLoaded(true)}
+                        onLoad={() => {
+                            setHostFrameLoaded(true);
+
+                            window.setTimeout(() => {
+                                sendDockConnect(selectedClient);
+                            }, 300);
+                        }}
                     />
                 </section>
             </div>
