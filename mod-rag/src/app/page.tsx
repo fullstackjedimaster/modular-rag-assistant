@@ -278,15 +278,15 @@ export default function HomePage() {
                         <div className="space-y-2">
                             <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
 
-                            <p className="max-w-3xl text-sm text-gray-600">
-                                Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
-                            </p>
+                            {/*<p className="max-w-3xl text-sm text-gray-600">*/}
+                            {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
+                            {/*</p>*/}
 
-                            {isDemo ? (
-                                <p className="max-w-3xl rounded border bg-white px-3 py-2 text-xs text-gray-600">
-                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
-                                </p>
-                            ) : null}
+                            {/*{isDemo ? (*/}
+                            {/*    <p className="max-w-3xl rounded border bg-white px-3 py-2 text-xs text-gray-600">*/}
+                            {/*        Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.*/}
+                            {/*    </p>*/}
+                            {/*) : null}*/}
 
                             {lastSelection ? (
                                 <p className="text-xs text-gray-500">
@@ -316,12 +316,7 @@ export default function HomePage() {
                 </header>
 
                 <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
-                    <div className="border-b border-gray-200 px-4 py-3">
-                        <h2 className="text-base font-semibold text-gray-900">
-                            {selectedClient.name}
-                        </h2>
-                        <p className="text-xs text-gray-500">{targetUrl}</p>
-                    </div>
+
 
                     <iframe
                         key={selectedClient.id}
