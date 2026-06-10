@@ -277,16 +277,7 @@ export default function HomePage() {
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div className="space-y-2">
                             <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
-
-                            {/*<p className="max-w-3xl text-sm text-gray-600">*/}
-                            {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
-                            {/*</p>*/}
-
-                            {/*{isDemo ? (*/}
-                            {/*    <p className="max-w-3xl rounded border bg-white px-3 py-2 text-xs text-gray-600">*/}
-                            {/*        Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.*/}
-                            {/*    </p>*/}
-                            {/*) : null}*/}
+                            
 
                             {lastSelection ? (
                                 <p className="text-xs text-gray-500">

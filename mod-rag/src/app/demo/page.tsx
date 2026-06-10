@@ -278,15 +278,15 @@ export default function DemoPage() {
                         <div>
                             <h1>Modular RAG Assistant Demo</h1>
 
-                            <p className="subtitle">
-                                Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
-                            </p>
+                            {/*<p className="subtitle">*/}
+                            {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
+                            {/*</p>*/}
 
-                            {isDemo ? (
-                                <p className="card muted-note">
-                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
-                                </p>
-                            ) : null}
+                            {/*{isDemo ? (*/}
+                            {/*    <p className="card muted-note">*/}
+                            {/*        Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.*/}
+                            {/*    </p>*/}
+                            {/*) : null}*/}
 
                             {lastSelection ? (
                                 <p className="small muted">
@@ -313,10 +313,10 @@ export default function DemoPage() {
                 </header>
 
                 <section className="card iframe-card">
-                    <div className="card-header">
-                        <h2>{selectedClient.name}</h2>
-                        <p className="small muted">{targetUrl}</p>
-                    </div>
+                    {/*<div className="card-header">*/}
+                    {/*    <h2>{selectedClient.name}</h2>*/}
+                    {/*    <p className="small muted">{targetUrl}</p>*/}
+                    {/*</div>*/}
 
                     <iframe
                         key={selectedClient.id}
