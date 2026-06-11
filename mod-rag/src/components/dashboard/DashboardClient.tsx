@@ -205,9 +205,9 @@ export default function DashboardClient({
                                 <div className="host-url">{row.host_url}</div>
 
                                 <div className="host-actions">
-                                    {/*<span className={connected ? "pill connected" : "pill"}>*/}
-                                    {/*    {connected ? "Connected" : "Not connected"}*/}
-                                    {/*</span>*/}
+                                    <span className={connected ? "pill connected" : "pill"}>
+                                        {connected ? "Connected" : "Not connected"}
+                                    </span>
 
                                     <button
                                         type="button"
