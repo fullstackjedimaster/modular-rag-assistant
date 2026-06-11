@@ -25,6 +25,9 @@ export const settings = {
       process.env.NEXT_PUBLIC_EMBED_LOCK_ENABLED ||
       "true",
 
+  EMBED_SECRET:
+      process.env.EMBED_SECRET ||
+      "",
 
 } as const;
 

@@ -1,14 +1,16 @@
 // daq-ui/src/middleware.ts
+import env from "@/src/lib/settings"
+
 import { NextRequest, NextResponse } from "next/server";
 
-const EMBED_SECRET = process.env.EMBED_SECRET || "";
+const EMBED_SECRET = env.EMBED_SECRET || "";
 const EXPECTED_AUD = "modular-rag-assistant";
 
 const TOKEN_COOKIE = "embed_token";
 const SID_COOKIE = "embed_sid";
 
 const EMBED_LOCK_ENABLED =
-    (process.env.EMBED_LOCK_ENABLED || "true").toLowerCase() === "true";
+    (env.EMBED_LOCK_ENABLED || "true").toLowerCase() === "true";
 
 const SESSION_SECONDS = 180;
 const SKEW_SECONDS = 30;

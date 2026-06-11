@@ -33,7 +33,7 @@ function dockUrlFor(ragClientId: string): string {
     const origin =
         typeof window !== "undefined"
             ? window.location.origin
-            : "https://mesh-daq.fullstackjedi.dev";
+            : "https://mesh-daq.fullstackjedi.dev/demo";
 
     const url = new URL("/dock", origin);
     url.searchParams.set("ragClientId", ragClientId);
@@ -42,6 +42,50 @@ function dockUrlFor(ragClientId: string): string {
 
 function clampHeight(height: number): number {
     return Math.max(600, Math.min(height, 5000));
+}
+
+type EmbedTarget = "iot-wireless-mesh-daq";
+
+const HOST_TARGET_BY_NAME: Record<string, EmbedTarget> = {
+    "iot-wireless-mesh-daq": "iot-wireless-mesh-daq",
+};
+
+function inferEmbedTarget(client: RagClientRow): EmbedTarget {
+    return HOST_TARGET_BY_NAME[client.name] ?? "iot-wireless-mesh-daq";
+}
+
+async function getChildEmbedToken(target: EmbedTarget): Promise<string> {
+    const res = await fetch(`/api/embed-token?target=${encodeURIComponent(target)}`, {
+        cache: "no-store",
+    });
+
+    if (!res.ok) {
+        throw new Error(`Child embed token failed: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const token = typeof data?.token === "string" ? data.token : "";
+
+    if (!token) {
+        throw new Error("Child embed token response missing token");
+    }
+
+    return token;
+}
+
+function buildChildHostUrl(
+    baseUrl: string,
+    frameId: string,
+    token: string
+): string {
+    const url = new URL(baseUrl);
+
+    url.searchParams.set("frameId", frameId);
+    url.searchParams.set("embed", "1");
+    url.searchParams.set("embed_token", token);
+    url.searchParams.set("_t", Date.now().toString());
+
+    return url.toString();
 }
 
 export default function DemoPage() {
@@ -55,6 +99,8 @@ export default function DemoPage() {
     const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
+    const [targetUrl, setTargetUrl] = useState<string>("");
+    const [targetUrlError, setTargetUrlError] = useState<string>("");
 
     useEffect(() => {
         let cancelled = false;
@@ -97,16 +143,44 @@ export default function DemoPage() {
         return ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0];
     }, [ragClients, selectedClientId]);
 
-    const targetUrl = useMemo(() => {
-        if (!selectedClient) return "";
+   useEffect(() => {
+    if (!selectedClient) {
+        setTargetUrl("");
+        return;
+    }
 
-        const url = new URL(selectedClient.host_url);
-        url.searchParams.set("frameId", `host-${selectedClient.id}`);
-        url.searchParams.set("embed", "1");
-        url.searchParams.set("_t", Date.now().toString());
+    let cancelled = false;
 
-        return url.toString();
-    }, [selectedClient]);
+    async function loadChildHostUrl() {
+        try {
+            setTargetUrlError("");
+
+            const target = inferEmbedTarget(selectedClient);
+            const token = await getChildEmbedToken(target);
+
+            if (cancelled) return;
+
+            setTargetUrl(
+                buildChildHostUrl(
+                    selectedClient.host_url,
+                    `host-${selectedClient.id}`,
+                    token
+                )
+            );
+        } catch (err) {
+            if (!cancelled) {
+                setTargetUrl("");
+                setTargetUrlError(err instanceof Error ? err.message : String(err));
+            }
+        }
+    }
+
+    void loadChildHostUrl();
+
+    return () => {
+        cancelled = true;
+    };
+}, [selectedClient]);
 
     const targetOrigin = useMemo(() => {
     if (!selectedClient) return "*";
@@ -318,29 +392,37 @@ export default function DemoPage() {
                     {/*    <p className="small muted">{targetUrl}</p>*/}
                     {/*</div>*/}
 
-                    <iframe
-                        key={selectedClient.id}
-                        ref={targetFrameRef}
-                        title={`${selectedClient.name} target host`}
-                        src={targetUrl}
-                        className="target-frame"
-                        style={{
-                            height: `${hostFrameHeight}px`,
-                        }}
-                        onLoad={() => {
-                            setHostFrameLoaded(true);
+                    {targetUrlError ? (
+                        <div className="error-card">
+                            Failed to prepare host demo: {targetUrlError}
+                        </div>
+                    ) : targetUrl ? (
+                        <iframe
+                            key={`${selectedClient.id}-${targetUrl}`}
+                            ref={targetFrameRef}
+                            title={`${selectedClient.name} target host`}
+                            src={targetUrl}
+                            className="target-frame"
+                            style={{
+                                height: `${hostFrameHeight}px`,
+                            }}
+                            onLoad={() => {
+                                setHostFrameLoaded(true);
 
-                            window.setTimeout(() => {
-                                sendDockConnect(selectedClient);
-                            }, 300);
-                        }}
-                    />
+                                window.setTimeout(() => {
+                                    sendDockConnect(selectedClient);
+                                }, 300);
+                            }}
+                        />
+                    ) : (
+                        <div className="card muted-note">
+                            Preparing secure host demo session...
+                        </div>
+                    )}
                 </section>
             </div>
 
-            <Suspense fallback={null}>
-                <DebugTapMount />
-            </Suspense>
+
         </main>
     );
 }
