@@ -86,7 +86,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
   return (
     <GroupBox title="AI Explanation">
-      <div className="mb-4 space-y-4">
+      <div className="mb-1 space-y-1">
         {telemetryEntries.length > 0 && (
           <div className="explanation-panel">
             {telemetryEntries.map(([key, value]) => (
@@ -97,7 +97,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <input
             type="text"
             value={query}
@@ -111,10 +111,10 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button
             onClick={onExplainAction}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-500 disabled:opacity-60"
+            className="rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-500 disabled:opacity-60"
             disabled={streaming}
             aria-label="Explain"
           >
@@ -123,7 +123,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
           <button
             onClick={onCancelAction}
-            className="rounded bg-gray-200 px-3 py-2 text-black disabled:opacity-60 dark:bg-gray-700 dark:text-white"
+            className="rounded bg-gray-200 px-2 py-1 text-black disabled:opacity-60 dark:bg-gray-700 dark:text-white"
             disabled={!streaming}
             aria-label="Cancel"
           >
@@ -132,7 +132,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
           <button
             onClick={onResetAction}
-            className="rounded bg-gray-200 px-3 py-2 text-black dark:bg-gray-700 dark:text-white"
+            className="rounded bg-gray-200 px-2 py-1 text-black dark:bg-gray-700 dark:text-white"
             aria-label="Reset"
           >
             Reset
