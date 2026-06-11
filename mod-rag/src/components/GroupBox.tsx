@@ -11,7 +11,7 @@ export default function GroupBox({ title, children }: GroupBoxProps) {
                 <legend>
                     {title}
                 </legend>
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xs shadow p-1 mb-1">
                     {children}
                 </div>
             </fieldset>

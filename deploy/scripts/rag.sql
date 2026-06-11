@@ -310,4 +310,3 @@ RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
 
 END $$;
 
-

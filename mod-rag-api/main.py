@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-from security.portfolio_lock import install_portfolio_lock
+# from security.embed_lock import install_embed_lock
 
 import os
 from pathlib import Path
@@ -20,6 +20,8 @@ try:
     from routers.embed_context_router import build_embed_context_router  # type: ignore
 except Exception:
     build_embed_context_router = None  # type: ignore
+from routers.routes_embed_token import router as embed_token_router
+
 
 
 def _p(p: str) -> Path:
@@ -40,13 +42,13 @@ app.add_middleware(
 )
 
 
-install_portfolio_lock(
-    app,
-    expected_aud="modular-rag-assistant",
-)
+# install_portfolio_lock(
+#     app,
+#     expected_aud="modular-rag-assistant",
+# )
 # ✅ primary DB-backed client_context API
 app.include_router(rag_clients_router)
-
+app.include_router(embed_token_router)
 app.include_router(client_docs_router)
 
 # ✅ embed/context router (nginx strips /api/ already)
