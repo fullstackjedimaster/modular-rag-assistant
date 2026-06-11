@@ -33,7 +33,7 @@ function dockUrlFor(ragClientId: string): string {
     const origin =
         typeof window !== "undefined"
             ? window.location.origin
-            : "https://rag.fullstackjedi.dev";
+            : "https://mesh-daq.fullstackjedi.dev";
 
     const url = new URL("/dock", origin);
     url.searchParams.set("ragClientId", ragClientId);
@@ -109,24 +109,24 @@ export default function DemoPage() {
     }, [selectedClient]);
 
     const targetOrigin = useMemo(() => {
-        if (!selectedClient) return "*";
+    if (!selectedClient) return "*";
 
-        try {
-            return safeOrigin(selectedClient.host_url);
-        } catch {
-            return "*";
-        }
-    }, [selectedClient]);
+    try {
+        return safeOrigin(selectedClient.host_url);
+    } catch {
+        return "*";
+    }
+}, [selectedClient]);
 
-    const sendMessageToTarget = useCallback(
-        (msg: RagDockConnectMessage | RagDockDisconnectMessage) => {
-            const targetWindow = targetFrameRef.current?.contentWindow;
-            if (!targetWindow) return;
+   const sendMessageToTarget = useCallback(
+    (msg: RagDockConnectMessage | RagDockDisconnectMessage) => {
+        const targetWindow = targetFrameRef.current?.contentWindow;
+        if (!targetWindow) return;
 
-            targetWindow.postMessage(msg, targetOrigin);
-        },
-        [targetOrigin]
-    );
+        targetWindow.postMessage(msg, targetOrigin);
+    },
+    [targetOrigin]
+);
 
     const sendDockConnect = useCallback(
         (client: RagClientRow) => {
