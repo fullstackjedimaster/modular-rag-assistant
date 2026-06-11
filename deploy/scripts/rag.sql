@@ -310,6 +310,11 @@ RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
 
 END $$;
 
+DO $$
+DECLARE
+    v_rag_client_id UUID;
+BEGIN
+
 INSERT INTO rag.rag_client (
 name,
 host_url,
