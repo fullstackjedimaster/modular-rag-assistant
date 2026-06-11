@@ -88,7 +88,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
     <GroupBox title="AI Explanation">
       <div className="mb-4 space-y-4">
         {telemetryEntries.length > 0 && (
-          <div className="rounded border border-gray-200 bg-gray-50 p-2 font-mono text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <div className="explanation-panel">
             {telemetryEntries.map(([key, value]) => (
               <div key={key}>
                 {key}: {String(value)}
@@ -105,7 +105,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !streaming) onExplainAction();
             }}
-            className="w-full rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            className="explanation-panel"
             placeholder="Ask for an explanation..."
             aria-label="Query input"
           />

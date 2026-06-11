@@ -25,7 +25,9 @@ html,
 body {
     margin: 0;
     min-height: 100%;
+    padding: 0;
 }
+
 
 body {
     padding: 24px;
@@ -344,4 +346,47 @@ button:disabled,
     justify-content: space-between;
     gap: 8px;
     margin-top: 10px;
+}
+
+
+
+body {
+  overflow: hidden;
+  background: transparent;
+}
+
+.smart-explainer {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--sans), sans-serif;
+}
+
+.smart-explainer * {
+  box-sizing: border-box;
+}
+
+.smart-explainer input,
+.smart-explainer textarea,
+.smart-explainer select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.smart-explainer textarea {
+  min-height: 48px;
+  resize: vertical;
+}
+
+.smart-explainer button {
+  white-space: nowrap;
+}
+
+.explanation-panel {
+  background: transparent;
+    padding: 0;
 }
