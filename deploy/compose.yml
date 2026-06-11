@@ -51,7 +51,7 @@ services:
     env_file:
       - ./env/mod-rag-api.env
       - ./env/postgres.env
-      - /opt/stacks/portfolio/deploy/shared/env/embed.env
+      - /opt/stacks/portfolio/deploy/shared/env/portfolio-lock.env
     depends_on:
       bootstrap:
         condition: service_completed_successfully
@@ -73,7 +73,9 @@ services:
     image: mod-rag:local
     env_file:
       - ./env/mod-rag.env
-      - /opt/stacks/portfolio/deploy/shared/env/embed.env
+      - /opt/stacks/portfolio/deploy/shared/env/portfolio-lock.env
+    environment:
+      PORTFOLIO_LOCK_ENABLED: "true"
     restart: unless-stopped
 
     ports:

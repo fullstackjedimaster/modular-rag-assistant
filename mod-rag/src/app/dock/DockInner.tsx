@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SmartExplainer } from "@/src/components/SmartExplainer";
-import  HostThemeReceiver from "@/src/components/HostThemeReceiver";
 import {
     getRagClient,
     type RagClientFull,
@@ -343,9 +342,8 @@ export default function DockInner() {
                     Waiting for a panel selection...
                 </div>
             )}
-            <HostThemeReceiver />
-            {client ? (
 
+            {client ? (
                 <SmartExplainer
                     subjectId={subjectId}
                     attrs={forwardedAttrs}
