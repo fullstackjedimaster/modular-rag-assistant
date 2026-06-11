@@ -121,7 +121,7 @@ export default function DashboardClient({
     }, [state, ids, disablePolling]);
 
     async function onConnect(row: RagClientRow) {
-        if (isReadOnly) return;
+      //  if (isReadOnly) return;
 
         setBusyId(row.id);
 
@@ -136,7 +136,7 @@ export default function DashboardClient({
     }
 
     async function onDisconnect(row: RagClientRow) {
-        if (isReadOnly) return;
+       // if (isReadOnly) return;
 
         setBusyId(row.id);
 
