@@ -33,7 +33,7 @@ function dockUrlFor(ragClientId: string): string {
     const origin =
         typeof window !== "undefined"
             ? window.location.origin
-            : "https://rag.fullstackjedi.dev";
+            : "https://mesh-daq.fullstackjedi.dev";
 
     const url = new URL("/dock", origin);
     url.searchParams.set("ragClientId", ragClientId);
