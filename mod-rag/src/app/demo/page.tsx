@@ -288,9 +288,7 @@ export default function DemoPage() {
         return (
             <main>
                 <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
                     <p className="subtitle">Loading RAG clients...</p>
-
                     <Suspense fallback={null}>
                         <DebugTapMount />
                     </Suspense>
@@ -303,7 +301,6 @@ export default function DemoPage() {
         return (
             <main>
                 <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
 
                     <div className="card error-card">
                         Failed to load RAG clients: {clientError}
@@ -327,7 +324,7 @@ export default function DemoPage() {
         return (
             <main>
                 <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
+
                     <p className="error-text">No RAG clients are configured.</p>
 
                     <div className="btns">
@@ -346,11 +343,11 @@ export default function DemoPage() {
 
     return (
         <main>
-            <div className="shell wide stack">
+            <div className="shell stack">
                 <header className="stack">
                     <div className="header-row">
                         <div>
-                            <h1>Modular RAG Assistant Demo</h1>
+
 
                             {/*<p className="subtitle">*/}
                             {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}

@@ -136,8 +136,8 @@ pre {
 
 .card {
     border: 1px solid rgba(148, 163, 184, 0.15);
-    border-radius: 16px;
-    padding: 18px;
+    border-radius: 4px;
+    padding: 4px;
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.99));
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
@@ -166,7 +166,7 @@ pre {
 
 label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     color: var(--muted);
     font-size: 12px;
     letter-spacing: 0.08em;
@@ -178,8 +178,8 @@ select,
 textarea {
     width: 100%;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
+    border-radius: 4px;
+    padding: 4px 6px;
     outline: none;
     background: #020617;
     color: var(--text);
@@ -204,8 +204,8 @@ textarea:focus {
 .btns {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 14px;
+    gap: 4px;
+    margin-top: 4px;
 }
 
 button,
@@ -215,7 +215,7 @@ button,
     justify-content: center;
     border: 0;
     border-radius: 999px;
-    padding: 10px 16px;
+    padding: 4px 8px;
     cursor: pointer;
     background: linear-gradient(135deg, #0ea5e9, #0369a1);
     color: white;
@@ -244,27 +244,27 @@ button:disabled,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
     color: var(--muted);
     font-size: 13px;
 }
 
 .dot {
     display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 8px;
+    width: 4px;
+    height: 4px;
+    margin-right: 2px;
     border-radius: 999px;
     background: var(--ok);
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
 }
 
 .pill {
     border: 1px solid rgba(148, 163, 184, 0.25);
     border-radius: 999px;
-    padding: 4px 8px;
+    padding: 1px 2px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 8px;
 }
 
 .pill.connected {
@@ -281,12 +281,12 @@ button:disabled,
 
 .card-header {
     border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-    padding: 14px 16px;
+    padding: 2px 4px;
 }
 
 .card-header h2 {
-    margin: 0 0 4px;
-    font-size: 16px;
+    margin: 0 0 2px;
+    font-size: 14px;
 }
 
 .card-header p {
@@ -304,13 +304,13 @@ button:disabled,
 
 .host-card-list {
     display: grid;
-    gap: 12px;
+    gap: 2px;
 }
 
 .host-card {
     border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 14px;
-    padding: 12px;
+    border-radius: 2px;
+    padding: 2px;
     background: rgba(15, 23, 42, 0.86);
 }
 
@@ -328,13 +328,13 @@ button:disabled,
     text-align: left;
     text-transform: none;
     letter-spacing: 0;
-    font-size: 15px;
+    font-size: 12px;
 }
 
 .host-url {
-    margin-top: 4px;
+    margin-top: 2px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 10px;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
@@ -344,8 +344,8 @@ button:disabled,
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 2px;
+    margin-top: 2px;
 }
 
 
