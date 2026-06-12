@@ -33,7 +33,7 @@ function dockUrlFor(ragClientId: string): string {
     const origin =
         typeof window !== "undefined"
             ? window.location.origin
-            : "https://mesh-daq.fullstackjedi.dev/demo";
+            : "https://rag.fullstackjedi.dev";
 
     const url = new URL("/dock", origin);
     url.searchParams.set("ragClientId", ragClientId);
@@ -41,51 +41,7 @@ function dockUrlFor(ragClientId: string): string {
 }
 
 function clampHeight(height: number): number {
-    return Math.max(600, Math.min(height, 5000));
-}
-
-type EmbedTarget = "iot-wireless-mesh-daq";
-
-const HOST_TARGET_BY_NAME: Record<string, EmbedTarget> = {
-    "iot-wireless-mesh-daq": "iot-wireless-mesh-daq",
-};
-
-function inferEmbedTarget(client: RagClientRow): EmbedTarget {
-    return HOST_TARGET_BY_NAME[client.name] ?? "iot-wireless-mesh-daq";
-}
-
-async function getChildEmbedToken(target: EmbedTarget): Promise<string> {
-    const res = await fetch(`/api/embed-token?target=${encodeURIComponent(target)}`, {
-        cache: "no-store",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Child embed token failed: ${res.status}`);
-    }
-
-    const data = await res.json();
-    const token = typeof data?.token === "string" ? data.token : "";
-
-    if (!token) {
-        throw new Error("Child embed token response missing token");
-    }
-
-    return token;
-}
-
-function buildChildHostUrl(
-    baseUrl: string,
-    frameId: string,
-    token: string
-): string {
-    const url = new URL(baseUrl);
-
-    url.searchParams.set("frameId", frameId);
-    url.searchParams.set("embed", "1");
-    url.searchParams.set("embed_token", token);
-    url.searchParams.set("_t", Date.now().toString());
-
-    return url.toString();
+    return Math.max(520, Math.min(height, 2600));
 }
 
 export default function DemoPage() {
@@ -99,8 +55,6 @@ export default function DemoPage() {
     const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
-    const [targetUrl, setTargetUrl] = useState<string>("");
-    const [targetUrlError, setTargetUrlError] = useState<string>("");
 
     useEffect(() => {
         let cancelled = false;
@@ -143,64 +97,30 @@ export default function DemoPage() {
         return ragClients.find((client) => client.id === selectedClientId) ?? ragClients[0];
     }, [ragClients, selectedClientId]);
 
-   useEffect(() => {
-    if (!selectedClient) {
-        setTargetUrl("");
-        return;
-    }
-
-    let cancelled = false;
-
-    async function loadChildHostUrl() {
-        try {
-            setTargetUrlError("");
-
-            const target = inferEmbedTarget(selectedClient);
-            const token = await getChildEmbedToken(target);
-
-            if (cancelled) return;
-
-            setTargetUrl(
-                buildChildHostUrl(
-                    selectedClient.host_url,
-                    `host-${selectedClient.id}`,
-                    token
-                )
-            );
-        } catch (err) {
-            if (!cancelled) {
-                setTargetUrl("");
-                setTargetUrlError(err instanceof Error ? err.message : String(err));
-            }
-        }
-    }
-
-    void loadChildHostUrl();
-
-    return () => {
-        cancelled = true;
-    };
-}, [selectedClient]);
+    const targetUrl = useMemo(() => {
+        if (!selectedClient) return "";
+        return selectedClient.host_url;
+    }, [selectedClient]);
 
     const targetOrigin = useMemo(() => {
-    if (!selectedClient) return "*";
+        if (!selectedClient) return "*";
 
-    try {
-        return safeOrigin(selectedClient.host_url);
-    } catch {
-        return "*";
-    }
-}, [selectedClient]);
+        try {
+            return safeOrigin(selectedClient.host_url);
+        } catch {
+            return "*";
+        }
+    }, [selectedClient]);
 
-   const sendMessageToTarget = useCallback(
-    (msg: RagDockConnectMessage | RagDockDisconnectMessage) => {
-        const targetWindow = targetFrameRef.current?.contentWindow;
-        if (!targetWindow) return;
+    const sendMessageToTarget = useCallback(
+        (msg: RagDockConnectMessage | RagDockDisconnectMessage) => {
+            const targetWindow = targetFrameRef.current?.contentWindow;
+            if (!targetWindow) return;
 
-        targetWindow.postMessage(msg, targetOrigin);
-    },
-    [targetOrigin]
-);
+            targetWindow.postMessage(msg, targetOrigin);
+        },
+        [targetOrigin]
+    );
 
     const sendDockConnect = useCallback(
         (client: RagClientRow) => {
@@ -242,7 +162,7 @@ export default function DemoPage() {
                 data &&
                 typeof data === "object" &&
                 "type" in data &&
-                (data.type === "EMBED_HEIGHT" || data.type === "HOST_APP_HEIGHT") &&
+                data.type === "HOST_APP_HEIGHT" &&
                 "height" in data &&
                 typeof data.height === "number"
             ) {
@@ -288,7 +208,9 @@ export default function DemoPage() {
         return (
             <main>
                 <div className="shell">
+                    <h1>Modular RAG Assistant Demo</h1>
                     <p className="subtitle">Loading RAG clients...</p>
+
                     <Suspense fallback={null}>
                         <DebugTapMount />
                     </Suspense>
@@ -301,6 +223,7 @@ export default function DemoPage() {
         return (
             <main>
                 <div className="shell">
+                    <h1>Modular RAG Assistant Demo</h1>
 
                     <div className="card error-card">
                         Failed to load RAG clients: {clientError}
@@ -324,7 +247,7 @@ export default function DemoPage() {
         return (
             <main>
                 <div className="shell">
-
+                    <h1>Modular RAG Assistant Demo</h1>
                     <p className="error-text">No RAG clients are configured.</p>
 
                     <div className="btns">
@@ -343,21 +266,21 @@ export default function DemoPage() {
 
     return (
         <main>
-            <div className="shell stack">
+            <div className="shell wide stack">
                 <header className="stack">
                     <div className="header-row">
                         <div>
+                            <h1>Modular RAG Assistant Demo</h1>
 
+                            <p className="subtitle">
+                                Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
+                            </p>
 
-                            {/*<p className="subtitle">*/}
-                            {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
-                            {/*</p>*/}
-
-                            {/*{isDemo ? (*/}
-                            {/*    <p className="card muted-note">*/}
-                            {/*        Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.*/}
-                            {/*    </p>*/}
-                            {/*) : null}*/}
+                            {isDemo ? (
+                                <p className="card muted-note">
+                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
+                                </p>
+                            ) : null}
 
                             {lastSelection ? (
                                 <p className="small muted">
@@ -384,42 +307,28 @@ export default function DemoPage() {
                 </header>
 
                 <section className="card iframe-card">
-                    {/*<div className="card-header">*/}
-                    {/*    <h2>{selectedClient.name}</h2>*/}
-                    {/*    <p className="small muted">{targetUrl}</p>*/}
-                    {/*</div>*/}
+                    <div className="card-header">
+                        <h2>{selectedClient.name}</h2>
+                        <p className="small muted">{targetUrl}</p>
+                    </div>
 
-                    {targetUrlError ? (
-                        <div className="error-card">
-                            Failed to prepare host demo: {targetUrlError}
-                        </div>
-                    ) : targetUrl ? (
-                        <iframe
-                            key={`${selectedClient.id}-${targetUrl}`}
-                            ref={targetFrameRef}
-                            title={`${selectedClient.name} target host`}
-                            src={targetUrl}
-                            className="target-frame"
-                            style={{
-                                height: `${hostFrameHeight}px`,
-                            }}
-                            onLoad={() => {
-                                setHostFrameLoaded(true);
-
-                                window.setTimeout(() => {
-                                    sendDockConnect(selectedClient);
-                                }, 300);
-                            }}
-                        />
-                    ) : (
-                        <div className="card muted-note">
-                            Preparing secure host demo session...
-                        </div>
-                    )}
+                    <iframe
+                        key={selectedClient.id}
+                        ref={targetFrameRef}
+                        title={`${selectedClient.name} target host`}
+                        src={targetUrl}
+                        className="target-frame"
+                        style={{
+                            height: `${hostFrameHeight}px`,
+                        }}
+                        onLoad={() => setHostFrameLoaded(true)}
+                    />
                 </section>
             </div>
 
-
+            <Suspense fallback={null}>
+                <DebugTapMount />
+            </Suspense>
         </main>
     );
 }

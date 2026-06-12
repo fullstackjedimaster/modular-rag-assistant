@@ -26,16 +26,26 @@ interface SmartExplainerProps {
 }
 
 function getTelemetryKey(message: TelemetryMessage): string | null {
-  const raw = message?.message_name;
+  if (!message) return null;
+
+  const raw = message.message_name;
+
   if (typeof raw !== "string") return null;
 
   const trimmed = raw.trim();
+
   return trimmed.length > 0 ? trimmed : null;
 }
 
 function coerceTelemetryValue(value: AttrValue): string | number | undefined {
-  if (typeof value === "string" || typeof value === "number") return value;
-  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "string" || typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
   return undefined;
 }
 
@@ -72,7 +82,10 @@ export function SmartExplainer({
 
     for (const key of telemetryKeys) {
       const value = coerceTelemetryValue(attrs?.[key]);
-      if (value !== undefined) t[key] = value;
+
+      if (value !== undefined) {
+        t[key] = value;
+      }
     }
 
     return t;
@@ -93,7 +106,9 @@ export function SmartExplainer({
       chaining_mode,
     });
 
-    if (subjectId) p.set("subject", subjectId);
+    if (subjectId) {
+      p.set("subject", subjectId);
+    }
 
     if (telemetryKeys.length > 0) {
       p.set("telemetry_messages", telemetryKeys.join(","));
@@ -183,14 +198,135 @@ export function SmartExplainer({
     };
   }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, embed_model]);
 
-  function onExplain() {
+  const onExplain = () => {
     setContextsOpen(false);
     reset();
     start();
-  }
+  };
 
   return (
     <div className="smart-explainer">
+      <style jsx global>{`
+        .smart-explainer {
+          width: 100%;
+          margin: 0;
+          padding: 3px;
+          color: #000;
+          font-family: Orbitron, system-ui, sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          background: transparent;
+          overflow: hidden;
+        }
+
+        .smart-explainer * {
+          box-sizing: border-box;
+          min-height: 0;
+        }
+
+        .smart-explainer > div,
+        .smart-explainer section,
+        .smart-explainer article {
+          max-width: 100%;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .smart-explainer .rounded,
+        .smart-explainer .rounded-lg,
+        .smart-explainer .rounded-xl,
+        .smart-explainer .shadow,
+        .smart-explainer .shadow-sm,
+        .smart-explainer .shadow-md,
+        .smart-explainer .shadow-lg {
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .smart-explainer input,
+        .smart-explainer textarea,
+        .smart-explainer select {
+          width: 100%;
+          max-width: 100%;
+          font-family: Orbitron, system-ui, sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          color: #000;
+          background: #fff;
+          border: thick inset #c0c0c0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          outline: none;
+        }
+
+        .smart-explainer textarea {
+          min-height: 76px;
+          resize: vertical;
+        }
+
+        .smart-explainer button {
+          font-family: Orbitron, system-ui, sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          color: #000;
+          background: #d9d9d9;
+          border: 2px outset #c0c0c0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          padding: 4px 8px;
+        }
+
+        .smart-explainer button:active {
+          border-style: inset !important;
+        }
+
+        .smart-explainer pre,
+        .smart-explainer code {
+          max-width: 100%;
+          white-space: pre-wrap;
+          word-break: break-word;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 11px;
+        }
+
+        .smart-explainer [class*="bg-white"],
+        .smart-explainer [class*="dark:bg"],
+        .smart-explainer [class*="bg-gray"],
+        .smart-explainer [class*="bg-slate"] {
+          background: transparent !important;
+        }
+
+        .smart-explainer [class*="border"] {
+          border-color: #777 !important;
+        }
+
+        .smart-explainer [class*="text-gray"],
+        .smart-explainer [class*="text-slate"] {
+          color: #000 !important;
+        }
+
+        .smart-explainer .space-y-6 > :not([hidden]) ~ :not([hidden]),
+        .smart-explainer .space-y-4 > :not([hidden]) ~ :not([hidden]),
+        .smart-explainer .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+          margin-top: 6px !important;
+        }
+
+        .smart-explainer .p-4,
+        .smart-explainer .p-6 {
+          padding: 4px !important;
+        }
+
+        .smart-explainer .px-4 {
+          padding-left: 4px !important;
+          padding-right: 4px !important;
+        }
+
+        .smart-explainer .py-4 {
+          padding-top: 4px !important;
+          padding-bottom: 4px !important;
+        }
+      `}</style>
+
       <ExplanationPanel
         query={query}
         setQueryAction={setQuery}
@@ -208,13 +344,13 @@ export function SmartExplainer({
         heatmapData={heatmapData}
       />
 
-      {toast ? (
+      {toast && (
         <Toast
           message={toast.message}
           type={toast.type}
           onCloseAction={() => setToast(null)}
         />
-      ) : null}
+      )}
     </div>
   );
 }

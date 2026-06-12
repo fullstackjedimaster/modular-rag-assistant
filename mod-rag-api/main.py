@@ -20,8 +20,6 @@ try:
     from routers.embed_context_router import build_embed_context_router  # type: ignore
 except Exception:
     build_embed_context_router = None  # type: ignore
-from routers.routes_embed_token import router as embed_token_router
-
 
 
 def _p(p: str) -> Path:
@@ -48,7 +46,7 @@ app.add_middleware(
 # )
 # ✅ primary DB-backed client_context API
 app.include_router(rag_clients_router)
-app.include_router(embed_token_router)
+
 app.include_router(client_docs_router)
 
 # ✅ embed/context router (nginx strips /api/ already)

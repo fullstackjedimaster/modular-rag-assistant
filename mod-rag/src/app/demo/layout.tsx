@@ -1,7 +1,7 @@
 // app/layout.tsx
 import { AppModeProvider } from "@/src/contexts/AppModeContext";
-import "@/src/app/globals.css";
-import EmbedHeightReporter   from "@/src/components/EmbedHeightReporter";
+import "./globals.css";
+
 
 export default function DemoLayout({
   children,
@@ -11,7 +11,6 @@ export default function DemoLayout({
   return (
     <html lang="en">
       <body>
-      <EmbedHeightReporter />
         <AppModeProvider>
           {children}
         </AppModeProvider>
