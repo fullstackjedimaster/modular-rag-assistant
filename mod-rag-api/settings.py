@@ -25,5 +25,5 @@ def env_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-EMBED_SECRET= env("EMBED_SECRET", required=True)
-EMBED_LOCK_ENABLED = env("EMBED_LOCK_ENABLED", required=True)
+EMBED_SECRET = env("EMBED_SECRET", required=True)
+PORTFOLIO_LOCK_ENABLED = env("PORTFOLIO_LOCK_ENABLED", required=True)

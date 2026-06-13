@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-# from security.embed_lock import install_embed_lock
 
 import os
 from pathlib import Path
@@ -40,10 +39,6 @@ app.add_middleware(
 )
 
 
-# install_portfolio_lock(
-#     app,
-#     expected_aud="modular-rag-assistant",
-# )
 # ✅ primary DB-backed client_context API
 app.include_router(rag_clients_router)
 

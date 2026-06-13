@@ -42,7 +42,7 @@ export default function DashboardClient({
     onDisconnectClientAction,
     compact = false,
 }: DashboardClientProps) {
-    const { disablePolling, isReadOnly } = useAppMode();
+    const { disablePolling } = useAppMode();
 
     const [state, setState] = useState<LoadState>("idle");
     const [err, setErr] = useState<string>("");
@@ -51,21 +51,20 @@ export default function DashboardClient({
     const [statusById, setStatusById] = useState<Record<string, RagClientStatus>>({});
     const [busyId, setBusyId] = useState<string | null>(null);
 
-    const ids: RagClientRow["id"][] = useMemo(
-      () => rows.map((r) => r.id),
-      [rows]
-    );
-  const refreshStatuses = useCallback(async (nextIds: RagClientRow["id"][]) => {
-    if (nextIds.length === 0) {
-      setStatusById({});
-      return;
-    }
+    const ids = useMemo(() => rows.map((r) => r.id), [rows]);
 
-    const statuses = await getRagClientStatuses(nextIds);
-    setStatusById(statuses);
-  },
-  []
-);
+    const refreshStatuses = useCallback(
+        async (nextIds = ids) => {
+            if (nextIds.length === 0) {
+                setStatusById({});
+                return;
+            }
+
+            const statuses = await getRagClientStatuses(nextIds);
+            setStatusById(statuses);
+        },
+        [ids]
+    );
 
     const boot = useCallback(async () => {
         setState("loading");
@@ -121,13 +120,11 @@ export default function DashboardClient({
     }, [state, ids, disablePolling]);
 
     async function onConnect(row: RagClientRow) {
-        if (isReadOnly) return;
-
         setBusyId(row.id);
 
         try {
             await connectRagClient(row.id);
-            await refreshStatuses(ids);
+            await refreshStatuses();
             onConnectClientAction?.(row);
             onSelectClientAction?.(row);
         } finally {
@@ -136,13 +133,11 @@ export default function DashboardClient({
     }
 
     async function onDisconnect(row: RagClientRow) {
-        if (isReadOnly) return;
-
         setBusyId(row.id);
 
         try {
             await disconnectRagClient(row.id);
-            await refreshStatuses(ids);
+            await refreshStatuses();
             onDisconnectClientAction?.(row);
         } finally {
             setBusyId(null);
@@ -243,27 +238,23 @@ export default function DashboardClient({
 
                                 <td className="py-2 pr-3">
                                     <div className="flex flex-wrap gap-2">
-                                        {!isReadOnly ? (
-                                            <>
-                                                <button
-                                                    className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
-                                                    type="button"
-                                                    disabled={busy}
-                                                    onClick={() => void onConnect(row)}
-                                                >
-                                                    {busy ? "Working..." : connected ? "Reconnect" : "Connect"}
-                                                </button>
+                                        <button
+                                            className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
+                                            type="button"
+                                            disabled={busy}
+                                            onClick={() => void onConnect(row)}
+                                        >
+                                            {busy ? "Working..." : connected ? "Reconnect" : "Connect"}
+                                        </button>
 
-                                                <button
-                                                    className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
-                                                    type="button"
-                                                    disabled={busy || !connected}
-                                                    onClick={() => void onDisconnect(row)}
-                                                >
-                                                    Disconnect
-                                                </button>
-                                            </>
-                                        ) : null}
+                                        <button
+                                            className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
+                                            type="button"
+                                            disabled={busy || !connected}
+                                            onClick={() => void onDisconnect(row)}
+                                        >
+                                            Disconnect
+                                        </button>
 
                                         <a
                                             className="border rounded px-3 py-2 text-sm hover:bg-gray-50"

@@ -74,6 +74,8 @@ services:
     env_file:
       - ./env/mod-rag.env
       - /opt/stacks/portfolio/deploy/shared/env/embed.env
+    environment:
+      PORTFOLIO_LOCK_ENABLED: "true"
     restart: unless-stopped
 
     ports:

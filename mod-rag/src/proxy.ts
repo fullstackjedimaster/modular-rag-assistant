@@ -1,14 +1,14 @@
-// daq-ui/src/middleware.ts
+// daq-ui/src/proxy.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const EMBED_SECRET = process.env.EMBED_SECRET || "";
 const EXPECTED_AUD = "modular-rag-assistant";
 
-const TOKEN_COOKIE = "embed_token";
-const SID_COOKIE = "embed_sid";
+const TOKEN_COOKIE = "pf_embed_token";
+const SID_COOKIE = "pf_embed_sid";
 
-const EMBED_LOCK_ENABLED =
-    (process.env.EMBED_LOCK_ENABLED || "true").toLowerCase() === "true";
+const PORTFOLIO_LOCK_ENABLED =
+    process.env.PORTFOLIO_LOCK_ENABLED !== "false";
 
 const SESSION_SECONDS = 180;
 const SKEW_SECONDS = 30;
@@ -31,12 +31,8 @@ function forbidden(message = "Not found") {
         },
     });
 }
-
 function base64UrlToBytes(input: string): Uint8Array {
-    const padded =
-        input.replace(/-/g, "+").replace(/_/g, "/") +
-        "=".repeat((4 - (input.length % 4)) % 4);
-
+    const padded = input.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (input.length % 4)) % 4);
     const raw = atob(padded);
     const bytes = new Uint8Array(raw.length);
 
@@ -60,16 +56,10 @@ function bytesToBase64Url(bytes: Uint8Array): string {
         binary += String.fromCharCode(bytes[i]);
     }
 
-    return btoa(binary)
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/g, "");
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-async function hmacSha256Base64Url(
-    data: string,
-    secret: string
-): Promise<string> {
+async function hmacSha256Base64Url(data: string, secret: string): Promise<string> {
     const key = await crypto.subtle.importKey(
         "raw",
         new TextEncoder().encode(secret),
@@ -78,12 +68,7 @@ async function hmacSha256Base64Url(
         ["sign"]
     );
 
-    const signature = await crypto.subtle.sign(
-        "HMAC",
-        key,
-        new TextEncoder().encode(data)
-    );
-
+    const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
     return bytesToBase64Url(new Uint8Array(signature));
 }
 
@@ -104,11 +89,7 @@ async function verifyToken(token: string): Promise<JwtPayload> {
         throw new Error("Invalid token alg");
     }
 
-    const expected = await hmacSha256Base64Url(
-        `${headerB64}.${payloadB64}`,
-        EMBED_SECRET
-    );
-
+    const expected = await hmacSha256Base64Url(`${headerB64}.${payloadB64}`, EMBED_SECRET);
     if (expected !== sigB64) {
         throw new Error("Invalid token signature");
     }
@@ -152,10 +133,7 @@ function isPublicPath(pathname: string): boolean {
 }
 
 export async function proxy(req: NextRequest) {
-    console.log("[middleware]", req.method, req.nextUrl.pathname);
-
-    if (!EMBED_LOCK_ENABLED) {
-        console.log("[middleware] lock off");
+    if (!PORTFOLIO_LOCK_ENABLED) {
         return NextResponse.next();
     }
 
@@ -189,7 +167,6 @@ export async function proxy(req: NextRequest) {
 
         if (queryToken) {
             const cleanUrl = req.nextUrl.clone();
-
             cleanUrl.searchParams.delete("embed_token");
 
             const res = NextResponse.redirect(cleanUrl);
@@ -197,7 +174,7 @@ export async function proxy(req: NextRequest) {
             res.cookies.set(TOKEN_COOKIE, token, {
                 httpOnly: true,
                 secure: true,
-                sameSite: "none",
+                sameSite: "lax",
                 path: "/",
                 maxAge: SESSION_SECONDS,
             });
@@ -205,7 +182,7 @@ export async function proxy(req: NextRequest) {
             res.cookies.set(SID_COOKIE, sid, {
                 httpOnly: true,
                 secure: true,
-                sameSite: "none",
+                sameSite: "lax",
                 path: "/",
                 maxAge: SESSION_SECONDS,
             });
@@ -215,7 +192,7 @@ export async function proxy(req: NextRequest) {
 
         return NextResponse.next();
     } catch (e) {
-        console.error("[middleware verifyToken]", e);
+        console.error("[proxy verifyToken]", e);
         return forbidden("Invalid or expired portfolio session.");
     }
 }
