@@ -41,7 +41,7 @@ function dockUrlFor(ragClientId: string): string {
 }
 
 function clampHeight(height: number): number {
-    return Math.max(520, Math.min(height, 2600));
+    return Math.max(600, Math.min(height, 5000));
 }
 
 export default function DemoPage() {
@@ -206,10 +206,10 @@ export default function DemoPage() {
 
     if (loadingClients) {
         return (
-            <main className="min-h-screen bg-slate-50 text-gray-900">
-                <div className="mx-auto max-w-5xl p-6">
-                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
-                    <p className="mt-2 text-sm text-gray-600">Loading RAG clients...</p>
+            <main>
+                <div className="shell">
+                    <h1>Modular RAG Assistant Demo</h1>
+                    <p className="subtitle">Loading RAG clients...</p>
 
                     <Suspense fallback={null}>
                         <DebugTapMount />
@@ -221,19 +221,16 @@ export default function DemoPage() {
 
     if (clientError) {
         return (
-            <main className="min-h-screen bg-slate-50 text-gray-900">
-                <div className="mx-auto max-w-5xl p-6">
-                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+            <main>
+                <div className="shell">
+                    <h1>Modular RAG Assistant Demo</h1>
 
-                    <div className="mt-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <div className="card error-card">
                         Failed to load RAG clients: {clientError}
                     </div>
 
-                    <div className="mt-4">
-                        <Link
-                            href="/clients"
-                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                        >
+                    <div className="btns">
+                        <Link href="/clients" className="button secondary">
                             {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
                         </Link>
                     </div>
@@ -248,16 +245,13 @@ export default function DemoPage() {
 
     if (!selectedClient) {
         return (
-            <main className="min-h-screen bg-slate-50 text-gray-900">
-                <div className="mx-auto max-w-5xl p-6">
-                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
-                    <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
+            <main>
+                <div className="shell">
+                    <h1>Modular RAG Assistant Demo</h1>
+                    <p className="error-text">No RAG clients are configured.</p>
 
-                    <div className="mt-4">
-                        <Link
-                            href="/clients"
-                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                        >
+                    <div className="btns">
+                        <Link href="/clients" className="button secondary">
                             {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
                         </Link>
                     </div>
@@ -271,36 +265,33 @@ export default function DemoPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 text-gray-900">
-            <div className="mx-auto max-w-7xl space-y-6 p-6">
-                <header className="space-y-3">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div className="space-y-2">
-                            <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+        <main>
+            <div className="shell wide stack">
+                <header className="stack">
+                    <div className="header-row">
+                        <div>
+                            <h1>Modular RAG Assistant Demo</h1>
 
-                            <p className="max-w-3xl text-sm text-gray-600">
+                            <p className="subtitle">
                                 Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
                             </p>
 
                             {isDemo ? (
-                                <p className="max-w-3xl rounded border bg-white px-3 py-2 text-xs text-gray-600">
+                                <p className="card muted-note">
                                     Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
                                 </p>
                             ) : null}
 
                             {lastSelection ? (
-                                <p className="text-xs text-gray-500">
+                                <p className="small muted">
                                     Latest target selection from host:{" "}
-                                    <span className="font-mono">{lastSelection}</span>
+                                    <span className="mono">{lastSelection}</span>
                                 </p>
                             ) : null}
                         </div>
 
                         {!isReadOnly ? (
-                            <Link
-                                href="/client/new"
-                                className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                            >
+                            <Link href="/client/new" className="button secondary">
                                 Configure New Client
                             </Link>
                         ) : null}
@@ -315,12 +306,10 @@ export default function DemoPage() {
                     />
                 </header>
 
-                <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
-                    <div className="border-b border-gray-200 px-4 py-3">
-                        <h2 className="text-base font-semibold text-gray-900">
-                            {selectedClient.name}
-                        </h2>
-                        <p className="text-xs text-gray-500">{targetUrl}</p>
+                <section className="card iframe-card">
+                    <div className="card-header">
+                        <h2>{selectedClient.name}</h2>
+                        <p className="small muted">{targetUrl}</p>
                     </div>
 
                     <iframe
@@ -328,10 +317,9 @@ export default function DemoPage() {
                         ref={targetFrameRef}
                         title={`${selectedClient.name} target host`}
                         src={targetUrl}
-                        className="block w-full border-0 overflow-hidden"
+                        className="target-frame"
                         style={{
                             height: `${hostFrameHeight}px`,
-                            overflow: "hidden",
                         }}
                         onLoad={() => setHostFrameLoaded(true)}
                     />
