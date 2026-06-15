@@ -106,7 +106,7 @@
 
     button {
       border: 0;
-      border-radius: 999px;
+
       padding: 1px 2px;
       cursor: pointer;
       font-weight: 600;
@@ -186,7 +186,7 @@
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    border-radius: 999px;
+    
     padding: 1px 2px;
     cursor: pointer;
     font-weight: 600;
