@@ -246,18 +246,18 @@ export default function HomePage() {
         );
     }
 
-
-
-
     if (!selectedClient) {
         return (
-            <main>
-                <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
-                    <p className="error-text">No RAG clients are configured.</p>
+            <main className="min-h-screen bg-slate-50 text-gray-900">
+                <div className="mx-auto max-w-5xl p-6">
+                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+                    <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
 
-                    <div className="btns">
-                        <Link href="/clients" className="button secondary">
+                    <div className="mt-4">
+                        <Link
+                            href="/clients"
+                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                        >
                             {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
                         </Link>
                     </div>
@@ -271,38 +271,40 @@ export default function HomePage() {
     }
 
     return (
-        <main>
-            <div className="shell wide stack">
-                <header className="stack">
-                    <div className="header-row">
-                        <div>
-                            {/*<h1>Modular RAG Assistant Demo</h1>*/}
+        <main className="min-h-screen bg-slate-50 text-gray-900">
+            <div className="mx-auto max-w-7xl space-y-6 p-6">
+                <header className="space-y-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-2">
+                            <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
 
-                            {/*<p className="subtitle">*/}
-                            {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
-                            {/*</p>*/}
+                            <p className="max-w-3xl text-sm text-gray-600">
+                                Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
+                            </p>
 
-                            {/*{isDemo ? (*/}
-                            {/*    <p className="card muted-note">*/}
-                            {/*        Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.*/}
-                            {/*    </p>*/}
-                            {/*) : null}*/}
+                            {isDemo ? (
+                                <p className="max-w-3xl rounded border bg-white px-3 py-2 text-xs text-gray-600">
+                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
+                                </p>
+                            ) : null}
 
                             {lastSelection ? (
-                                <p className="small muted">
+                                <p className="text-xs text-gray-500">
                                     Latest target selection from host:{" "}
-                                    <span className="mono">{lastSelection}</span>
+                                    <span className="font-mono">{lastSelection}</span>
                                 </p>
                             ) : null}
                         </div>
 
-                        {/*{!isReadOnly ? (*/}
-                        {/*    <Link href="/client/new" className="button secondary">*/}
-                        {/*        Configure New Client*/}
-                        {/*    </Link>*/}
-                        {/*) : null}*/}
+                        {!isReadOnly ? (
+                            <Link
+                                href="/client/new"
+                                className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                            >
+                                Configure New Client
+                            </Link>
+                        ) : null}
                     </div>
-
 
                     <DashboardClient
                         selectedRagClientId={selectedClient.id}
@@ -313,11 +315,13 @@ export default function HomePage() {
                     />
                 </header>
 
-                 <section className="card iframe-card">
-                    {/*<div className="card-header">*/}
-                    {/*    <h2>{selectedClient.name}</h2>*/}
-                    {/*    <p className="small muted">{targetUrl}</p>*/}
-                    {/*</div>*/}
+                <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
+                    <div className="border-b border-gray-200 px-4 py-3">
+                        <h2 className="text-base font-semibold text-gray-900">
+                            {selectedClient.name}
+                        </h2>
+                        <p className="text-xs text-gray-500">{targetUrl}</p>
+                    </div>
 
                     <iframe
                         key={selectedClient.id}
