@@ -1,26 +1,29 @@
-// src/hooks/useEmbedToken.ts
-'use client';
+// daq-ui/src/hooks/useEmbedToken.ts
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import { getEmbedToken, setEmbedToken } from "@/src/lib/embedTokenStore";
 
-export function useEmbedToken() {
-    const [token, setToken] = useState<string | null>(null);
+export function useEmbedToken(): string {
+    const [token, setTokenState] = useState<string>(() => getEmbedToken());
 
     useEffect(() => {
         function handleMessage(ev: MessageEvent) {
             const data = ev.data;
+
             if (
                 data &&
-                typeof data === 'object' &&
-                data.kind === 'portfolio-embed-token' &&
-                typeof data.token === 'string'
+                typeof data === "object" &&
+                data.kind === "portfolio-embed-token" &&
+                typeof data.token === "string"
             ) {
-                setToken(data.token);
+                setEmbedToken(data.token);
+                setTokenState(data.token);
             }
         }
 
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
     }, []);
 
     return token;
