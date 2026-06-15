@@ -189,14 +189,7 @@ export default function DashboardClient({
 
             <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                    <thead>
-                    <tr className="text-left border-b">
-                        <th className="">Name</th>
-                        <th className="">Host URL</th>
-                        <th className="">Connected</th>
-                        <th className="">Actions</th>
-                    </tr>
-                    </thead>
+
 
                     <tbody>
                     {rows.map((row) => {
@@ -214,23 +207,20 @@ export default function DashboardClient({
                                 ].join(" ")}
                             >
                                 <td className="">
-                                    <button
-                                        type="button"
+                                    <link
+
                                         className="underline text-left"
                                         onClick={() => onSelect(row)}
                                     >
-                                        {row.name}
-                                    </button>
+                                        {row.host_url}
+                                    </link>
                                 </td>
 
-                                <td className="font-mono text-xs break-all">
-                                    {row.host_url}
-                                </td>
 
                                 <td className="">
                                     <span
                                         className={[
-                                            "inline-flex items-center px-2 py-1 rounded text-xs border",
+                                            "inline-flex items-center  rounded text-xs ",
                                             connected
                                                 ? "bg-green-50 border-green-200"
                                                 : "bg-gray-50 border-gray-200",
@@ -241,32 +231,32 @@ export default function DashboardClient({
                                     </span>
                                 </td>
 
-                                <td className="py-2 pr-3">
+                                <td className="3">
                                     <div className="flex flex-wrap gap-2">
                                         {!isReadOnly ? (
                                             <>
-                                                <button
-                                                    className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
-                                                    type="button"
-                                                    disabled={busy}
+                                                <link
+                                                    className="text-xs disabled:opacity-50 hover:bg-gray-50"
+
+
                                                     onClick={() => void onConnect(row)}
                                                 >
                                                     {busy ? "Working..." : connected ? "Reconnect" : "Connect"}
-                                                </button>
+                                                </link>
 
-                                                <button
-                                                    className="border rounded px-3 py-2 text-sm disabled:opacity-50 hover:bg-gray-50"
-                                                    type="button"
-                                                    disabled={busy || !connected}
+                                                <link
+                                                    className="text-xs disabled:opacity-50 hover:bg-gray-50"
+
+
                                                     onClick={() => void onDisconnect(row)}
                                                 >
                                                     Disconnect
-                                                </button>
+                                                </link>
                                             </>
                                         ) : null}
 
                                         <a
-                                            className="border rounded px-3 py-2 text-sm hover:bg-gray-50"
+                                            className="border rounded  text-sm hover:bg-gray-50"
                                             href={`/hosts/${row.id}`}
                                         >
                                             Manage

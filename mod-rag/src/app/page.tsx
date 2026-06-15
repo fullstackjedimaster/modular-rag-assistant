@@ -246,68 +246,8 @@ export default function HomePage() {
         );
     }
 
-    if (!selectedClient) {
-        return (
-            <main className="min-h-screen bg-slate-50 text-gray-900">
-                <div className="mx-auto max-w-5xl p-6">
-                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
-                    <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
 
-                    <div className="mt-4">
-                        <Link
-                            href="/clients"
-                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
-                        </Link>
-                    </div>
 
-                    <Suspense fallback={null}>
-                        <DebugTapMount />
-                    </Suspense>
-                </div>
-            </main>
-        );
-    }
-
-    if (loadingClients) {
-        return (
-            <main>
-                <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
-                    <p className="subtitle">Loading RAG clients...</p>
-
-                    <Suspense fallback={null}>
-                        <DebugTapMount />
-                    </Suspense>
-                </div>
-            </main>
-        );
-    }
-
-    if (clientError) {
-        return (
-            <main>
-                <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
-
-                    <div className="card error-card">
-                        Failed to load RAG clients: {clientError}
-                    </div>
-
-                    <div className="btns">
-                        <Link href="/clients" className="button secondary">
-                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
-                        </Link>
-                    </div>
-
-                    <Suspense fallback={null}>
-                        <DebugTapMount />
-                    </Suspense>
-                </div>
-            </main>
-        );
-    }
 
     if (!selectedClient) {
         return (
@@ -336,7 +276,7 @@ export default function HomePage() {
                 <header className="stack">
                     <div className="header-row">
                         <div>
-                            <h1>Modular RAG Assistant Demo</h1>
+                            {/*<h1>Modular RAG Assistant Demo</h1>*/}
 
                             {/*<p className="subtitle">*/}
                             {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
@@ -356,11 +296,11 @@ export default function HomePage() {
                             ) : null}
                         </div>
 
-                        {!isReadOnly ? (
-                            <Link href="/client/new" className="button secondary">
-                                Configure New Client
-                            </Link>
-                        ) : null}
+                        {/*{!isReadOnly ? (*/}
+                        {/*    <Link href="/client/new" className="button secondary">*/}
+                        {/*        Configure New Client*/}
+                        {/*    </Link>*/}
+                        {/*) : null}*/}
                     </div>
 
 
@@ -374,10 +314,10 @@ export default function HomePage() {
                 </header>
 
                  <section className="card iframe-card">
-                    <div className="card-header">
-                        <h2>{selectedClient.name}</h2>
-                        <p className="small muted">{targetUrl}</p>
-                    </div>
+                    {/*<div className="card-header">*/}
+                    {/*    <h2>{selectedClient.name}</h2>*/}
+                    {/*    <p className="small muted">{targetUrl}</p>*/}
+                    {/*</div>*/}
 
                     <iframe
                         key={selectedClient.id}
