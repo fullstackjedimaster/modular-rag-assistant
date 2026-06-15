@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 const EMBED_SECRET = process.env.EMBED_SECRET || "";
 const EXPECTED_AUD = "modular-rag-assistant";
 
-const TOKEN_COOKIE = "pf_embed_token";
-const SID_COOKIE = "pf_embed_sid";
+const TOKEN_COOKIE = "embed_token";
+const SID_COOKIE = "embed_sid";
 
-const PORTFOLIO_LOCK_ENABLED =
-    process.env.PORTFOLIO_LOCK_ENABLED !== "false";
+const EMBED_LOCK_ENABLED =
+    process.env.EMBED_LOCK_ENABLED !== "false";
 
 const SESSION_SECONDS = 180;
 const SKEW_SECONDS = 30;
@@ -133,7 +133,7 @@ function isPublicPath(pathname: string): boolean {
 }
 
 export async function proxy(req: NextRequest) {
-    if (!PORTFOLIO_LOCK_ENABLED) {
+    if (!EMBED_LOCK_ENABLED) {
         return NextResponse.next();
     }
 
