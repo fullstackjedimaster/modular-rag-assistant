@@ -169,7 +169,7 @@ export default function DashboardClient({
                 </div>
 
                 <button
-                    className="mt-3 border rounded px-3 py-2 text-sm hover:bg-gray-50"
+                    className=" border rounded  text-sm hover:bg-gray-50"
                     onClick={() => void boot()}
                     type="button"
                 >
@@ -181,20 +181,20 @@ export default function DashboardClient({
 
     return (
         <GroupBox title="Configured Host Apps">
-            {!compact && (
-                <div className="mb-3 text-xs text-gray-600">
-                    Select a host app to load it in the demo frame. Connect attaches the RAG dock inside that host app.
-                </div>
-            )}
+            {/*{!compact && (*/}
+            {/*    <div className="mb-3 text-xs text-gray-600">*/}
+            {/*        Select a host app to load it in the demo frame. Connect attaches the RAG dock inside that host app.*/}
+            {/*    </div>*/}
+            {/*)}*/}
 
             <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs">
                     <thead>
                     <tr className="text-left border-b">
-                        <th className="py-2 pr-3">Name</th>
-                        <th className="py-2 pr-3">Host URL</th>
-                        <th className="py-2 pr-3">Connected</th>
-                        <th className="py-2 pr-3">Actions</th>
+                        <th className="">Name</th>
+                        <th className="">Host URL</th>
+                        <th className="">Connected</th>
+                        <th className="">Actions</th>
                     </tr>
                     </thead>
 
@@ -213,7 +213,7 @@ export default function DashboardClient({
                                     selected ? "bg-blue-50" : "",
                                 ].join(" ")}
                             >
-                                <td className="py-2 pr-3">
+                                <td className="">
                                     <button
                                         type="button"
                                         className="underline text-left"
@@ -223,11 +223,11 @@ export default function DashboardClient({
                                     </button>
                                 </td>
 
-                                <td className="py-2 pr-3 font-mono text-xs break-all">
+                                <td className="font-mono text-xs break-all">
                                     {row.host_url}
                                 </td>
 
-                                <td className="py-2 pr-3">
+                                <td className="">
                                     <span
                                         className={[
                                             "inline-flex items-center px-2 py-1 rounded text-xs border",

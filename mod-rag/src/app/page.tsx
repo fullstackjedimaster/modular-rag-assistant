@@ -338,15 +338,15 @@ export default function HomePage() {
                         <div>
                             <h1>Modular RAG Assistant Demo</h1>
 
-                            <p className="subtitle">
-                                Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
-                            </p>
+                            {/*<p className="subtitle">*/}
+                            {/*    Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.*/}
+                            {/*</p>*/}
 
-                            {isDemo ? (
-                                <p className="card muted-note">
-                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
-                                </p>
-                            ) : null}
+                            {/*{isDemo ? (*/}
+                            {/*    <p className="card muted-note">*/}
+                            {/*        Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.*/}
+                            {/*    </p>*/}
+                            {/*) : null}*/}
 
                             {lastSelection ? (
                                 <p className="small muted">
