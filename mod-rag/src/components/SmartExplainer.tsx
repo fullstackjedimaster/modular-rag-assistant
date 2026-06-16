@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  ExplanationPanel,
-  type HallucinationMetrics,
-  type Telemetry,
-} from "@/src/components/ExplanationPanel";
+import { ExplanationPanel, type Telemetry } from "@/src/components/ExplanationPanel";
 import { useStream } from "@/src/hooks/useStream";
 import { useAIConfig } from "@/src/hooks/useAIConfig";
 import Toast from "@/src/components/Toast";
@@ -54,25 +50,17 @@ function coerceTelemetryValue(value: AttrValue): string | number | undefined {
 }
 
 export function SmartExplainer({
-                                 subjectId,
-                                 attrs = {},
-                                 collection,
-                                 llm_model,
-                                 embed_model,
-                                 prompt,
-                                 chaining_mode,
-                                 telemetry_messages = [],
-                               }: SmartExplainerProps) {
+  subjectId,
+  attrs = {},
+  collection,
+  llm_model,
+  embed_model,
+  prompt,
+  chaining_mode,
+  telemetry_messages = [],
+}: SmartExplainerProps) {
   const [query, setQuery] = useState<string>(prompt || "");
   const [contextsOpen, setContextsOpen] = useState<boolean>(false);
-
-  const [heatmapData, setHeatmapData] = useState<
-      { idx: number; sentence: string; score: number }[] | null
-  >(null);
-
-  const [hallucinationMetrics, setHallucinationMetrics] =
-      useState<HallucinationMetrics | null>(null);
-
   const [toast, setToast] = useState<{
     message: string;
     type?: "info" | "success" | "error";
@@ -85,8 +73,8 @@ export function SmartExplainer({
 
   const telemetryKeys = useMemo<string[]>(() => {
     return telemetry_messages
-        .map(getTelemetryKey)
-        .filter((key): key is string => Boolean(key));
+      .map(getTelemetryKey)
+      .filter((key): key is string => Boolean(key));
   }, [telemetry_messages]);
 
   const telemetry = useMemo<Telemetry>(() => {
@@ -161,103 +149,89 @@ export function SmartExplainer({
     contexts,
   } = useStream({
     url,
-    forceSSE: true,
+    forceSSE: false,
     stallMs: 90000,
     heartbeatMs: 5000,
     onNotifyAction: (message, type) => setToast({ message, type }),
   });
 
+  const [heatmapData, setHeatmapData] = useState<
+    { idx: number; sentence: string; score: number }[] | null
+  >(null);
+
   useEffect(() => {
-    if (streaming) return;
-    if (!answer.trim()) return;
-    if (!contexts || contexts.length === 0) return;
+    if (!answer || !cfg.heatmap) return;
 
     let cancelled = false;
 
-    async function loadCompletedAnswerEvaluation() {
+    async function loadHeatmap() {
       try {
-        const resp = await fetch(`${base}/eval/hallucination`, {
+        const resp = await fetch(`${base}/diagnostics/heatmap`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             answer,
-            contexts,
+            context: (contexts || []).join("\n"),
+            embed_model: cfg.embed_model || embed_model,
           }),
         });
 
         if (!resp.ok) {
-          console.warn("Hallucination evaluation failed:", resp.status);
+          console.warn("Heatmap fetch failed:", resp.status);
           return;
         }
 
         const data = await resp.json();
 
-        if (cancelled) return;
-
-        setHallucinationMetrics({
-          coverage: Number(data.coverage ?? 0),
-          contradictionRisk: Number(data.contradiction_risk ?? 0),
-          faithfulness: Number(data.faithfulness ?? 0),
-        });
-
-        const firstContextHeatmap =
-            data.per_context_saliency?.[0]?.sentences ?? [];
-
-        setHeatmapData(firstContextHeatmap);
+        if (!cancelled) {
+          setHeatmapData(data.scores || []);
+        }
       } catch (err) {
-        console.warn("Completed-answer evaluation error:", err);
+        console.warn("Heatmap analysis error:", err);
       }
     }
 
-    void loadCompletedAnswerEvaluation();
+    void loadHeatmap();
 
     return () => {
       cancelled = true;
     };
-  }, [streaming, answer, contexts, base]);
+  }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, embed_model]);
 
   const onExplain = () => {
     setContextsOpen(false);
-    setHeatmapData(null);
-    setHallucinationMetrics(null);
     reset();
     start();
   };
 
-  const onReset = () => {
-    setContextsOpen(false);
-    setHeatmapData(null);
-    setHallucinationMetrics(null);
-    reset();
-  };
-
   return (
-      <div className="smart-explainer">
-        <ExplanationPanel
-            query={query}
-            setQueryAction={setQuery}
-            telemetry={telemetry}
-            streaming={streaming}
-            banner={banner}
-            answer={answer}
-            progress={progress}
-            error={error}
-            onExplainAction={onExplain}
-            onCancelAction={cancel}
-            onResetAction={onReset}
-            contexts={contexts}
-            contextsOpen={contextsOpen}
-            heatmapData={heatmapData}
-            hallucinationMetrics={hallucinationMetrics}
-        />
+    <div className="smart-explainer">
 
-        {toast && (
-            <Toast
-                message={toast.message}
-                type={toast.type}
-                onCloseAction={() => setToast(null)}
-            />
-        )}
-      </div>
+
+      <ExplanationPanel
+        query={query}
+        setQueryAction={setQuery}
+        telemetry={telemetry}
+        streaming={streaming}
+        banner={banner}
+        answer={answer}
+        progress={progress}
+        error={error}
+        onExplainAction={onExplain}
+        onCancelAction={cancel}
+        onResetAction={reset}
+        contexts={contexts}
+        contextsOpen={contextsOpen}
+        heatmapData={heatmapData}
+      />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onCloseAction={() => setToast(null)}
+        />
+      )}
+    </div>
   );
 }
