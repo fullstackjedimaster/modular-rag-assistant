@@ -223,7 +223,6 @@ export default function DemoPage() {
     }
 
     function handleDisconnectClient(client: RagClientRow) {
-        lastAutoConnectKeyRef.current = "";
         sendDockDisconnect(client);
     }
 
