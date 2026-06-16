@@ -26,29 +26,39 @@ interface SmartExplainerProps {
 }
 
 function getTelemetryKey(message: TelemetryMessage): string | null {
-  const raw = message?.message_name;
+  if (!message) return null;
+
+  const raw = message.message_name;
+
   if (typeof raw !== "string") return null;
 
   const trimmed = raw.trim();
+
   return trimmed.length > 0 ? trimmed : null;
 }
 
 function coerceTelemetryValue(value: AttrValue): string | number | undefined {
-  if (typeof value === "string" || typeof value === "number") return value;
-  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "string" || typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
   return undefined;
 }
 
 export function SmartExplainer({
-                                 subjectId,
-                                 attrs = {},
-                                 collection,
-                                 llm_model,
-                                 embed_model,
-                                 prompt,
-                                 chaining_mode,
-                                 telemetry_messages = [],
-                               }: SmartExplainerProps) {
+  subjectId,
+  attrs = {},
+  collection,
+  llm_model,
+  embed_model,
+  prompt,
+  chaining_mode,
+  telemetry_messages = [],
+}: SmartExplainerProps) {
   const [query, setQuery] = useState<string>(prompt || "");
   const [contextsOpen, setContextsOpen] = useState<boolean>(false);
   const [toast, setToast] = useState<{
@@ -63,8 +73,8 @@ export function SmartExplainer({
 
   const telemetryKeys = useMemo<string[]>(() => {
     return telemetry_messages
-        .map(getTelemetryKey)
-        .filter((key): key is string => Boolean(key));
+      .map(getTelemetryKey)
+      .filter((key): key is string => Boolean(key));
   }, [telemetry_messages]);
 
   const telemetry = useMemo<Telemetry>(() => {
@@ -72,7 +82,10 @@ export function SmartExplainer({
 
     for (const key of telemetryKeys) {
       const value = coerceTelemetryValue(attrs?.[key]);
-      if (value !== undefined) t[key] = value;
+
+      if (value !== undefined) {
+        t[key] = value;
+      }
     }
 
     return t;
@@ -93,7 +106,9 @@ export function SmartExplainer({
       chaining_mode,
     });
 
-    if (subjectId) p.set("subject", subjectId);
+    if (subjectId) {
+      p.set("subject", subjectId);
+    }
 
     if (telemetryKeys.length > 0) {
       p.set("telemetry_messages", telemetryKeys.join(","));
@@ -141,7 +156,7 @@ export function SmartExplainer({
   });
 
   const [heatmapData, setHeatmapData] = useState<
-      { idx: number; sentence: string; score: number }[] | null
+    { idx: number; sentence: string; score: number }[] | null
   >(null);
 
   useEffect(() => {
@@ -183,38 +198,40 @@ export function SmartExplainer({
     };
   }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, embed_model]);
 
-  function onExplain() {
+  const onExplain = () => {
     setContextsOpen(false);
     reset();
     start();
-  }
+  };
 
   return (
-      <div className="smart-explainer">
-        <ExplanationPanel
-            query={query}
-            setQueryAction={setQuery}
-            telemetry={telemetry}
-            streaming={streaming}
-            banner={banner}
-            answer={answer}
-            progress={progress}
-            error={error}
-            onExplainAction={onExplain}
-            onCancelAction={cancel}
-            onResetAction={reset}
-            contexts={contexts}
-            contextsOpen={contextsOpen}
-            heatmapData={heatmapData}
-        />
+    <div className="smart-explainer">
 
-        {toast ? (
-            <Toast
-                message={toast.message}
-                type={toast.type}
-                onCloseAction={() => setToast(null)}
-            />
-        ) : null}
-      </div>
+
+      <ExplanationPanel
+        query={query}
+        setQueryAction={setQuery}
+        telemetry={telemetry}
+        streaming={streaming}
+        banner={banner}
+        answer={answer}
+        progress={progress}
+        error={error}
+        onExplainAction={onExplain}
+        onCancelAction={cancel}
+        onResetAction={reset}
+        contexts={contexts}
+        contextsOpen={contextsOpen}
+        heatmapData={heatmapData}
+      />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onCloseAction={() => setToast(null)}
+        />
+      )}
+    </div>
   );
 }

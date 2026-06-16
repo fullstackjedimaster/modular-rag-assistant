@@ -86,7 +86,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
   return (
     <GroupBox title="AI Explanation">
-      <div className="explanation-panel">
+      <div className="mb-4 space-y-4">
         {telemetryEntries.length > 0 && (
           <div className="rounded border border-gray-200 bg-gray-50 p-2 font-mono text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
             {telemetryEntries.map(([key, value]) => (

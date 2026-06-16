@@ -8,7 +8,6 @@ import {
     type RagClientFull,
     type TelemetryMessage,
 } from "@/src/lib/ragClientApi";
-import HostThemeReceiver from "@/src/components/dock/HostThemeReceiver"
 
 type AttrValue = string | number | boolean | null | undefined;
 type Attrs = Record<string, AttrValue>;
@@ -343,9 +342,8 @@ export default function DockInner() {
                     Waiting for a panel selection...
                 </div>
             )}
-            <HostThemeReceiver />
-            {client ? (
 
+            {client ? (
                 <SmartExplainer
                     subjectId={subjectId}
                     attrs={forwardedAttrs}
