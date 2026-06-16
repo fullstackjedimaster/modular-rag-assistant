@@ -226,28 +226,19 @@ export default function DashboardClient({
                                 </td>
 
                                 <td className="py-1 pr-3">
-                                    {isReadOnly ? (
-                                        <span
-                                            className="text-xs"
-                                            title={st?.detail || ""}
-                                        >
-                                            {connected ? "Connected" : "Not connected"}
-                                        </span>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            disabled={busy}
-                                            title={st?.detail || ""}
-                                            onClick={() => void onToggleConnection(row, connected)}
-                                            className="underline text-xs disabled:opacity-50"
-                                        >
-                                            {busy
-                                                ? "Working..."
-                                                : connected
-                                                    ? "Disconnect"
-                                                    : "Connect"}
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        disabled={busy}
+                                        title={st?.detail || ""}
+                                        onClick={() => void onToggleConnection(row, connected)}
+                                        className="underline text-xs disabled:opacity-50"
+                                    >
+                                        {busy
+                                            ? "Working..."
+                                            : connected
+                                                ? "Disconnect"
+                                                : "Connect"}
+                                    </button>
                                 </td>
                             </tr>
                         );
