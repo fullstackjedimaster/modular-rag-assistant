@@ -8,7 +8,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import Link from "next/link";
+// import Link from "next/link";
 import { listRagClients, type RagClientRow } from "@/src/lib/ragClientApi";
 import {
     parseSelectionMessage,
@@ -18,7 +18,6 @@ import {
 import DashboardClient from "@/src/components/dashboard/DashboardClient";
 import PostMessageTap from "@/src/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/src/components/debug/useDebugFlags";
-import { useAppMode } from "@/src/contexts/AppModeContext";
 
 function DebugTapMount() {
     const { msgdebug } = useDebugFlags();
@@ -45,7 +44,6 @@ function clampHeight(height: number): number {
 }
 
 export default function DemoPage() {
-    const { isDemo, isReadOnly } = useAppMode();
 
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
@@ -223,6 +221,7 @@ export default function DemoPage() {
     }
 
     function handleDisconnectClient(client: RagClientRow) {
+        lastAutoConnectKeyRef.current = "";
         sendDockDisconnect(client);
     }
 
@@ -245,24 +244,12 @@ export default function DemoPage() {
         return (
             <main className="min-h-screen bg-slate-50 text-gray-900">
                 <div className="mx-auto max-w-5xl p-6">
-                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
 
                     <div className="mt-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
                         Failed to load RAG clients: {clientError}
                     </div>
 
-                    <div className="mt-4">
-                        <Link
-                            href="/clients"
-                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                            {"View RAG Clients" }
-                        </Link>
-                    </div>
 
-                    <Suspense fallback={null}>
-                        <DebugTapMount />
-                    </Suspense>
                 </div>
             </main>
         );
@@ -272,21 +259,12 @@ export default function DemoPage() {
         return (
             <main className="min-h-screen bg-slate-50 text-gray-900">
                 <div className="mx-auto max-w-5xl p-6">
+
                     <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
 
-                    <div className="mt-4">
-                        <Link
-                            href="/clients"
-                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                            {"View RAG Clients"}
-                        </Link>
+
                     </div>
 
-                    <Suspense fallback={null}>
-                        <DebugTapMount />
-                    </Suspense>
-                </div>
             </main>
         );
     }
@@ -297,11 +275,11 @@ export default function DemoPage() {
                 <header className="space-y-3">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div className="space-y-2">
+                            <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
 
                             <p className="max-w-3xl text-sm text-gray-600">
                                 Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
                             </p>
-
 
 
                             {lastSelection ? (
@@ -325,6 +303,7 @@ export default function DemoPage() {
                 </header>
 
                 <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
+
 
                     <iframe
                         key={selectedClient.id}
