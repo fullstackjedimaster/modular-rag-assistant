@@ -43,7 +43,7 @@ export default function DashboardClient({
                                             onDisconnectClientAction,
                                             compact = false,
                                         }: DashboardClientProps) {
-    const { disablePolling, isReadOnly } = useAppMode();
+    const { disablePolling } = useAppMode();
 
     const [state, setState] = useState<LoadState>("idle");
     const [err, setErr] = useState<string>("");
@@ -120,7 +120,7 @@ export default function DashboardClient({
     }, [state, ids, disablePolling]);
 
     async function onConnect(row: RagClientRow) {
-        if (isReadOnly) return;
+
 
         setBusyId(row.id);
 
@@ -135,7 +135,7 @@ export default function DashboardClient({
     }
 
     async function onDisconnect(row: RagClientRow) {
-        if (isReadOnly) return;
+
 
         setBusyId(row.id);
 
