@@ -46,6 +46,7 @@ function clampHeight(height: number): number {
 
 export default function HomePage() {
     const { isDemo, isReadOnly } = useAppMode();
+
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
@@ -55,6 +56,7 @@ export default function HomePage() {
     const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
+    const lastAutoConnectKeyRef = useRef<string>("");
 
     useEffect(() => {
         let cancelled = false;
@@ -150,6 +152,24 @@ export default function HomePage() {
     );
 
     useEffect(() => {
+        if (!selectedClient) return;
+        if (!hostFrameLoaded) return;
+
+        const autoConnectKey = `${selectedClient.id}:${targetUrl}`;
+
+        if (lastAutoConnectKeyRef.current === autoConnectKey) return;
+        lastAutoConnectKeyRef.current = autoConnectKey;
+
+        const t = window.setTimeout(() => {
+            sendDockConnect(selectedClient);
+        }, 250);
+
+        return () => {
+            window.clearTimeout(t);
+        };
+    }, [selectedClient, targetUrl, hostFrameLoaded, sendDockConnect]);
+
+    useEffect(() => {
         const onMessage = (ev: MessageEvent<unknown>) => {
             const targetWindow = targetFrameRef.current?.contentWindow;
 
@@ -190,10 +210,12 @@ export default function HomePage() {
         setHostFrameLoaded(false);
         setHostFrameHeight(1400);
         setLastSelection("");
+        lastAutoConnectKeyRef.current = "";
     }
 
     function handleConnectClient(client: RagClientRow) {
         setSelectedClientId(client.id);
+        lastAutoConnectKeyRef.current = "";
 
         window.setTimeout(() => {
             sendDockConnect(client);
@@ -201,6 +223,7 @@ export default function HomePage() {
     }
 
     function handleDisconnectClient(client: RagClientRow) {
+        lastAutoConnectKeyRef.current = "";
         sendDockDisconnect(client);
     }
 
