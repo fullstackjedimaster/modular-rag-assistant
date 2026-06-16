@@ -6,7 +6,7 @@ import { useEffect } from "react";
 export type PanelTelemetry = {
     voltage?: string;
     current?: string;
-    status?: string;
+    // status?: string;
 };
 
 type Props = {
@@ -40,7 +40,7 @@ export default function SelectedMacListener({ setMac, setTelemetry, query, setQu
             if (d.telemetry && typeof d.telemetry === "object") {
                 const t = d.telemetry as PanelTelemetry;
                 setTelemetry({
-                    status: t.status !== undefined ? String(t.status) : undefined,
+                    // status: t.status !== undefined ? String(t.status) : undefined,
                     voltage: t.voltage !== undefined ? String(t.voltage) : undefined,
                     current: t.current !== undefined ? String(t.current) : undefined,
                 });
