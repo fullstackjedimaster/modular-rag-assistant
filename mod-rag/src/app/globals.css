@@ -256,93 +256,46 @@
     overflow: hidden;
 }
 
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+    background: transparent;
+}
+
 .smart-explainer {
     width: 100%;
+    max-width: 100%;
     margin: 0;
-    padding: 3px;
-    color: #000;
-    font-family: Orbitron, system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    background: transparent;
+    padding: 0;
     overflow: hidden;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--sans), sans-serif;
 }
 
 .smart-explainer * {
-  box-sizing: border-box;
-  min-height: 0;
-}
-
-.smart-explainer > div,
-.smart-explainer section,
-.smart-explainer article {
-  max-width: 100%;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-.smart-explainer .rounded,
-.smart-explainer .rounded-lg,
-.smart-explainer .rounded-xl,
-.smart-explainer .shadow,
-.smart-explainer .shadow-sm,
-.smart-explainer .shadow-md,
-.smart-explainer .shadow-lg {
-  border-radius: 0 !important;
-  box-shadow: none !important;
+    box-sizing: border-box;
 }
 
 .smart-explainer input,
 .smart-explainer textarea,
 .smart-explainer select {
-  width: 100%;
-  max-width: 100%;
-  font-family: Orbitron, system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #000;
-  background: #fff;
-  border: thick inset #c0c0c0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  outline: none;
+    width: 100%;
+    max-width: 100%;
 }
 
 .smart-explainer textarea {
-  min-height: 76px;
-  resize: vertical;
+    min-height: 48px;
+    resize: vertical;
 }
 
 .smart-explainer button {
-  font-family: Orbitron, system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: #000;
-  background: #d9d9d9;
-  border: 2px outset #c0c0c0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 4px 8px;
-}
-
-.smart-explainer button:active {
-  border-style: inset !important;
-}
-
-.smart-explainer pre,
-.smart-explainer code {
-  max-width: 100%;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-}
-
-.smart-explainer [class*="bg-white"],
-.smart-explainer [class*="dark:bg"],
-.smart-explainer [class*="bg-gray"],
-.smart-explainer [class*="bg-slate"] {
-  background: transparent !important;
+    white-space: nowrap;
 }
 
 .smart-explainer [class*="border"] {
@@ -373,4 +326,9 @@
 .smart-explainer .py-4 {
   padding-top: 4px !important;
   padding-bottom: 4px !important;
+}
+
+.explanation-panel {
+    padding: 0;
+    background-color: transparent;
 }
