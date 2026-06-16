@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import GroupBox from "@/src/components/GroupBox";
 import SaliencyHeatmap from "@/src/components/SaliencyHeatmap";
 
@@ -49,21 +49,21 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
   contextsOpen = false,
   heatmapData,
 }) => {
-  const copyAnswer = useCallback(async () => {
-    if (!answer) return;
-
-    try {
-      await navigator.clipboard.writeText(answer);
-    } catch {
-      // Clipboard may be unavailable in some browser/security contexts.
-    }
-  }, [answer]);
-
-  const telemetryEntries = useMemo(() => {
-    return Object.entries(telemetry || {}).filter(
-      ([, value]) => value !== undefined && value !== null && value !== ""
-    );
-  }, [telemetry]);
+  // const copyAnswer = useCallback(async () => {
+  //   if (!answer) return;
+  //
+  //   try {
+  //     await navigator.clipboard.writeText(answer);
+  //   } catch {
+  //     // Clipboard may be unavailable in some browser/security contexts.
+  //   }
+  // }, [answer]);
+  //
+  // const telemetryEntries = useMemo(() => {
+  //   return Object.entries(telemetry || {}).filter(
+  //     ([, value]) => value !== undefined && value !== null && value !== ""
+  //   );
+  // }, [telemetry]);
 
   const statusColor = useMemo(() => {
     const s = (progress?.status || "").toLowerCase();
@@ -86,16 +86,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
   return (
     <GroupBox title="AI Explanation">
-      <div className="mb-4 space-y-4">
-        {telemetryEntries.length > 0 && (
-          <div className="rounded border border-gray-200 bg-gray-50 p-2 font-mono text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-            {telemetryEntries.map(([key, value]) => (
-              <div key={key}>
-                {key}: {String(value)}
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="explanation-panel">
 
         <div className="flex gap-2">
           <input
@@ -105,7 +96,6 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !streaming) onExplainAction();
             }}
-            className="w-full rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-800 dark:text-white"
             placeholder="Ask for an explanation..."
             aria-label="Query input"
           />
@@ -114,7 +104,6 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
         <div className="flex gap-2">
           <button
             onClick={onExplainAction}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-500 disabled:opacity-60"
             disabled={streaming}
             aria-label="Explain"
           >
@@ -123,7 +112,6 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
           <button
             onClick={onCancelAction}
-            className="rounded bg-gray-200 px-3 py-2 text-black disabled:opacity-60 dark:bg-gray-700 dark:text-white"
             disabled={!streaming}
             aria-label="Cancel"
           >
@@ -132,7 +120,6 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
 
           <button
             onClick={onResetAction}
-            className="rounded bg-gray-200 px-3 py-2 text-black dark:bg-gray-700 dark:text-white"
             aria-label="Reset"
           >
             Reset
@@ -188,17 +175,11 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
         )}
 
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          <h4 >
             Answer
           </h4>
 
-          <button
-            onClick={copyAnswer}
-            className="rounded border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:hover:bg-gray-700"
-            disabled={!answer}
-          >
-            Copy
-          </button>
+
         </div>
 
         <div className="min-h-[96px] whitespace-pre-wrap rounded border border-gray-200 bg-white/70 p-3 font-sans text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100">
