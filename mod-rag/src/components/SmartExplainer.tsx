@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ExplanationPanel, type Telemetry } from "@/src/components/ExplanationPanel";
+import {
+  ExplanationPanel,
+  type HallucinationMetrics,
+  type Telemetry,
+} from "@/src/components/ExplanationPanel";
 import { useStream } from "@/src/hooks/useStream";
 import { useAIConfig } from "@/src/hooks/useAIConfig";
 import Toast from "@/src/components/Toast";
@@ -11,6 +15,29 @@ import { PromptChainingMode } from "@/src/lib/ragClientApi";
 
 type AttrValue = string | number | boolean | null | undefined;
 type Attrs = Record<string, AttrValue>;
+
+type HeatmapSentence = {
+  idx: number;
+  sentence: string;
+  score: number;
+};
+
+type EvalResponse = {
+  coverage?: number;
+  contradiction_risk?: number;
+  hallucination_estimate?: number;
+  faithfulness?: number;
+  per_context_saliency?: {
+    sentences?: HeatmapSentence[];
+  }[];
+};
+
+type DiagnosticsHeatmapResponse = {
+  scores?: HeatmapSentence[];
+  avg_score?: number;
+  max_score?: number;
+  min_score?: number;
+};
 
 interface SmartExplainerProps {
   subjectId?: string;
@@ -49,18 +76,41 @@ function coerceTelemetryValue(value: AttrValue): string | number | undefined {
   return undefined;
 }
 
+function getBestEvalHeatmap(data: EvalResponse): HeatmapSentence[] {
+  const perContext = data.per_context_saliency || [];
+
+  const allSentences = perContext.flatMap((ctx) => ctx.sentences || []);
+
+  if (allSentences.length === 0) {
+    return [];
+  }
+
+  return allSentences.map((item, idx) => ({
+    idx,
+    sentence: item.sentence,
+    score: Number(item.score ?? 0),
+  }));
+}
+
 export function SmartExplainer({
-  subjectId,
-  attrs = {},
-  collection,
-  llm_model,
-  embed_model,
-  prompt,
-  chaining_mode,
-  telemetry_messages = [],
-}: SmartExplainerProps) {
+                                 subjectId,
+                                 attrs = {},
+                                 collection,
+                                 llm_model,
+                                 embed_model,
+                                 prompt,
+                                 chaining_mode,
+                                 telemetry_messages = [],
+                               }: SmartExplainerProps) {
   const [query, setQuery] = useState<string>(prompt || "");
   const [contextsOpen, setContextsOpen] = useState<boolean>(false);
+
+  const [heatmapData, setHeatmapData] = useState<HeatmapSentence[] | null>(null);
+  const [hallucinationMetrics, setHallucinationMetrics] =
+      useState<HallucinationMetrics | null>(null);
+
+  const [evaluationStatus, setEvaluationStatus] = useState<string | null>(null);
+
   const [toast, setToast] = useState<{
     message: string;
     type?: "info" | "success" | "error";
@@ -71,11 +121,11 @@ export function SmartExplainer({
     embed_model,
   });
 
-  const telemetryKeys = useMemo<string[]>(() => {
+  const telemetryKeys = useMemo<string[]>((() => {
     return telemetry_messages
-      .map(getTelemetryKey)
-      .filter((key): key is string => Boolean(key));
-  }, [telemetry_messages]);
+        .map(getTelemetryKey)
+        .filter((key): key is string => Boolean(key));
+  }), [telemetry_messages]);
 
   const telemetry = useMemo<Telemetry>(() => {
     const t: Telemetry = {};
@@ -155,83 +205,159 @@ export function SmartExplainer({
     onNotifyAction: (message, type) => setToast({ message, type }),
   });
 
-  const [heatmapData, setHeatmapData] = useState<
-    { idx: number; sentence: string; score: number }[] | null
-  >(null);
-
   useEffect(() => {
-    if (!answer || !cfg.heatmap) return;
+    if (streaming) return;
+    if (!answer.trim()) return;
+
+    const cleanContexts = (contexts || [])
+        .map((ctx) => String(ctx || "").trim())
+        .filter(Boolean);
+
+    if (cleanContexts.length === 0) {
+      setEvaluationStatus("skipped: no contexts");
+      return;
+    }
 
     let cancelled = false;
 
-    async function loadHeatmap() {
+    async function loadDiagnosticsHeatmapFallback() {
+      const resp = await fetch(`${base}/diagnostics/heatmap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answer,
+          context: cleanContexts.join("\n"),
+        }),
+      });
+
+      if (!resp.ok) {
+        throw new Error(`/diagnostics/heatmap failed: ${resp.status}`);
+      }
+
+      const data = (await resp.json()) as DiagnosticsHeatmapResponse;
+
+      if (cancelled) return;
+
+      setHeatmapData(data.scores || []);
+    }
+
+    async function loadCompletedAnswerEvaluation() {
+      setEvaluationStatus("running");
+
       try {
-        const resp = await fetch(`${base}/diagnostics/heatmap`, {
+        const resp = await fetch(`${base}/eval/hallucination`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             answer,
-            context: (contexts || []).join("\n"),
-            embed_model: cfg.embed_model || embed_model,
+            contexts: cleanContexts,
           }),
         });
 
         if (!resp.ok) {
-          console.warn("Heatmap fetch failed:", resp.status);
+          throw new Error(`/eval/hallucination failed: ${resp.status}`);
+        }
+
+        const data = (await resp.json()) as EvalResponse;
+
+        if (cancelled) return;
+
+        setHallucinationMetrics({
+          coverage: Number(data.coverage ?? 0),
+          contradictionRisk: Number(data.contradiction_risk ?? 0),
+          faithfulness: Number(data.faithfulness ?? 0),
+        });
+
+        const evalHeatmap = getBestEvalHeatmap(data);
+
+        if (evalHeatmap.length > 0) {
+          setHeatmapData(evalHeatmap);
+          setEvaluationStatus("ready");
           return;
         }
 
-        const data = await resp.json();
+        setEvaluationStatus("eval ready; loading fallback heatmap");
+        await loadDiagnosticsHeatmapFallback();
 
         if (!cancelled) {
-          setHeatmapData(data.scores || []);
+          setEvaluationStatus("ready");
         }
       } catch (err) {
-        console.warn("Heatmap analysis error:", err);
+        console.warn("Completed-answer evaluation error:", err);
+
+        if (!cancelled) {
+          setEvaluationStatus("eval failed; trying fallback heatmap");
+        }
+
+        try {
+          await loadDiagnosticsHeatmapFallback();
+
+          if (!cancelled) {
+            setEvaluationStatus("heatmap ready; badges unavailable");
+          }
+        } catch (fallbackErr) {
+          console.warn("Fallback heatmap error:", fallbackErr);
+
+          if (!cancelled) {
+            setEvaluationStatus("failed");
+          }
+        }
       }
     }
 
-    void loadHeatmap();
+    void loadCompletedAnswerEvaluation();
 
     return () => {
       cancelled = true;
     };
-  }, [answer, cfg.heatmap, cfg.embed_model, contexts, base, embed_model]);
+  }, [streaming, answer, contexts, base]);
+
+  const clearEvaluation = () => {
+    setContextsOpen(false);
+    setHeatmapData(null);
+    setHallucinationMetrics(null);
+    setEvaluationStatus(null);
+  };
 
   const onExplain = () => {
-    setContextsOpen(false);
+    clearEvaluation();
     reset();
     start();
   };
 
+  const onReset = () => {
+    clearEvaluation();
+    reset();
+  };
+
   return (
-    <div className="smart-explainer">
-
-
-      <ExplanationPanel
-        query={query}
-        setQueryAction={setQuery}
-        telemetry={telemetry}
-        streaming={streaming}
-        banner={banner}
-        answer={answer}
-        progress={progress}
-        error={error}
-        onExplainAction={onExplain}
-        onCancelAction={cancel}
-        onResetAction={reset}
-        contexts={contexts}
-        contextsOpen={contextsOpen}
-        heatmapData={heatmapData}
-      />
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onCloseAction={() => setToast(null)}
+      <div className="smart-explainer">
+        <ExplanationPanel
+            query={query}
+            setQueryAction={setQuery}
+            telemetry={telemetry}
+            streaming={streaming}
+            banner={banner}
+            answer={answer}
+            progress={progress}
+            error={error}
+            onExplainAction={onExplain}
+            onCancelAction={cancel}
+            onResetAction={onReset}
+            contexts={contexts}
+            contextsOpen={contextsOpen}
+            heatmapData={heatmapData}
+            hallucinationMetrics={hallucinationMetrics}
+            evaluationStatus={evaluationStatus}
         />
-      )}
-    </div>
+
+        {toast && (
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                onCloseAction={() => setToast(null)}
+            />
+        )}
+      </div>
   );
 }
