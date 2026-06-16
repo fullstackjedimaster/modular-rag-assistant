@@ -41,11 +41,12 @@ function dockUrlFor(ragClientId: string): string {
 }
 
 function clampHeight(height: number): number {
-    return Math.max(600, Math.min(height, 5000));
+    return Math.max(520, Math.min(height, 2600));
 }
 
 export default function DemoPage() {
     const { isDemo, isReadOnly } = useAppMode();
+
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
@@ -55,6 +56,7 @@ export default function DemoPage() {
     const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
+    const lastAutoConnectKeyRef = useRef<string>("");
 
     useEffect(() => {
         let cancelled = false;
@@ -150,6 +152,24 @@ export default function DemoPage() {
     );
 
     useEffect(() => {
+        if (!selectedClient) return;
+        if (!hostFrameLoaded) return;
+
+        const autoConnectKey = `${selectedClient.id}:${targetUrl}`;
+
+        if (lastAutoConnectKeyRef.current === autoConnectKey) return;
+        lastAutoConnectKeyRef.current = autoConnectKey;
+
+        const t = window.setTimeout(() => {
+            sendDockConnect(selectedClient);
+        }, 250);
+
+        return () => {
+            window.clearTimeout(t);
+        };
+    }, [selectedClient, targetUrl, hostFrameLoaded, sendDockConnect]);
+
+    useEffect(() => {
         const onMessage = (ev: MessageEvent<unknown>) => {
             const targetWindow = targetFrameRef.current?.contentWindow;
 
@@ -190,10 +210,12 @@ export default function DemoPage() {
         setHostFrameLoaded(false);
         setHostFrameHeight(1400);
         setLastSelection("");
+        lastAutoConnectKeyRef.current = "";
     }
 
     function handleConnectClient(client: RagClientRow) {
         setSelectedClientId(client.id);
+        lastAutoConnectKeyRef.current = "";
 
         window.setTimeout(() => {
             sendDockConnect(client);
@@ -201,15 +223,16 @@ export default function DemoPage() {
     }
 
     function handleDisconnectClient(client: RagClientRow) {
+        lastAutoConnectKeyRef.current = "";
         sendDockDisconnect(client);
     }
 
     if (loadingClients) {
         return (
-            <main>
-                <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
-                    <p className="subtitle">Loading RAG clients...</p>
+            <main className="min-h-screen bg-slate-50 text-gray-900">
+                <div className="mx-auto max-w-5xl p-6">
+                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
+                    <p className="mt-2 text-sm text-gray-600">Loading RAG clients...</p>
 
                     <Suspense fallback={null}>
                         <DebugTapMount />
@@ -221,17 +244,20 @@ export default function DemoPage() {
 
     if (clientError) {
         return (
-            <main>
-                <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
+            <main className="min-h-screen bg-slate-50 text-gray-900">
+                <div className="mx-auto max-w-5xl p-6">
+                    <h1 className="text-2xl font-bold">Modular RAG Assistant Demo</h1>
 
-                    <div className="card error-card">
+                    <div className="mt-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
                         Failed to load RAG clients: {clientError}
                     </div>
 
-                    <div className="btns">
-                        <Link href="/clients" className="button secondary">
-                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
+                    <div className="mt-4">
+                        <Link
+                            href="/clients"
+                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                            {"View RAG Clients" }
                         </Link>
                     </div>
 
@@ -245,14 +271,16 @@ export default function DemoPage() {
 
     if (!selectedClient) {
         return (
-            <main>
-                <div className="shell">
-                    <h1>Modular RAG Assistant Demo</h1>
-                    <p className="error-text">No RAG clients are configured.</p>
+            <main className="min-h-screen bg-slate-50 text-gray-900">
+                <div className="mx-auto max-w-5xl p-6">
+                    <p className="mt-2 text-sm text-red-600">No RAG clients are configured.</p>
 
-                    <div className="btns">
-                        <Link href="/clients" className="button secondary">
-                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
+                    <div className="mt-4">
+                        <Link
+                            href="/clients"
+                            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                            {"View RAG Clients"}
                         </Link>
                     </div>
 
@@ -265,36 +293,27 @@ export default function DemoPage() {
     }
 
     return (
-        <main>
-            <div className="shell wide stack">
-                <header className="stack">
-                    <div className="header-row">
-                        <div>
-                            <h1>Modular RAG Assistant Demo</h1>
+        <main className="min-h-screen bg-slate-50 text-gray-900">
+            <div className="mx-auto max-w-7xl space-y-6 p-6">
+                <header className="space-y-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-2">
 
-                            <p className="subtitle">
+                            <p className="max-w-3xl text-sm text-gray-600">
                                 Select a host app to load it below. Connect attaches the RAG dock inside the embedded host app.
                             </p>
 
-                            {isDemo ? (
-                                <p className="card muted-note">
-                                    Demo mode is read-only for configuration. Status polling is disabled; client details remain viewable.
-                                </p>
-                            ) : null}
+
 
                             {lastSelection ? (
-                                <p className="small muted">
+                                <p className="text-xs text-gray-500">
                                     Latest target selection from host:{" "}
-                                    <span className="mono">{lastSelection}</span>
+                                    <span className="font-mono">{lastSelection}</span>
                                 </p>
                             ) : null}
                         </div>
 
-                        {!isReadOnly ? (
-                            <Link href="/client/new" className="button secondary">
-                                Configure New Client
-                            </Link>
-                        ) : null}
+
                     </div>
 
                     <DashboardClient
@@ -306,20 +325,17 @@ export default function DemoPage() {
                     />
                 </header>
 
-                <section className="card iframe-card">
-                    <div className="card-header">
-                        <h2>{selectedClient.name}</h2>
-                        <p className="small muted">{targetUrl}</p>
-                    </div>
-
+                <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
+                   
                     <iframe
                         key={selectedClient.id}
                         ref={targetFrameRef}
                         title={`${selectedClient.name} target host`}
                         src={targetUrl}
-                        className="target-frame"
+                        className="block w-full border-0 overflow-hidden"
                         style={{
                             height: `${hostFrameHeight}px`,
+                            overflow: "hidden",
                         }}
                         onLoad={() => setHostFrameLoaded(true)}
                     />

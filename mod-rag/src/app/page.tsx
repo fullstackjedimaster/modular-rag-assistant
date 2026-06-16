@@ -339,12 +339,7 @@ export default function HomePage() {
                 </header>
 
                 <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
-                    <div className="border-b border-gray-200 px-4 py-3">
-                        <h2 className="text-base font-semibold text-gray-900">
-                            {selectedClient.name}
-                        </h2>
-                        <p className="text-xs text-gray-500">{targetUrl}</p>
-                    </div>
+
 
                     <iframe
                         key={selectedClient.id}
