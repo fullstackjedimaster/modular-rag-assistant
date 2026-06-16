@@ -326,7 +326,7 @@ export default function DemoPage() {
                 </header>
 
                 <section className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
-                   
+
                     <iframe
                         key={selectedClient.id}
                         ref={targetFrameRef}

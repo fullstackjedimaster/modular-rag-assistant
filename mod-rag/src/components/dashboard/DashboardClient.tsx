@@ -226,7 +226,14 @@ export default function DashboardClient({
                                 </td>
 
                                 <td className="py-1 pr-3">
-
+                                    {isReadOnly ? (
+                                        <span
+                                            className="text-xs"
+                                            title={st?.detail || ""}
+                                        >
+                                            {connected ? "Connected" : "Not connected"}
+                                        </span>
+                                    ) : (
                                         <button
                                             type="button"
                                             disabled={busy}
@@ -240,7 +247,7 @@ export default function DashboardClient({
                                                     ? "Disconnect"
                                                     : "Connect"}
                                         </button>
-
+                                    )}
                                 </td>
                             </tr>
                         );
