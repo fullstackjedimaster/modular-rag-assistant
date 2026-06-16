@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-      --bg: #07111f;
-      --card: #0f172a;
+      --bg: #ffffff;
+      --card: #ffffff;
       --border: #22304a;
-      --text: #e5e7eb;
+      --text: #000000;
       --muted: #94a3b8;
       --accent: #38bdf8;
       --ok: #10b981;
@@ -19,7 +19,7 @@
       margin: 0;
       padding: 2px;
       font-family: var(--sans),sans-serif;
-      background: radial-gradient(circle at top, #0b1830 0, #020617 42%, #020617 100%);
+      background: transparent;
       color: var(--text);
     }
 
@@ -49,7 +49,7 @@
     }
 
     .card {
-      background: linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.99));
+      background: white;
       border: 1px solid rgba(148,163,184,.15);
       border-radius: 2px;
       padding: 2px;
@@ -79,7 +79,7 @@
       width: 100%;
       border-radius: 2px;
       border: 1px solid var(--border);
-      background: #020617;
+      background: #ffffff;
       color: var(--text);
       padding: 1px 2px;
       font-size: 12px;
@@ -145,7 +145,7 @@
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
-      background: #020617;
+
       border: 1px solid rgba(148,163,184,.12);
       border-radius: 2px;
       padding: 2px;
@@ -197,7 +197,7 @@
 }
 
 .button.secondary {
-    background: #111827;
+    background: #ffffff;
     border: 1px solid rgba(148,163,184,.25);
     color: var(--text);
 }
@@ -375,3 +375,8 @@
   padding-bottom: 4px !important;
 }
 
+.explanation-panel {
+    padding: 0;
+    background-color: transparent;
+
+}
