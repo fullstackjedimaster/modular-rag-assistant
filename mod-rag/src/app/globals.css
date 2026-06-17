@@ -254,6 +254,9 @@
     width: 100%;
     border: 0;
     overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .smart-explainer {
@@ -266,6 +269,9 @@
     font-weight: 600;
     background: transparent;
     overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .smart-explainer * {
@@ -378,5 +384,7 @@
 .explanation-panel {
     padding: 0;
     background-color: transparent;
-
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
