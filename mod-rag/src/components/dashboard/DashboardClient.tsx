@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import GroupBox from "@/src/components/GroupBox";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
     connectRagClient,
@@ -120,8 +119,6 @@ export default function DashboardClient({
     }, [state, ids, disablePolling]);
 
     async function onConnect(row: RagClientRow) {
-
-
         setBusyId(row.id);
 
         try {
@@ -135,8 +132,6 @@ export default function DashboardClient({
     }
 
     async function onDisconnect(row: RagClientRow) {
-
-
         setBusyId(row.id);
 
         try {
@@ -158,102 +153,93 @@ export default function DashboardClient({
     }
 
     if (state === "loading" || state === "idle") {
-        return (
-            <GroupBox title="Configured Host Apps">
-                <div className="text-sm text-gray-600">Loading...</div>
-            </GroupBox>
-        );
+        return <div className="rag-client-loading">Loading...</div>;
     }
 
     if (state === "error") {
         return (
-            <GroupBox title="Configured Host Apps">
-                <div className="text-sm text-red-600 whitespace-pre-wrap">
+            <div className="rag-client-error-box">
+                <div className="rag-client-error-message">
                     {err || "Failed to load."}
                 </div>
 
                 <button
-                    className="mt-3 border rounded px-3 py-2 text-sm hover:bg-gray-50"
+                    className="rag-link-button rag-retry-button"
                     onClick={() => void boot()}
                     type="button"
                 >
                     Retry
                 </button>
-            </GroupBox>
+            </div>
         );
     }
 
     return (
-        <GroupBox title="Configured Host Apps">
+        <div className={compact ? "rag-client-list rag-client-list-compact" : "rag-client-list"}>
             {!compact && (
-                <div className="mb-3 text-xs text-gray-600">
+                <div className="rag-client-help">
                     Select a host app to load it in the demo frame. Connect attaches the RAG dock inside that host app.
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                    <tr className="text-left border-b">
-                        <th className="py-2 pr-3">Name</th>
-                        <th className="py-2 pr-3">Connected</th>
-                    </tr>
-                    </thead>
+            <table className="rag-client-table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Dock</th>
+                </tr>
+                </thead>
 
-                    <tbody>
-                    {rows.map((row) => {
-                        const st = statusById[row.id];
-                        const connected = Boolean(st?.connected);
-                        const busy = busyId === row.id;
-                        const selected = selectedRagClientId === row.id;
+                <tbody>
+                {rows.map((row) => {
+                    const st = statusById[row.id];
+                    const connected = Boolean(st?.connected);
+                    const busy = busyId === row.id;
+                    const selected = selectedRagClientId === row.id;
 
-                        return (
-                            <tr
-                                key={row.id}
-                                className={[
-                                    "border-b hover:bg-gray-50",
-                                    selected ? "bg-blue-50" : "",
-                                ].join(" ")}
-                            >
-                                <td className="py-1 pr-3">
-                                    <Link
-                                        href={`/hosts/${row.id}`}
-                                        title={row.host_url}
-                                        className="underline font-medium"
-                                    >
-                                        {row.name}
-                                    </Link>
-                                </td>
+                    return (
+                        <tr
+                            key={row.id}
+                            className={selected ? "selected" : ""}
+                        >
+                            <td>
+                                <Link
+                                    href={`/hosts/${row.id}`}
+                                    title={row.host_url}
+                                    className="rag-client-name"
+                                >
+                                    {row.name}
+                                </Link>
+                            </td>
 
-                                <td className="py-1 pr-3">
-                                    <button
-                                        type="button"
-                                        disabled={busy}
-                                        title={st?.detail || ""}
-                                        onClick={() => void onToggleConnection(row, connected)}
-                                        className="underline text-xs disabled:opacity-50"
-                                    >
-                                        {busy
-                                            ? "Working..."
-                                            : connected
-                                                ? "Disconnect"
-                                                : "Connect"}
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-
-                    {rows.length === 0 && (
-                        <tr>
-                            <td className="py-3 text-sm text-gray-600" colSpan={2}>
-                                No host apps configured yet.
+                            <td>
+                                <button
+                                    type="button"
+                                    disabled={busy}
+                                    title={st?.detail || ""}
+                                    onClick={() => void onToggleConnection(row, connected)}
+                                    className="rag-link-button rag-connect-button"
+                                >
+                                    {busy
+                                        ? "Working..."
+                                        : connected
+                                            ? "Disconnect"
+                                            : "Connect"}
+                                </button>
                             </td>
                         </tr>
-                    )}
-                    </tbody>
-                </table>
-            </div>
-        </GroupBox>
+                    );
+                })}
+
+                {rows.length === 0 && (
+                    <tr>
+                        <td className="rag-client-empty" colSpan={2}>
+                            No host apps configured yet.
+                        </td>
+                    </tr>
+                )}
+                </tbody>
+            </table>
+        </div>
     );
 }

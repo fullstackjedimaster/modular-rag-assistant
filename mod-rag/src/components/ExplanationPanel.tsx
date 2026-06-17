@@ -62,22 +62,22 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
     const statusColor = useMemo(() => {
         const s = (progress?.status || "").toLowerCase();
 
-        if (s.includes("error") || s.includes("stall")) return "text-red-500";
-        if (s.includes("done")) return "text-green-600";
-        if (s.includes("stream")) return "text-blue-600";
-        if (s.includes("connect")) return "text-amber-600";
+        if (s.includes("error") || s.includes("stall")) return "rag-status-bad";
+        if (s.includes("done")) return "rag-status-good";
+        if (s.includes("stream")) return "rag-status-info";
+        if (s.includes("connect")) return "rag-status-warn";
 
-        return "text-gray-600";
+        return "rag-status-muted";
     }, [progress?.status]);
 
     const evalStatusColor = useMemo(() => {
         const s = (evaluationStatus || "").toLowerCase();
 
-        if (s.includes("failed") || s.includes("error")) return "text-red-500";
-        if (s.includes("ready") || s.includes("complete")) return "text-green-600";
-        if (s.includes("running") || s.includes("loading")) return "text-blue-600";
+        if (s.includes("failed") || s.includes("error")) return "rag-status-bad";
+        if (s.includes("ready") || s.includes("complete")) return "rag-status-good";
+        if (s.includes("running") || s.includes("loading")) return "rag-status-info";
 
-        return "text-gray-500";
+        return "rag-status-muted";
     }, [evaluationStatus]);
 
     const contextsRef = useRef<HTMLDetailsElement>(null);
@@ -88,10 +88,20 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
         }
     }, [contextsOpen, contexts]);
 
+    const progressText = progress
+        ? `${progress.elapsed.toFixed(2)}s | chars=${progress.chars} | ~tok=${
+            progress.approx_tokens
+        } | rate=${progress.rate_cps.toFixed(1)}c/s${
+            progress.status ? " | " + progress.status : ""
+        }${progress.note ? " | " + progress.note : ""}${
+            progress.done ? " | done" : ""
+        }`
+        : "idle";
+
     return (
-        <GroupBox title="AI Explanation">
+        <GroupBox title="AI Explanation" variant="flash">
             <div className="explanation-panel">
-                <div className="flex gap-2">
+                <div className="explain-command-row">
                     <input
                         type="text"
                         value={query}
@@ -101,81 +111,76 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
                         }}
                         placeholder="Ask for an explanation..."
                         aria-label="Query input"
+                        className="explain-query-input"
                     />
-                </div>
 
-                <div className="flex gap-2">
-                    <button
-                        onClick={onExplainAction}
-                        disabled={streaming}
-                        aria-label="Explain"
-                    >
-                        {streaming ? "Working..." : "Explain"}
-                    </button>
+                    <div className="explain-actions">
+                        <button
+                            onClick={onExplainAction}
+                            disabled={streaming}
+                            aria-label="Explain"
+                            type="button"
+                        >
+                            {streaming ? "Working..." : "Explain"}
+                        </button>
 
-                    <button
-                        onClick={onCancelAction}
-                        disabled={!streaming}
-                        aria-label="Cancel"
-                    >
-                        Cancel
-                    </button>
+                        <button
+                            onClick={onCancelAction}
+                            disabled={!streaming}
+                            aria-label="Cancel"
+                            type="button"
+                        >
+                            Cancel
+                        </button>
 
-                    <button
-                        onClick={onResetAction}
-                        aria-label="Reset"
-                    >
-                        Reset
-                    </button>
+                        <button
+                            onClick={onResetAction}
+                            aria-label="Reset"
+                            type="button"
+                        >
+                            Reset
+                        </button>
+                    </div>
                 </div>
 
                 <div
-                    className={`font-mono text-xs ${statusColor}`}
+                    className={`explain-status-line ${statusColor}`}
                     aria-live="polite"
                     aria-atomic="true"
                     role="status"
                 >
-                    {progress
-                        ? `${progress.elapsed.toFixed(2)}s | chars=${progress.chars} | ~tok=${
-                            progress.approx_tokens
-                        } | rate=${progress.rate_cps.toFixed(1)}c/s${
-                            progress.status ? " | " + progress.status : ""
-                        }${progress.note ? " | " + progress.note : ""}${
-                            progress.done ? " | done" : ""
-                        }`
-                        : "idle"}
-
+                    {progressText}
                     {error ? ` | error: ${error}` : ""}
                 </div>
 
                 {evaluationStatus && (
-                    <div className={`font-mono text-xs ${evalStatusColor}`}>
+                    <div className={`explain-status-line ${evalStatusColor}`}>
                         eval: {evaluationStatus}
                     </div>
                 )}
 
                 {(banner || (contexts && contexts.length > 0)) && (
-                    <div className="space-y-2 text-xs">
+                    <div className="explain-support-area">
                         {banner && (
-                            <pre className="whitespace-pre-wrap text-gray-500 dark:text-gray-400">
-                {banner}
-              </pre>
+                            <pre className="explain-pre explain-banner">
+                                {banner}
+                            </pre>
                         )}
 
                         {contexts && contexts.length > 0 && (
-                            <details ref={contextsRef}>
-                                <summary className="cursor-pointer text-gray-500 dark:text-gray-400">
+                            <details ref={contextsRef} className="explain-contexts">
+                                <summary>
                                     Retrieved contexts ({contexts.length})
                                 </summary>
 
-                                <div className="mt-2 space-y-2">
+                                <div className="explain-context-list">
                                     {contexts.map((c, i) => (
                                         <pre
                                             key={i}
-                                            className="whitespace-pre-wrap rounded border border-gray-200 p-2 text-[11px] dark:border-gray-700"
+                                            className="explain-pre explain-context-pre"
                                         >
-                      {c}
-                    </pre>
+                                            {c}
+                                        </pre>
                                     ))}
                                 </div>
                             </details>
@@ -183,26 +188,24 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
                     </div>
                 )}
 
-                <div className="flex items-center justify-between">
+                <div className="explain-answer-head">
                     <h4>Answer</h4>
-                </div>
 
-                {hallucinationMetrics && (
-                    <div className="mb-2">
+                    {hallucinationMetrics && (
                         <HallucinationBadgeRow
                             coverage={hallucinationMetrics.coverage}
                             contradictionRisk={hallucinationMetrics.contradictionRisk}
                             faithfulness={hallucinationMetrics.faithfulness}
                         />
-                    </div>
-                )}
+                    )}
+                </div>
 
-                <div className="min-h-[96px] whitespace-pre-wrap rounded border border-gray-200 bg-white/70 p-3 font-sans text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100">
+                <div className="explain-answer-box">
                     {answer || (streaming ? "Working..." : "")}
                 </div>
 
                 {heatmapData && heatmapData.length > 0 && (
-                    <div className="mt-4">
+                    <div className="explain-heatmap-wrap">
                         <SaliencyHeatmap
                             title="Context Support Heatmap"
                             sentences={heatmapData}
