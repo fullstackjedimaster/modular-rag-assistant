@@ -390,13 +390,15 @@ button:disabled {
 
 .smart-explainer {
     width: 100%;
-    max-width: 100%;
+    max-width: 338px;
     margin: 0;
-    padding: 3px;
+    padding: 0.5rem;
     color: #0f172a;
     font-family: var(--sans), sans-serif;
     font-size: 13px;
     background: transparent;
+
+    box-sizing: border-box;
     overflow-x: hidden;
 }
 
