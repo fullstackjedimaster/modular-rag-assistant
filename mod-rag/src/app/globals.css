@@ -424,7 +424,7 @@ button:disabled {
     gap: 6px;
     width: 100%;
     max-width: 100%;
-    overflow: visible;
+    overflow-x: hidden;
     white-space: normal;
     word-break: normal;
 }
