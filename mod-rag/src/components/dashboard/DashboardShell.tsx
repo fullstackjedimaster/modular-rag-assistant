@@ -297,7 +297,6 @@ export default function DashboardShell() {
             <header className="rag-client-header">
               <div className="rag-client-topline">
                 <div className="rag-client-title-wrap">
-                  <h1 className="rag-title">Modular RAG Assistant Demo</h1>
 
                   {lastSelection ? (
                       <p className="rag-last-selection">
@@ -313,11 +312,6 @@ export default function DashboardShell() {
                 ) : null}
               </div>
 
-              {isDemo ? (
-                  <p className="rag-demo-note">
-                    Demo mode: read-only configuration, host client visible, polling disabled.
-                  </p>
-              ) : null}
 
               <DashboardClient
                   selectedRagClientId={selectedClient.id}
