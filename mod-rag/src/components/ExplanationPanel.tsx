@@ -4,6 +4,7 @@ import {
     useEffect,
     useMemo,
     useRef,
+    useState,
     type KeyboardEvent,
 } from "react";
 
@@ -54,13 +55,38 @@ export type ExplanationPanelProps = {
     evaluationStatus?: string | null;
 };
 
+function useAnimatedEllipsis(
+    active: boolean,
+    maxDots = 4,
+    intervalMs = 450,
+): string {
+    const [dotCount, setDotCount] = useState(1);
+
+    useEffect(() => {
+        if (!active) {
+            return;
+        }
+
+        const intervalId = window.setInterval(() => {
+            setDotCount((current) =>
+                current >= maxDots ? 1 : current + 1,
+            );
+        }, intervalMs);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [active, intervalMs, maxDots]);
+
+    return active ? ".".repeat(dotCount) : "";
+}
+
 function getProgressStatusClass(status?: string): string {
     const normalized = (status ?? "").toLowerCase();
 
     if (
         normalized.includes("error") ||
-        normalized.includes("failed") ||
-        normalized.includes("stall")
+        normalized.includes("failed")
     ) {
         return "rag-status-bad";
     }
@@ -83,7 +109,8 @@ function getProgressStatusClass(status?: string): string {
 
     if (
         normalized.includes("connect") ||
-        normalized.includes("waiting")
+        normalized.includes("waiting") ||
+        normalized.includes("stall")
     ) {
         return "rag-status-warn";
     }
@@ -114,13 +141,53 @@ export function ExplanationPanel({
 }: ExplanationPanelProps) {
     const contextsRef = useRef<HTMLDetailsElement>(null);
 
+    const animationActive = streaming && !error;
+    const animatedDots = useAnimatedEllipsis(animationActive);
+
+    const hasStartedOutput =
+        answer.trim().length > 0 ||
+        finiteNumber(progress?.chars ?? 0) > 0;
+
+    const liveActivityLabel = useMemo(() => {
+        if (animationActive) {
+            return hasStartedOutput
+                ? `Streaming${animatedDots}`
+                : `Waiting${animatedDots}`;
+        }
+
+        if (error) {
+            return "Error";
+        }
+
+        if (progress?.done) {
+            return "Done";
+        }
+
+        const serverStatus = progress?.status?.trim();
+
+        return serverStatus || "Idle";
+    }, [
+        animatedDots,
+        animationActive,
+        error,
+        hasStartedOutput,
+        progress?.done,
+        progress?.status,
+    ]);
+
     const statusColor = useMemo(
-        () => getProgressStatusClass(progress?.status),
-        [progress?.status],
+        () =>
+            getProgressStatusClass(
+                error ? "error" : liveActivityLabel,
+            ),
+        [error, liveActivityLabel],
     );
 
     const evaluationStatusColor = useMemo(
-        () => getProgressStatusClass(evaluationStatus ?? undefined),
+        () =>
+            getProgressStatusClass(
+                evaluationStatus ?? undefined,
+            ),
         [evaluationStatus],
     );
 
@@ -131,45 +198,56 @@ export function ExplanationPanel({
             return;
         }
 
-        details.open = contextsOpen && contexts.length > 0;
+        details.open =
+            contextsOpen && contexts.length > 0;
     }, [contextsOpen, contexts.length]);
 
     const progressText = useMemo(() => {
         if (!progress) {
-            return "idle";
+            return liveActivityLabel;
         }
 
-        const elapsed = finiteNumber(progress.elapsed).toFixed(2);
-        const chars = Math.max(0, finiteNumber(progress.chars));
-        const tokens = Math.max(0, finiteNumber(progress.approx_tokens));
-        const rate = Math.max(0, finiteNumber(progress.rate_cps)).toFixed(1);
+        const elapsed = finiteNumber(
+            progress.elapsed,
+        ).toFixed(2);
+
+        const chars = Math.max(
+            0,
+            finiteNumber(progress.chars),
+        );
+
+        const tokens = Math.max(
+            0,
+            finiteNumber(progress.approx_tokens),
+        );
+
+        const rate = Math.max(
+            0,
+            finiteNumber(progress.rate_cps),
+        ).toFixed(1);
 
         const parts = [
             `${elapsed}s`,
             `chars=${chars}`,
             `~tok=${tokens}`,
             `rate=${rate}c/s`,
+            liveActivityLabel,
         ];
-
-        if (progress.status) {
-            parts.push(progress.status);
-        }
 
         if (progress.note) {
             parts.push(progress.note);
         }
 
-        if (progress.done) {
-            parts.push("done");
-        }
-
         return parts.join(" | ");
-    }, [progress]);
+    }, [liveActivityLabel, progress]);
 
     function handleQueryKeyDown(
         event: KeyboardEvent<HTMLInputElement>,
     ): void {
-        if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+        if (
+            event.key !== "Enter" ||
+            event.nativeEvent.isComposing
+        ) {
             return;
         }
 
@@ -182,17 +260,27 @@ export function ExplanationPanel({
 
     const hasContexts = contexts.length > 0;
     const hasHeatmap = Boolean(heatmapData?.length);
-    const answerText = answer || (streaming ? "Working..." : "No answer yet.");
+
+    const answerText =
+        answer ||
+        (streaming
+            ? `${hasStartedOutput ? "Streaming" : "Waiting"}${animatedDots}`
+            : "No answer yet.");
 
     return (
-        <GroupBox title="AI Explanation" variant="flash">
+        <GroupBox
+            title="AI Explanation"
+            variant="flash"
+        >
             <div className="explanation-panel">
                 <div className="explain-command-row">
                     <input
                         type="text"
                         value={query}
                         onChange={(event) =>
-                            setQueryAction(event.target.value)
+                            setQueryAction(
+                                event.target.value,
+                            )
                         }
                         onKeyDown={handleQueryKeyDown}
                         placeholder="Ask for an explanation..."
@@ -204,10 +292,15 @@ export function ExplanationPanel({
                         <button
                             type="button"
                             onClick={onExplainAction}
-                            disabled={streaming || !query.trim()}
+                            disabled={
+                                streaming ||
+                                !query.trim()
+                            }
                             aria-label="Explain"
                         >
-                            {streaming ? "Working..." : "Explain"}
+                            {streaming
+                                ? `Working${animatedDots}`
+                                : "Explain"}
                         </button>
 
                         <button
@@ -236,7 +329,9 @@ export function ExplanationPanel({
                     role="status"
                 >
                     {progressText}
-                    {error ? ` | error: ${error}` : ""}
+                    {error
+                        ? ` | error: ${error}`
+                        : ""}
                 </div>
 
                 {evaluationStatus && (
@@ -262,18 +357,29 @@ export function ExplanationPanel({
                                 className="explain-contexts"
                             >
                                 <summary>
-                                    Retrieved contexts ({contexts.length})
+                                    Retrieved contexts (
+                                    {contexts.length})
                                 </summary>
 
                                 <div className="explain-context-list">
-                                    {contexts.map((context, index) => (
-                                        <pre
-                                            key={`${index}-${context.slice(0, 32)}`}
-                                            className="explain-pre explain-context-pre"
-                                        >
-                                            {context}
-                                        </pre>
-                                    ))}
+                                    {contexts.map(
+                                        (
+                                            context,
+                                            index,
+                                        ) => (
+                                            <pre
+                                                key={`${index}-${context.slice(
+                                                    0,
+                                                    32,
+                                                )}`}
+                                                className="explain-pre explain-context-pre"
+                                            >
+                                                {
+                                                    context
+                                                }
+                                            </pre>
+                                        ),
+                                    )}
                                 </div>
                             </details>
                         )}
@@ -285,7 +391,9 @@ export function ExplanationPanel({
                     aria-labelledby="explain-answer-title"
                 >
                     <div className="explain-answer-head">
-                        <h4 id="explain-answer-title">Answer</h4>
+                        <h4 id="explain-answer-title">
+                            Answer
+                        </h4>
 
                         {hallucinationMetrics && (
                             <HallucinationBadgeRow
@@ -325,7 +433,9 @@ export function ExplanationPanel({
                         >
                             <SaliencyHeatmap
                                 title="Context Support Heatmap"
-                                sentences={heatmapData}
+                                sentences={
+                                    heatmapData
+                                }
                             />
                         </div>
                     </section>
