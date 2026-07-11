@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    type KeyboardEvent,
+} from "react";
+
 import GroupBox from "@/src/components/GroupBox";
-import SaliencyHeatmap from "@/src/components/SaliencyHeatmap";
 import HallucinationBadgeRow from "@/src/components/HallucinationBadgeRow";
+import SaliencyHeatmap from "@/src/components/SaliencyHeatmap";
 
 export type Telemetry = Record<string, string | number | undefined>;
 
@@ -23,9 +29,15 @@ export type HallucinationMetrics = {
     faithfulness: number;
 };
 
+export type HeatmapSentence = {
+    idx: number;
+    sentence: string;
+    score: number;
+};
+
 export type ExplanationPanelProps = {
     query: string;
-    setQueryAction: (v: string) => void;
+    setQueryAction: (value: string) => void;
     telemetry: Telemetry;
     streaming: boolean;
     banner: string;
@@ -37,66 +49,140 @@ export type ExplanationPanelProps = {
     onResetAction: () => void;
     contexts?: string[];
     contextsOpen?: boolean;
-    heatmapData?: { idx: number; sentence: string; score: number }[] | null;
+    heatmapData?: HeatmapSentence[] | null;
     hallucinationMetrics?: HallucinationMetrics | null;
     evaluationStatus?: string | null;
 };
 
-export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
-                                                                      query,
-                                                                      setQueryAction,
-                                                                      streaming,
-                                                                      banner,
-                                                                      answer,
-                                                                      progress,
-                                                                      error,
-                                                                      onExplainAction,
-                                                                      onCancelAction,
-                                                                      onResetAction,
-                                                                      contexts,
-                                                                      contextsOpen = false,
-                                                                      heatmapData,
-                                                                      hallucinationMetrics,
-                                                                      evaluationStatus,
-                                                                  }) => {
-    const statusColor = useMemo(() => {
-        const s = (progress?.status || "").toLowerCase();
+function getProgressStatusClass(status?: string): string {
+    const normalized = (status ?? "").toLowerCase();
 
-        if (s.includes("error") || s.includes("stall")) return "rag-status-bad";
-        if (s.includes("done")) return "rag-status-good";
-        if (s.includes("stream")) return "rag-status-info";
-        if (s.includes("connect")) return "rag-status-warn";
+    if (
+        normalized.includes("error") ||
+        normalized.includes("failed") ||
+        normalized.includes("stall")
+    ) {
+        return "rag-status-bad";
+    }
 
-        return "rag-status-muted";
-    }, [progress?.status]);
+    if (
+        normalized.includes("done") ||
+        normalized.includes("ready") ||
+        normalized.includes("complete")
+    ) {
+        return "rag-status-good";
+    }
 
-    const evalStatusColor = useMemo(() => {
-        const s = (evaluationStatus || "").toLowerCase();
+    if (
+        normalized.includes("stream") ||
+        normalized.includes("running") ||
+        normalized.includes("loading")
+    ) {
+        return "rag-status-info";
+    }
 
-        if (s.includes("failed") || s.includes("error")) return "rag-status-bad";
-        if (s.includes("ready") || s.includes("complete")) return "rag-status-good";
-        if (s.includes("running") || s.includes("loading")) return "rag-status-info";
+    if (
+        normalized.includes("connect") ||
+        normalized.includes("waiting")
+    ) {
+        return "rag-status-warn";
+    }
 
-        return "rag-status-muted";
-    }, [evaluationStatus]);
+    return "rag-status-muted";
+}
 
+function finiteNumber(value: number, fallback = 0): number {
+    return Number.isFinite(value) ? value : fallback;
+}
+
+export function ExplanationPanel({
+    query,
+    setQueryAction,
+    streaming,
+    banner,
+    answer,
+    progress,
+    error,
+    onExplainAction,
+    onCancelAction,
+    onResetAction,
+    contexts = [],
+    contextsOpen = false,
+    heatmapData,
+    hallucinationMetrics,
+    evaluationStatus,
+}: ExplanationPanelProps) {
     const contextsRef = useRef<HTMLDetailsElement>(null);
 
-    useEffect(() => {
-        if (contextsOpen && contexts && contexts.length && contextsRef.current) {
-            contextsRef.current.open = true;
-        }
-    }, [contextsOpen, contexts]);
+    const statusColor = useMemo(
+        () => getProgressStatusClass(progress?.status),
+        [progress?.status],
+    );
 
-    const progressText = progress
-        ? `${progress.elapsed.toFixed(2)}s | chars=${progress.chars} | ~tok=${
-            progress.approx_tokens
-        } | rate=${progress.rate_cps.toFixed(1)}c/s${
-            progress.status ? " | " + progress.status : ""
-        }${progress.note ? " | " + progress.note : ""}${
-            progress.done ? " | done" : ""
-        }`
-        : "idle";
+    const evaluationStatusColor = useMemo(
+        () => getProgressStatusClass(evaluationStatus ?? undefined),
+        [evaluationStatus],
+    );
+
+    useEffect(() => {
+        const details = contextsRef.current;
+
+        if (!details) {
+            return;
+        }
+
+        details.open = contextsOpen && contexts.length > 0;
+    }, [contextsOpen, contexts.length]);
+
+    const progressText = useMemo(() => {
+        if (!progress) {
+            return "idle";
+        }
+
+        const elapsed = finiteNumber(progress.elapsed).toFixed(2);
+        const chars = Math.max(0, finiteNumber(progress.chars));
+        const tokens = Math.max(0, finiteNumber(progress.approx_tokens));
+        const rate = Math.max(0, finiteNumber(progress.rate_cps)).toFixed(1);
+
+        const parts = [
+            `${elapsed}s`,
+            `chars=${chars}`,
+            `~tok=${tokens}`,
+            `rate=${rate}c/s`,
+        ];
+
+        if (progress.status) {
+            parts.push(progress.status);
+        }
+
+        if (progress.note) {
+            parts.push(progress.note);
+        }
+
+        if (progress.done) {
+            parts.push("done");
+        }
+
+        return parts.join(" | ");
+    }, [progress]);
+
+    function handleQueryKeyDown(
+        event: KeyboardEvent<HTMLInputElement>,
+    ): void {
+        if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (!streaming && query.trim()) {
+            onExplainAction();
+        }
+    }
+
+    const hasContexts = contexts.length > 0;
+    const hasHeatmap = Boolean(heatmapData?.length);
+    const answerText = answer || (streaming ? "Working..." : "No answer yet.");
 
     return (
         <GroupBox title="AI Explanation" variant="flash">
@@ -105,38 +191,38 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
                     <input
                         type="text"
                         value={query}
-                        onChange={(e) => setQueryAction(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !streaming) onExplainAction();
-                        }}
+                        onChange={(event) =>
+                            setQueryAction(event.target.value)
+                        }
+                        onKeyDown={handleQueryKeyDown}
                         placeholder="Ask for an explanation..."
-                        aria-label="Query input"
+                        aria-label="Explanation query"
                         className="explain-query-input"
                     />
 
                     <div className="explain-actions">
                         <button
-                            onClick={onExplainAction}
-                            disabled={streaming}
-                            aria-label="Explain"
                             type="button"
+                            onClick={onExplainAction}
+                            disabled={streaming || !query.trim()}
+                            aria-label="Explain"
                         >
                             {streaming ? "Working..." : "Explain"}
                         </button>
 
                         <button
+                            type="button"
                             onClick={onCancelAction}
                             disabled={!streaming}
-                            aria-label="Cancel"
-                            type="button"
+                            aria-label="Cancel explanation"
                         >
                             Cancel
                         </button>
 
                         <button
-                            onClick={onResetAction}
-                            aria-label="Reset"
                             type="button"
+                            onClick={onResetAction}
+                            aria-label="Reset explanation"
                         >
                             Reset
                         </button>
@@ -154,12 +240,15 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
                 </div>
 
                 {evaluationStatus && (
-                    <div className={`explain-status-line ${evalStatusColor}`}>
+                    <div
+                        className={`explain-status-line ${evaluationStatusColor}`}
+                        aria-live="polite"
+                    >
                         eval: {evaluationStatus}
                     </div>
                 )}
 
-                {(banner || (contexts && contexts.length > 0)) && (
+                {(banner || hasContexts) && (
                     <div className="explain-support-area">
                         {banner && (
                             <pre className="explain-pre explain-banner">
@@ -167,19 +256,22 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
                             </pre>
                         )}
 
-                        {contexts && contexts.length > 0 && (
-                            <details ref={contextsRef} className="explain-contexts">
+                        {hasContexts && (
+                            <details
+                                ref={contextsRef}
+                                className="explain-contexts"
+                            >
                                 <summary>
                                     Retrieved contexts ({contexts.length})
                                 </summary>
 
                                 <div className="explain-context-list">
-                                    {contexts.map((c, i) => (
+                                    {contexts.map((context, index) => (
                                         <pre
-                                            key={i}
+                                            key={`${index}-${context.slice(0, 32)}`}
                                             className="explain-pre explain-context-pre"
                                         >
-                                            {c}
+                                            {context}
                                         </pre>
                                     ))}
                                 </div>
@@ -188,31 +280,57 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
                     </div>
                 )}
 
-                <div className="explain-answer-head">
-                    <h4>Answer</h4>
+                <section
+                    className="explain-answer-section"
+                    aria-labelledby="explain-answer-title"
+                >
+                    <div className="explain-answer-head">
+                        <h4 id="explain-answer-title">Answer</h4>
 
-                    {hallucinationMetrics && (
-                        <HallucinationBadgeRow
-                            coverage={hallucinationMetrics.coverage}
-                            contradictionRisk={hallucinationMetrics.contradictionRisk}
-                            faithfulness={hallucinationMetrics.faithfulness}
-                        />
-                    )}
-                </div>
-
-                <div className="explain-answer-box">
-                    {answer || (streaming ? "Working..." : "")}
-                </div>
-
-                {heatmapData && heatmapData.length > 0 && (
-                    <div className="explain-heatmap-wrap">
-                        <SaliencyHeatmap
-                            title="Context Support Heatmap"
-                            sentences={heatmapData}
-                        />
+                        {hallucinationMetrics && (
+                            <HallucinationBadgeRow
+                                coverage={
+                                    hallucinationMetrics.coverage
+                                }
+                                contradictionRisk={
+                                    hallucinationMetrics.contradictionRisk
+                                }
+                                faithfulness={
+                                    hallucinationMetrics.faithfulness
+                                }
+                            />
+                        )}
                     </div>
+
+                    <div
+                        className="explain-answer-scroll"
+                        tabIndex={0}
+                        aria-label="Scrollable explanation answer"
+                    >
+                        <div className="explain-answer-box">
+                            {answerText}
+                        </div>
+                    </div>
+                </section>
+
+                {hasHeatmap && heatmapData && (
+                    <section
+                        className="explain-heatmap-section"
+                        aria-label="Context support heatmap"
+                    >
+                        <div
+                            className="explain-heatmap-scroll"
+                            tabIndex={0}
+                            aria-label="Scrollable context support heatmap"
+                        >
+                            <SaliencyHeatmap
+                                title="Context Support Heatmap"
+                                sentences={heatmapData}
+                            />
+                        </div>
+                    </section>
                 )}
             </div>
         </GroupBox>
     );
-};
+}
