@@ -388,14 +388,16 @@ button:disabled {
 
 /* smart explainer dock/body */
 
-/* smart explainer dock/body */
-
 .smart-explainer {
     width: 100%;
     max-width: 338px;
+    min-height: 0;
+    max-height: none;
     margin: 0;
     padding: 0.5rem;
     overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     color: #0f172a;
     background: transparent;
     font-family: var(--sans), sans-serif;
@@ -425,7 +427,11 @@ button:disabled {
     gap: 6px;
     width: 100%;
     max-width: 100%;
+    min-height: 0;
+    max-height: none;
     overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     white-space: normal;
     word-break: normal;
 }
@@ -744,198 +750,44 @@ button:disabled {
     font-size: 11px;
 }
 
-/* Narrow layouts */
+/* Prevent an outer scrollbar around the embedded explainer.
+   Only the explicit inner panes below may scroll. */
 
-@media (max-width: 760px) {
-    .explain-command-row {
-        grid-template-columns: 1fr;
-    }
-
-    .explain-actions {
-        flex-wrap: wrap;
-    }
-
-    .hallucination-row {
-        justify-content: flex-start;
-    }
-
-    .saliency-row {
-        grid-template-columns: 1fr;
-    }
-
-    .explain-answer-scroll {
-        height: 190px;
-        min-height: 190px;
-        max-height: 190px;
-    }
-
-    .explain-heatmap-scroll {
-        height: 230px;
-        min-height: 230px;
-        max-height: 230px;
-    }
-}
-.explain-banner {
-    color: #64748b;
+html:has(.smart-explainer),
+body:has(.smart-explainer) {
+    overflow-x: hidden;
+    overflow-y: hidden;
 }
 
-.explain-contexts {
-    max-width: 100%;
+.rag-page:has(.smart-explainer),
+.rag-page-inner:has(.smart-explainer),
+.rag-page-inner-narrow:has(.smart-explainer),
+.smart-explainer,
+.smart-explainer .fieldset-section,
+.smart-explainer .fieldset-compact,
+.smart-explainer .fieldset-flash,
+.smart-explainer .groupbox-body,
+.smart-explainer .explanation-panel,
+.smart-explainer .explain-support-area,
+.smart-explainer .explain-answer-section,
+.smart-explainer .explain-heatmap-section {
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: hidden;
 }
 
-.explain-contexts summary {
-    cursor: pointer;
-    user-select: none;
-    color: #475569;
-    font-size: 11px;
-    font-weight: 800;
+/* These are the only vertical scrolling regions inside the explainer. */
+
+.smart-explainer .explain-context-list,
+.smart-explainer .explain-answer-scroll,
+.smart-explainer .explain-heatmap-scroll {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
-.explain-context-list {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 5px;
-}
-
-.explain-context-pre {
-    font-size: 10px;
-}
-
-.explain-answer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 2px;
-}
-
-.explain-answer-head h4 {
-    margin: 0;
-    font-size: 12px;
-    line-height: 1.1;
-    font-weight: 900;
-    color: #0f172a;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.explain-answer-box {
-    min-height: 104px;
-    max-width: 100%;
-    overflow: visible;
-    border: 1px solid #cbd5e1;
-    background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
-    padding: 10px;
-    font-family: var(--sans), sans-serif;
-    font-size: 13px;
-    line-height: 1.48;
-    color: #0f172a;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.explain-heatmap-wrap {
-    max-width: 100%;
-    margin-top: 3px;
-}
-
-/* hallucination badges */
-
-.hallucination-row {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.hallucination-chip {
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid transparent;
-    padding: 3px 6px;
-    font-size: 10px;
-    line-height: 1.1;
-    font-weight: 900;
-    white-space: nowrap;
-}
-
-.hallucination-good {
-    border-color: #86efac;
-    background: #dcfce7;
-    color: #166534;
-}
-
-.hallucination-warn {
-    border-color: #fcd34d;
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.hallucination-bad {
-    border-color: #fda4af;
-    background: #ffe4e6;
-    color: #9f1239;
-}
-
-/* saliency */
-
-.saliency-card {
-    max-width: 100%;
-    border: 1px solid #cbd5e1;
-    background:
-            radial-gradient(circle at top left, rgba(124, 58, 237, 0.09), transparent 22rem),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
-    padding: 9px;
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
-}
-
-.saliency-title {
-    margin-bottom: 7px;
-    font-size: 11px;
-    font-weight: 900;
-    color: #334155;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.saliency-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.saliency-row {
-    display: grid;
-    grid-template-columns: minmax(48px, 18%) minmax(0, 1fr);
-    gap: 8px;
-    align-items: start;
-}
-
-.saliency-meter-shell {
-    height: 13px;
-    border: 1px solid #cbd5e1;
-    background: #f1f5f9;
-    overflow: hidden;
-}
-
-.saliency-meter-fill {
-    height: 100%;
-    background: linear-gradient(90deg, rgba(14, 165, 233, 0.18), rgba(124, 58, 237, 0.58));
-}
-
-.saliency-sentence {
-    min-width: 0;
-    font-size: 11px;
-    line-height: 1.35;
-    color: #1e293b;
-    overflow-wrap: anywhere;
-}
 
 /* misc older helpers kept harmless */
 
@@ -1004,5 +856,17 @@ button:disabled {
 
     .saliency-row {
         grid-template-columns: 1fr;
+    }
+
+    .explain-answer-scroll {
+        height: 190px;
+        min-height: 190px;
+        max-height: 190px;
+    }
+
+    .explain-heatmap-scroll {
+        height: 230px;
+        min-height: 230px;
+        max-height: 230px;
     }
 }
