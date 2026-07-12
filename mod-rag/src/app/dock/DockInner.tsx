@@ -130,30 +130,23 @@ function postDockHeight(): void {
     }
 
     const root =
-        document.querySelector<HTMLElement>(".smart-explainer") ??
+        document.getElementById("rag-dock-content") ??
         document.body;
 
-    const rootRect = root.getBoundingClientRect();
+    const rect = root.getBoundingClientRect();
 
-    /*
-     * Measure the actual explainer content rather than the iframe viewport.
-     * clientHeight must not be included because it can lock the measurement
-     * to the old iframe height.
-     */
-    const contentHeight = Math.max(
-        rootRect.bottom,
-        root.scrollHeight,
-        root.offsetHeight,
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
+    const contentHeight = Math.ceil(
+        Math.max(
+            rect.height,
+            root.scrollHeight,
+            root.offsetHeight,
+        ) + 12,
     );
-
-    const height = Math.ceil(contentHeight + 16);
 
     window.parent.postMessage(
         {
             type: "RAG_DOCK_RESIZE",
-            height,
+            height: contentHeight,
         },
         "*",
     );
@@ -360,7 +353,10 @@ export default function DockInner() {
     }
 
     return (
-        <main className="m-0 w-full overflow-hidden bg-transparent p-0">
+        <main
+            id="rag-dock-content"
+            className="m-0 h-auto min-h-0 w-full overflow-visible bg-transparent p-0"
+        >
             {dockError && (
                 <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
                     {dockError}

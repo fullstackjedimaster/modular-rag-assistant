@@ -396,8 +396,7 @@ button:disabled {
     margin: 0;
     padding: 0.5rem;
     overflow: hidden;
-    overflow-x: hidden;
-    overflow-y: hidden;
+
     color: #0f172a;
     background: transparent;
     font-family: var(--sans), sans-serif;
@@ -430,8 +429,7 @@ button:disabled {
     min-height: 0;
     max-height: none;
     overflow: hidden;
-    overflow-x: hidden;
-    overflow-y: hidden;
+
     white-space: normal;
     word-break: normal;
 }
@@ -583,7 +581,7 @@ button:disabled {
     min-height: 180px;
     max-height: 180px;
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     border: 1px solid #cbd5e1;
@@ -760,7 +758,9 @@ button:disabled {
 
 html:has(.smart-explainer),
 body:has(.smart-explainer) {
+    height: auto;
     min-height: 0;
+    max-height: none;
     overflow-x: hidden;
     overflow-y: visible;
 }
@@ -770,10 +770,10 @@ body:has(.smart-explainer) {
 .rag-page-inner-narrow:has(.smart-explainer),
 .smart-explainer,
 .smart-explainer .fieldset-section,
-.smart-explainer .fieldset-compact,
 .smart-explainer .fieldset-flash,
 .smart-explainer .groupbox-body,
 .smart-explainer .explanation-panel {
+    height: auto;
     min-height: 0;
     max-height: none;
     overflow-x: hidden;
