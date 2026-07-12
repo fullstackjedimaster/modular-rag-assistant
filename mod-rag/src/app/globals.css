@@ -579,11 +579,11 @@ button:disabled {
 
 .explain-answer-scroll {
     width: 100%;
-    height: clamp(160px, 27vh, 230px);
-    min-height: 160px;
-    max-height: 230px;
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     border: 1px solid #cbd5e1;
@@ -668,9 +668,9 @@ button:disabled {
 
 .explain-heatmap-scroll {
     width: 100%;
-    height: clamp(190px, 31vh, 270px);
-    min-height: 190px;
-    max-height: 270px;
+    height: 220px;
+    min-height: 220px;
+    max-height: 220px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -753,10 +753,16 @@ button:disabled {
 /* Prevent an outer scrollbar around the embedded explainer.
    Only the explicit inner panes below may scroll. */
 
+/*
+ * The embedded document itself does not scroll.
+ * Its iframe expands to match the complete content height.
+ */
+
 html:has(.smart-explainer),
 body:has(.smart-explainer) {
+    min-height: 0;
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: visible;
 }
 
 .rag-page:has(.smart-explainer),
@@ -767,28 +773,12 @@ body:has(.smart-explainer) {
 .smart-explainer .fieldset-compact,
 .smart-explainer .fieldset-flash,
 .smart-explainer .groupbox-body,
-.smart-explainer .explanation-panel,
-.smart-explainer .explain-support-area,
-.smart-explainer .explain-answer-section,
-.smart-explainer .explain-heatmap-section {
+.smart-explainer .explanation-panel {
     min-height: 0;
     max-height: none;
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: visible;
 }
-
-/* These are the only vertical scrolling regions inside the explainer. */
-
-.smart-explainer .explain-context-list,
-.smart-explainer .explain-answer-scroll,
-.smart-explainer .explain-heatmap-scroll {
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-}
-
-
 /* misc older helpers kept harmless */
 
 .muted {

@@ -129,22 +129,26 @@ function postDockHeight(): void {
         return;
     }
 
-    const body = document.body;
-    const html = document.documentElement;
+    const root =
+        document.querySelector<HTMLElement>(".smart-explainer") ??
+        document.body;
 
-    const bodyRect = body.getBoundingClientRect();
-    const htmlRect = html.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
 
-    const rawHeight = Math.max(
-        bodyRect.bottom,
-        htmlRect.bottom,
-        body.scrollHeight,
-        body.offsetHeight,
-        html.scrollHeight,
-        html.offsetHeight,
+    /*
+     * Measure the actual explainer content rather than the iframe viewport.
+     * clientHeight must not be included because it can lock the measurement
+     * to the old iframe height.
+     */
+    const contentHeight = Math.max(
+        rootRect.bottom,
+        root.scrollHeight,
+        root.offsetHeight,
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
     );
 
-    const height = Math.ceil(rawHeight + 8);
+    const height = Math.ceil(contentHeight + 16);
 
     window.parent.postMessage(
         {
@@ -282,27 +286,57 @@ export default function DockInner() {
         };
     }, []);
 
-    useEffect(() => {
-        postDockHeight();
+   useEffect(() => {
+    let animationFrameId = 0;
 
-        const observer = new ResizeObserver(() => {
+    const reportHeight = () => {
+        window.cancelAnimationFrame(animationFrameId);
+
+        animationFrameId = window.requestAnimationFrame(() => {
             postDockHeight();
         });
+    };
 
-        observer.observe(document.body);
+    reportHeight();
 
-        window.addEventListener("load", postDockHeight);
-        window.addEventListener("resize", postDockHeight);
+    const resizeObserver = new ResizeObserver(reportHeight);
 
-        const timer = window.setInterval(postDockHeight, 500);
+    resizeObserver.observe(document.documentElement);
+    resizeObserver.observe(document.body);
 
-        return () => {
-            observer.disconnect();
-            window.removeEventListener("load", postDockHeight);
-            window.removeEventListener("resize", postDockHeight);
-            window.clearInterval(timer);
-        };
-    }, []);
+    const explainer =
+        document.querySelector<HTMLElement>(".smart-explainer");
+
+    if (explainer) {
+        resizeObserver.observe(explainer);
+    }
+
+    const mutationObserver = new MutationObserver(reportHeight);
+
+    mutationObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        characterData: true,
+    });
+
+    window.addEventListener("load", reportHeight);
+    window.addEventListener("resize", reportHeight);
+
+    const intervalId = window.setInterval(
+        reportHeight,
+        500,
+    );
+
+    return () => {
+        window.cancelAnimationFrame(animationFrameId);
+        resizeObserver.disconnect();
+        mutationObserver.disconnect();
+        window.removeEventListener("load", reportHeight);
+        window.removeEventListener("resize", reportHeight);
+        window.clearInterval(intervalId);
+    };
+}, []);
 
     useEffect(() => {
         postDockHeight();
