@@ -124,26 +124,34 @@ function pickAllowedAttrs(attrs: Attrs, allow: string[]) {
     return out;
 }
 
-function postDockHeight() {
-    if (typeof window === "undefined") return;
+function postDockHeight(): void {
+    if (typeof window === "undefined") {
+        return;
+    }
 
     const body = document.body;
     const html = document.documentElement;
 
-    const height = Math.max(
+    const bodyRect = body.getBoundingClientRect();
+    const htmlRect = html.getBoundingClientRect();
+
+    const rawHeight = Math.max(
+        bodyRect.bottom,
+        htmlRect.bottom,
         body.scrollHeight,
         body.offsetHeight,
-        html.clientHeight,
         html.scrollHeight,
-        html.offsetHeight
+        html.offsetHeight,
     );
+
+    const height = Math.ceil(rawHeight + 8);
 
     window.parent.postMessage(
         {
             type: "RAG_DOCK_RESIZE",
-            height: height + 8,
+            height,
         },
-        "*"
+        "*",
     );
 }
 
