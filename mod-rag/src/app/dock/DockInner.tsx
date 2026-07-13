@@ -34,6 +34,11 @@ type RawRagClientSelectedMessage = {
     hostUrl?: string;
 };
 
+const HEIGHT_PADDING = 12;
+const HEIGHT_CHANGE_THRESHOLD = 2;
+const HEIGHT_POLL_INTERVAL_MS = 250;
+const HEIGHT_SETTLE_DELAYS_MS = [0, 50, 150, 350, 750];
+
 function assert(condition: unknown, msg: string): asserts condition {
     if (!condition) throw new Error(`[dock] ${msg}`);
 }
@@ -124,31 +129,30 @@ function pickAllowedAttrs(attrs: Attrs, allow: string[]) {
     return out;
 }
 
-function postDockHeight(): void {
-    if (typeof window === "undefined") {
-        return;
-    }
+function getFrameId(): string {
+    return new URLSearchParams(window.location.search).get("frameId") || "";
+}
 
+function measureDockHeight(): number {
     const root =
         document.getElementById("rag-dock-content") ??
         document.body;
 
-    const rect = root.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    let deepestBottom = rootRect.bottom + window.scrollY;
 
-    const contentHeight = Math.ceil(
+    for (const child of Array.from(root.children)) {
+        const rect = child.getBoundingClientRect();
+        deepestBottom = Math.max(deepestBottom, rect.bottom + window.scrollY);
+    }
+
+    return Math.ceil(
         Math.max(
-            rect.height,
+            deepestBottom,
+            rootRect.height,
             root.scrollHeight,
             root.offsetHeight,
-        ) + 12,
-    );
-
-    window.parent.postMessage(
-        {
-            type: "RAG_DOCK_RESIZE",
-            height: contentHeight,
-        },
-        "*",
+        ) + HEIGHT_PADDING,
     );
 }
 
@@ -279,61 +283,109 @@ export default function DockInner() {
         };
     }, []);
 
-   useEffect(() => {
-    let animationFrameId = 0;
-
-    const reportHeight = () => {
-        window.cancelAnimationFrame(animationFrameId);
-
-        animationFrameId = window.requestAnimationFrame(() => {
-            postDockHeight();
-        });
-    };
-
-    reportHeight();
-
-    const resizeObserver = new ResizeObserver(reportHeight);
-
-    resizeObserver.observe(document.documentElement);
-    resizeObserver.observe(document.body);
-
-    const explainer =
-        document.querySelector<HTMLElement>(".smart-explainer");
-
-    if (explainer) {
-        resizeObserver.observe(explainer);
-    }
-
-    const mutationObserver = new MutationObserver(reportHeight);
-
-    mutationObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        characterData: true,
-    });
-
-    window.addEventListener("load", reportHeight);
-    window.addEventListener("resize", reportHeight);
-
-    const intervalId = window.setInterval(
-        reportHeight,
-        500,
-    );
-
-    return () => {
-        window.cancelAnimationFrame(animationFrameId);
-        resizeObserver.disconnect();
-        mutationObserver.disconnect();
-        window.removeEventListener("load", reportHeight);
-        window.removeEventListener("resize", reportHeight);
-        window.clearInterval(intervalId);
-    };
-}, []);
-
     useEffect(() => {
-        postDockHeight();
-    }, [loaded, dockError, client, subjectId, attrs, sessionToken, sessionExp]);
+        const frameId = getFrameId();
+        let animationFrameId = 0;
+        let lastHeight = 0;
+        let disposed = false;
+        const settleTimers = new Set<number>();
+
+        function postHeight(): void {
+            if (disposed) return;
+
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = window.requestAnimationFrame(() => {
+                if (disposed) return;
+
+                const height = measureDockHeight();
+
+                if (
+                    lastHeight > 0 &&
+                    Math.abs(height - lastHeight) < HEIGHT_CHANGE_THRESHOLD
+                ) {
+                    return;
+                }
+
+                lastHeight = height;
+
+                window.parent.postMessage(
+                    { type: "RAG_DOCK_RESIZE", frameId, height },
+                    "*",
+                );
+            });
+        }
+
+        function scheduleReports(): void {
+            for (const delay of HEIGHT_SETTLE_DELAYS_MS) {
+                const timerId = window.setTimeout(() => {
+                    settleTimers.delete(timerId);
+                    postHeight();
+                }, delay);
+
+                settleTimers.add(timerId);
+            }
+        }
+
+        scheduleReports();
+
+        const resizeObserver = new ResizeObserver(scheduleReports);
+        resizeObserver.observe(document.documentElement);
+        resizeObserver.observe(document.body);
+
+        const root = document.getElementById("rag-dock-content");
+        if (root) resizeObserver.observe(root);
+
+        const mutationObserver = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                for (const node of Array.from(mutation.addedNodes)) {
+                    if (node instanceof HTMLElement) {
+                        resizeObserver.observe(node);
+                    }
+                }
+            }
+
+            scheduleReports();
+        });
+
+        mutationObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            characterData: true,
+        });
+
+        const onLoad = () => scheduleReports();
+        const onResize = () => scheduleReports();
+        const onTransitionEnd = () => scheduleReports();
+
+        window.addEventListener("load", onLoad);
+        window.addEventListener("resize", onResize);
+        document.addEventListener("transitionend", onTransitionEnd, true);
+        document.addEventListener("animationend", onTransitionEnd, true);
+
+        const intervalId = window.setInterval(
+            postHeight,
+            HEIGHT_POLL_INTERVAL_MS,
+        );
+
+        return () => {
+            disposed = true;
+            window.cancelAnimationFrame(animationFrameId);
+
+            for (const timerId of settleTimers) {
+                window.clearTimeout(timerId);
+            }
+
+            settleTimers.clear();
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+            window.removeEventListener("load", onLoad);
+            window.removeEventListener("resize", onResize);
+            document.removeEventListener("transitionend", onTransitionEnd, true);
+            document.removeEventListener("animationend", onTransitionEnd, true);
+            window.clearInterval(intervalId);
+        };
+    }, []);
 
     const forwardedAttrs = useMemo(() => {
         if (!loaded || !client) return {};
