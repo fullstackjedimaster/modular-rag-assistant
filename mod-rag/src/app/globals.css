@@ -396,7 +396,8 @@ button:disabled {
     margin: 0;
     padding: 0.5rem;
     overflow: hidden;
-
+    overflow-x: hidden;
+    overflow-y: hidden;
     color: #0f172a;
     background: transparent;
     font-family: var(--sans), sans-serif;
@@ -429,7 +430,8 @@ button:disabled {
     min-height: 0;
     max-height: none;
     overflow: hidden;
-
+    overflow-x: hidden;
+    overflow-y: hidden;
     white-space: normal;
     word-break: normal;
 }
@@ -550,10 +552,9 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    min-height: 0;
     max-width: 100%;
     overflow: hidden;
-     flex: 1 1 0;
-    min-height: 220px;
 }
 
 .explain-answer-head {
@@ -578,9 +579,9 @@ button:disabled {
 
 .explain-answer-scroll {
     width: 100%;
-    height: 180px;
-    min-height: 240px;
-    max-height: 240px;
+    height: clamp(160px, 27vh, 230px);
+    min-height: 160px;
+    max-height: 230px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -660,18 +661,16 @@ button:disabled {
 /* Heatmap pane */
 
 .explain-heatmap-section {
-
+    min-height: 0;
     max-width: 100%;
     overflow: hidden;
-    flex: 1.5 1 0;
-    min-height: 300px;
 }
 
 .explain-heatmap-scroll {
     width: 100%;
-    height: 220px;
-    min-height: 220px;
-    max-height: 360px;
+    height: clamp(190px, 31vh, 270px);
+    min-height: 190px;
+    max-height: 270px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -754,18 +753,10 @@ button:disabled {
 /* Prevent an outer scrollbar around the embedded explainer.
    Only the explicit inner panes below may scroll. */
 
-/*
- * The embedded document itself does not scroll.
- * Its iframe expands to match the complete content height.
- */
-
 html:has(.smart-explainer),
 body:has(.smart-explainer) {
-    height: auto;
-    min-height: 0;
-    max-height: none;
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: hidden;
 }
 
 .rag-page:has(.smart-explainer),
@@ -773,15 +764,31 @@ body:has(.smart-explainer) {
 .rag-page-inner-narrow:has(.smart-explainer),
 .smart-explainer,
 .smart-explainer .fieldset-section,
+.smart-explainer .fieldset-compact,
 .smart-explainer .fieldset-flash,
 .smart-explainer .groupbox-body,
-.smart-explainer .explanation-panel {
-    height: auto;
+.smart-explainer .explanation-panel,
+.smart-explainer .explain-support-area,
+.smart-explainer .explain-answer-section,
+.smart-explainer .explain-heatmap-section {
     min-height: 0;
     max-height: none;
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: hidden;
 }
+
+/* These are the only vertical scrolling regions inside the explainer. */
+
+.smart-explainer .explain-context-list,
+.smart-explainer .explain-answer-scroll,
+.smart-explainer .explain-heatmap-scroll {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+
 /* misc older helpers kept harmless */
 
 .muted {
@@ -851,34 +858,15 @@ body:has(.smart-explainer) {
         grid-template-columns: 1fr;
     }
 
-    .explain-answer-scroll,
-.explain-heatmap-scroll {
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
+    .explain-answer-scroll {
+        height: 190px;
+        min-height: 190px;
+        max-height: 190px;
+    }
 
-
-}
-
-html:has(#rag-dock-content),
-body:has(#rag-dock-content) {
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-}
-
-#rag-dock-content {
-    display: block;
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
+    .explain-heatmap-scroll {
+        height: 230px;
+        min-height: 230px;
+        max-height: 230px;
+    }
 }
