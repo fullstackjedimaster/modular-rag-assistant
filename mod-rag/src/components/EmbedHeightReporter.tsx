@@ -2,51 +2,42 @@
 
 import { useEffect } from "react";
 
-const SNAP = 4;
+const DEFAULT_CONTENT_ROOT_ID = "mod-rag-embed-content";
 const MAX_HEIGHT = 5000;
 const CHANGE_THRESHOLD = 2;
-const POLL_INTERVAL_MS = 250;
 const SETTLE_DELAYS_MS = [0, 50, 150, 350, 750];
+
+type EmbedHeightReporterProps = {
+    contentRootId?: string;
+};
 
 function getFrameId(): string {
     return new URLSearchParams(window.location.search).get("frameId") || "";
 }
 
-function snapHeight(height: number): number {
-    return Math.min(MAX_HEIGHT, Math.ceil(height / SNAP) * SNAP);
-}
+function measureContentHeight(root: HTMLElement): number {
+    const rect = root.getBoundingClientRect();
 
-function measureDocumentHeight(): number {
-    const body = document.body;
-    const html = document.documentElement;
-    const scrollingElement = document.scrollingElement;
-
-    const bodyRect = body.getBoundingClientRect();
-    const htmlRect = html.getBoundingClientRect();
-
-    let deepestBottom = 0;
-
-    for (const child of Array.from(body.children)) {
-        const rect = child.getBoundingClientRect();
-        deepestBottom = Math.max(deepestBottom, rect.bottom + window.scrollY);
-    }
-
-    const rawHeight = Math.max(
-        bodyRect.bottom + window.scrollY,
-        htmlRect.bottom + window.scrollY,
-        deepestBottom,
-        body.scrollHeight,
-        body.offsetHeight,
-        html.scrollHeight,
-        html.offsetHeight,
-        scrollingElement?.scrollHeight ?? 0,
+    return Math.min(
+        MAX_HEIGHT,
+        Math.max(1, Math.ceil(Math.max(rect.height, root.offsetHeight))),
     );
-
-    return snapHeight(rawHeight);
 }
 
-export default function EmbedHeightReporter() {
+export default function EmbedHeightReporter({
+    contentRootId = DEFAULT_CONTENT_ROOT_ID,
+}: EmbedHeightReporterProps) {
     useEffect(() => {
+        const root = document.getElementById(contentRootId);
+
+        if (!(root instanceof HTMLElement)) {
+            console.warn(
+                `[EmbedHeightReporter] Missing #${contentRootId}; height reporting disabled.`,
+            );
+            return;
+        }
+
+        const rootElement = root;
         const frameId = getFrameId();
         let animationFrameId = 0;
         let lastHeight = 0;
@@ -60,14 +51,16 @@ export default function EmbedHeightReporter() {
             animationFrameId = window.requestAnimationFrame(() => {
                 if (disposed) return;
 
-                const height = measureDocumentHeight();
+                const height = measureContentHeight(rootElement);
 
-                if (lastHeight > 0 && Math.abs(height - lastHeight) < CHANGE_THRESHOLD) {
+                if (
+                    lastHeight > 0 &&
+                    Math.abs(height - lastHeight) < CHANGE_THRESHOLD
+                ) {
                     return;
                 }
 
                 lastHeight = height;
-
                 window.parent.postMessage(
                     { type: "EMBED_HEIGHT", frameId, height },
                     "*",
@@ -81,72 +74,41 @@ export default function EmbedHeightReporter() {
                     settleTimers.delete(timerId);
                     postMeasuredHeight();
                 }, delay);
-
                 settleTimers.add(timerId);
             }
         }
 
-        document.documentElement.style.overflowX = "hidden";
-        document.body.style.overflowX = "hidden";
-
         scheduleSettledMeasurements();
 
         const resizeObserver = new ResizeObserver(scheduleSettledMeasurements);
-        resizeObserver.observe(document.documentElement);
-        resizeObserver.observe(document.body);
+        resizeObserver.observe(rootElement);
 
-        for (const child of Array.from(document.body.children)) {
-            resizeObserver.observe(child);
-        }
-
-        const mutationObserver = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                for (const node of Array.from(mutation.addedNodes)) {
-                    if (node instanceof HTMLElement) {
-                        resizeObserver.observe(node);
-                    }
-                }
-            }
-
-            scheduleSettledMeasurements();
-        });
-
-        mutationObserver.observe(document.body, {
+        const mutationObserver = new MutationObserver(scheduleSettledMeasurements);
+        mutationObserver.observe(rootElement, {
             childList: true,
             subtree: true,
-            attributes: true,
             characterData: true,
         });
 
-        const onLoad = () => scheduleSettledMeasurements();
         const onResize = () => scheduleSettledMeasurements();
-        const onTransitionEnd = () => scheduleSettledMeasurements();
+        const onLayoutEnd = () => scheduleSettledMeasurements();
 
-        window.addEventListener("load", onLoad);
         window.addEventListener("resize", onResize);
-        document.addEventListener("transitionend", onTransitionEnd, true);
-        document.addEventListener("animationend", onTransitionEnd, true);
-
-        const intervalId = window.setInterval(postMeasuredHeight, POLL_INTERVAL_MS);
+        document.addEventListener("transitionend", onLayoutEnd, true);
+        document.addEventListener("animationend", onLayoutEnd, true);
 
         return () => {
             disposed = true;
             window.cancelAnimationFrame(animationFrameId);
-
-            for (const timerId of settleTimers) {
-                window.clearTimeout(timerId);
-            }
-
+            for (const timerId of settleTimers) window.clearTimeout(timerId);
             settleTimers.clear();
             resizeObserver.disconnect();
             mutationObserver.disconnect();
-            window.removeEventListener("load", onLoad);
             window.removeEventListener("resize", onResize);
-            document.removeEventListener("transitionend", onTransitionEnd, true);
-            document.removeEventListener("animationend", onTransitionEnd, true);
-            window.clearInterval(intervalId);
+            document.removeEventListener("transitionend", onLayoutEnd, true);
+            document.removeEventListener("animationend", onLayoutEnd, true);
         };
-    }, []);
+    }, [contentRootId]);
 
     return null;
 }

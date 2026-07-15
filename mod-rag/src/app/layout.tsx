@@ -1,21 +1,27 @@
-// app/layout.tsx
+// mod-rag/src/app/layout.tsx
+import "@/src/app/globals.css";
+
+import type { ReactNode } from "react";
+
+import EmbedHeightBoundary from "@/src/components/EmbedHeightBoundary";
 import { AppModeProvider } from "@/src/contexts/AppModeContext";
-import "@/src/app/globals.css"
-import  EmbedHeightReporter  from "@/src/components/EmbedHeightReporter";
+
+type RootLayoutProps = {
+    children: ReactNode;
+};
 
 export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <AppModeProvider>
-          {children}
-            <EmbedHeightReporter/>
-        </AppModeProvider>
-      </body>
-    </html>
-  );
+    children,
+}: RootLayoutProps) {
+    return (
+        <html lang="en">
+            <body>
+                <AppModeProvider>
+                    <EmbedHeightBoundary>
+                        {children}
+                    </EmbedHeightBoundary>
+                </AppModeProvider>
+            </body>
+        </html>
+    );
 }

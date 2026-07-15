@@ -1,19 +1,17 @@
-// app/layout.tsx
-import { AppModeProvider } from "@/src/contexts/AppModeContext";
-import "@/src/app/globals.css"
+// mod-rag/src/app/demo/layout.tsx
+import type { ReactNode } from "react";
+
+type DemoLayoutProps = {
+    children: ReactNode;
+};
 
 export default function DemoLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <AppModeProvider>
-          {children}
-        </AppModeProvider>
-      </body>
-    </html>
-  );
+    children,
+}: DemoLayoutProps) {
+    /*
+     * This layout is nested beneath app/layout.tsx.
+     * Do not render another <html>, <body>, AppModeProvider, or
+     * EmbedHeightReporter here.
+     */
+    return children;
 }

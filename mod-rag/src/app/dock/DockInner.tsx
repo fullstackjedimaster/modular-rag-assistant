@@ -58,9 +58,7 @@ type RagDockResizeMessage = {
 
 const CONTENT_ROOT_ID = "rag-dock-content";
 
-const HEIGHT_PADDING = 12;
 const HEIGHT_CHANGE_THRESHOLD = 2;
-const HEIGHT_POLL_INTERVAL_MS = 1000;
 const HEIGHT_SETTLE_DELAYS_MS = [
     0,
     50,
@@ -236,7 +234,7 @@ function measureDockHeight(
         Math.max(
             rect.height,
             root.offsetHeight,
-        ) + HEIGHT_PADDING,
+        ),
     );
 }
 
@@ -637,16 +635,6 @@ export default function DockInner() {
             true,
         );
 
-        /*
-         * Slow fallback only. ResizeObserver and MutationObserver
-         * handle normal layout updates.
-         */
-        const intervalId =
-            window.setInterval(
-                reportHeight,
-                HEIGHT_POLL_INTERVAL_MS,
-            );
-
         return () => {
             disposed = true;
 
@@ -685,9 +673,6 @@ export default function DockInner() {
                 true,
             );
 
-            window.clearInterval(
-                intervalId,
-            );
         };
     }, []);
 
