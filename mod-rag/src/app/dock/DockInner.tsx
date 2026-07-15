@@ -719,15 +719,8 @@ export default function DockInner() {
         subjectId,
     ]);
 
-    if (!loaded) {
-        return (
-            <div className="p-2 text-sm">
-                Loading AI explanation...
-            </div>
-        );
-    }
 
-    return (
+     return (
         <main
             id={CONTENT_ROOT_ID}
             className="m-0 block h-auto min-h-0 w-full bg-transparent p-0"
@@ -735,62 +728,56 @@ export default function DockInner() {
                 overflow: "visible",
             }}
         >
-            {dockError && (
-                <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
-                    {dockError}
+            {!loaded ? (
+                <div className="p-2 text-sm">
+                    Loading AI explanation...
                 </div>
-            )}
-
-            {!ragClientId && (
-                <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
-                    Waiting for a RAG client
-                    selection...
-                </div>
-            )}
-
-            {ragClientId && !client && (
-                <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
-                    Waiting for explainer
-                    configuration...
-                </div>
-            )}
-
-            {client && !subjectId && (
-                <div className="mb-2 border border-gray-500 bg-gray-100 px-2 py-1 text-xs">
-                    Waiting for a panel
-                    selection...
-                </div>
-            )}
-
-            {client ? (
-                <SmartExplainer
-                    subjectId={subjectId}
-                    attrs={forwardedAttrs}
-                    collection={
-                        client.collection
-                    }
-                    llm_model={
-                        client.llm_model
-                    }
-                    embed_model={
-                        client.embed_model
-                    }
-                    prompt={client.prompt}
-                    chaining_mode={
-                        client.chaining_mode
-                    }
-                    telemetry_messages={
-                        client.telemetry_messages
-                    }
-                    showControls={false}
-                    showPanel={true}
-                />
             ) : (
-                <div className="border border-gray-500 bg-white px-2 py-3 text-sm">
-                    The dock is loaded, but no
-                    RAG client configuration has
-                    been resolved yet.
-                </div>
+                <>
+                    {dockError && (
+                        <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
+                            {dockError}
+                        </div>
+                    )}
+
+                    {!ragClientId && (
+                        <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
+                            Waiting for a RAG client selection...
+                        </div>
+                    )}
+
+                    {ragClientId && !client && (
+                        <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
+                            Waiting for explainer configuration...
+                        </div>
+                    )}
+
+                    {client && !subjectId && (
+                        <div className="mb-2 border border-gray-500 bg-gray-100 px-2 py-1 text-xs">
+                            Waiting for a panel selection...
+                        </div>
+                    )}
+
+                    {client ? (
+                        <SmartExplainer
+                            subjectId={subjectId}
+                            attrs={forwardedAttrs}
+                            collection={client.collection}
+                            llm_model={client.llm_model}
+                            embed_model={client.embed_model}
+                            prompt={client.prompt}
+                            chaining_mode={client.chaining_mode}
+                            telemetry_messages={client.telemetry_messages}
+                            showControls={false}
+                            showPanel={true}
+                        />
+                    ) : (
+                        <div className="border border-gray-500 bg-white px-2 py-3 text-sm">
+                            The dock is loaded, but no RAG client configuration has
+                            been resolved yet.
+                        </div>
+                    )}
+                </>
             )}
 
             <div className="hidden">
