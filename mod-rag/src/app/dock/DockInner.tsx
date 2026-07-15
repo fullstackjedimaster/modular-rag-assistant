@@ -1,7 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
+
 import { SmartExplainer } from "@/src/components/SmartExplainer";
 import {
     getRagClient,
@@ -9,7 +14,13 @@ import {
     type TelemetryMessage,
 } from "@/src/lib/ragClientApi";
 
-type AttrValue = string | number | boolean | null | undefined;
+type AttrValue =
+    | string
+    | number
+    | boolean
+    | null
+    | undefined;
+
 type Attrs = Record<string, AttrValue>;
 type RagClientId = RagClientFull["id"];
 
@@ -34,60 +45,114 @@ type RawRagClientSelectedMessage = {
     hostUrl?: string;
 };
 
+type RagDockReadyMessage = {
+    type: "RAG_DOCK_READY";
+    frameId?: string;
+};
+
+type RagDockResizeMessage = {
+    type: "RAG_DOCK_RESIZE";
+    frameId?: string;
+    height: number;
+};
+
+const CONTENT_ROOT_ID = "rag-dock-content";
+
 const HEIGHT_PADDING = 12;
 const HEIGHT_CHANGE_THRESHOLD = 2;
-const HEIGHT_POLL_INTERVAL_MS = 250;
-const HEIGHT_SETTLE_DELAYS_MS = [0, 50, 150, 350, 750];
+const HEIGHT_POLL_INTERVAL_MS = 1000;
+const HEIGHT_SETTLE_DELAYS_MS = [
+    0,
+    50,
+    150,
+    350,
+];
 
-function assert(condition: unknown, msg: string): asserts condition {
-    if (!condition) throw new Error(`[dock] ${msg}`);
+function assert(
+    condition: unknown,
+    message: string,
+): asserts condition {
+    if (!condition) {
+        throw new Error(`[dock] ${message}`);
+    }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+function isObject(
+    value: unknown,
+): value is Record<string, unknown> {
+    return (
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+    );
 }
 
-function isRagClientId(value: string | undefined | null): value is RagClientId {
+function isRagClientId(
+    value: string | undefined | null,
+): value is RagClientId {
     return (
         typeof value === "string" &&
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-            value
+            value,
         )
     );
 }
 
-function isRawTargetSelectedMessage(value: unknown): value is RawTargetSelectedMessage {
-    if (!isObject(value)) return false;
+function isRawTargetSelectedMessage(
+    value: unknown,
+): value is RawTargetSelectedMessage {
+    if (!isObject(value)) {
+        return false;
+    }
 
     return (
         value.type === "TARGET_SELECTED" &&
-        (typeof value.id === "string" || typeof value.subject_id === "string")
+        (
+            typeof value.id === "string" ||
+            typeof value.subject_id === "string"
+        )
     );
 }
 
-function isRawRagSessionMessage(value: unknown): value is RawRagSessionMessage {
-    if (!isObject(value)) return false;
-
-    return value.type === "RAG_SESSION" && typeof value.token === "string";
+function isRawRagSessionMessage(
+    value: unknown,
+): value is RawRagSessionMessage {
+    return (
+        isObject(value) &&
+        value.type === "RAG_SESSION" &&
+        typeof value.token === "string"
+    );
 }
 
-function isRawRagClientSelectedMessage(value: unknown): value is RawRagClientSelectedMessage {
-    if (!isObject(value)) return false;
-
-    return value.type === "RAG_CLIENT_SELECTED" && typeof value.ragClientId === "string";
+function isRawRagClientSelectedMessage(
+    value: unknown,
+): value is RawRagClientSelectedMessage {
+    return (
+        isObject(value) &&
+        value.type === "RAG_CLIENT_SELECTED" &&
+        typeof value.ragClientId === "string"
+    );
 }
 
-function telemetryKey(message: TelemetryMessage): string | null {
+function telemetryKey(
+    message: TelemetryMessage,
+): string | null {
     const key = message?.message_name;
 
-    if (typeof key !== "string") return null;
+    if (typeof key !== "string") {
+        return null;
+    }
 
     const trimmed = key.trim();
 
-    return trimmed.length > 0 ? trimmed : null;
+    return trimmed.length > 0
+        ? trimmed
+        : null;
 }
 
-function requireAllowlist(telemetryMessages?: TelemetryMessage[]): string[] {
+function requireAllowlist(
+    telemetryMessages?: TelemetryMessage[],
+): string[] {
     const messages = telemetryMessages || [];
 
     if (messages.length === 0) {
@@ -96,58 +161,76 @@ function requireAllowlist(telemetryMessages?: TelemetryMessage[]): string[] {
 
     const keys = messages
         .map(telemetryKey)
-        .filter((key): key is string => Boolean(key));
+        .filter(
+            (key): key is string =>
+                Boolean(key),
+        );
 
     assert(
         keys.length === messages.length,
-        "telemetry_messages contains an invalid message_name."
+        "telemetry_messages contains an invalid message_name.",
     );
 
     return keys;
 }
 
-function pickAllowedAttrs(attrs: Attrs, allow: string[]) {
-    const out: Record<string, string | number | boolean> = {};
+function pickAllowedAttrs(
+    attrs: Attrs,
+    allow: string[],
+): Record<
+    string,
+    string | number | boolean
+> {
+    const output: Record<
+        string,
+        string | number | boolean
+    > = {};
 
     for (const key of allow) {
-        const v = attrs[key];
+        const value = attrs[key];
 
-        if (v === null || v === undefined) {
+        if (
+            value === null ||
+            value === undefined
+        ) {
             continue;
         }
 
-        const t = typeof v;
+        const valueType = typeof value;
 
         assert(
-            t === "string" || t === "number" || t === "boolean",
-            `attr "${key}" must be string|number|boolean, got ${t}.`
+            valueType === "string" ||
+                valueType === "number" ||
+                valueType === "boolean",
+            `attr "${key}" must be string|number|boolean, got ${valueType}.`,
         );
 
-        out[key] = v;
+        output[key] = value;
     }
 
-    return out;
+    return output;
 }
 
 function getFrameId(): string {
-    return new URLSearchParams(window.location.search).get("frameId") || "";
+    return (
+        new URLSearchParams(
+            window.location.search,
+        ).get("frameId") || ""
+    );
 }
 
-function measureDockHeight(): number {
-    const root = document.getElementById("rag-dock-content");
-
-    if (!root) {
-        return 0;
-    }
-
-    const rect = root.getBoundingClientRect();
+function measureDockHeight(
+    root: HTMLElement,
+): number {
+    const rect =
+        root.getBoundingClientRect();
 
     /*
-     * Measure only actual dock content.
+     * Measure only the explicit dock content element.
      *
-     * Do not use body.scrollHeight, html.scrollHeight, clientHeight,
-     * or document.scrollingElement here. Those values include the iframe
-     * viewport and create an infinite resize feedback loop on mobile.
+     * Do not use body/html scrollHeight here. Those measurements
+     * can incorporate the iframe viewport and create an endless
+     * resize feedback loop on mobile.
      */
     return Math.ceil(
         Math.max(
@@ -160,39 +243,61 @@ function measureDockHeight(): number {
 export default function DockInner() {
     const params = useSearchParams();
 
-    const forcedRagClientId = params.get("ragClientId") || undefined;
+    const forcedRagClientId =
+        params.get("ragClientId") ||
+        undefined;
 
-    const [subjectId, setSubjectId] = useState<string | undefined>(undefined);
-    const [attrs, setAttrs] = useState<Attrs>({});
-    const [dockError, setDockError] = useState<string | null>(null);
+    const [subjectId, setSubjectId] =
+        useState<string | undefined>();
 
-    const [sessionToken, setSessionToken] = useState<string | undefined>(undefined);
-    const [sessionExp, setSessionExp] = useState<number | undefined>(undefined);
+    const [attrs, setAttrs] =
+        useState<Attrs>({});
 
-    const [ragClientId, setRagClientId] = useState<string | undefined>(
-        forcedRagClientId
-    );
+    const [dockError, setDockError] =
+        useState<string | null>(null);
 
-    const [clientLabel, setClientLabel] = useState<string | undefined>(undefined);
-    const [clientHostUrl, setClientHostUrl] = useState<string | undefined>(undefined);
+    const [sessionToken, setSessionToken] =
+        useState<string | undefined>();
 
-    const [client, setClient] = useState<RagClientFull | null>(null);
-    const [loaded, setLoaded] = useState(false);
+    const [sessionExp, setSessionExp] =
+        useState<number | undefined>();
 
-    const activeRagClientId = useMemo<RagClientId | null>(() => {
-        return isRagClientId(ragClientId) ? ragClientId : null;
-    }, [ragClientId]);
+    const [ragClientId, setRagClientId] =
+        useState<string | undefined>(
+            forcedRagClientId,
+        );
+
+    const [clientLabel, setClientLabel] =
+        useState<string | undefined>();
+
+    const [clientHostUrl, setClientHostUrl] =
+        useState<string | undefined>();
+
+    const [client, setClient] =
+        useState<RagClientFull | null>(null);
+
+    const [loaded, setLoaded] =
+        useState(false);
+
+    const activeRagClientId =
+        useMemo<RagClientId | null>(() => {
+            return isRagClientId(ragClientId)
+                ? ragClientId
+                : null;
+        }, [ragClientId]);
 
     useEffect(() => {
         if (forcedRagClientId) {
-            setRagClientId(forcedRagClientId);
+            setRagClientId(
+                forcedRagClientId,
+            );
         }
     }, [forcedRagClientId]);
 
     useEffect(() => {
         let cancelled = false;
 
-        async function loadClient() {
+        async function loadClient(): Promise<void> {
             setLoaded(false);
             setClient(null);
 
@@ -202,25 +307,50 @@ export default function DockInner() {
             }
 
             if (!activeRagClientId) {
-                setDockError(`Invalid ragClientId: ${ragClientId}`);
+                setDockError(
+                    `Invalid ragClientId: ${ragClientId}`,
+                );
                 setLoaded(true);
                 return;
             }
 
             try {
-                const loadedClient = await getRagClient(activeRagClientId);
+                const loadedClient =
+                    await getRagClient(
+                        activeRagClientId,
+                    );
 
-                if (cancelled) return;
+                if (cancelled) {
+                    return;
+                }
 
                 setClient(loadedClient);
-                setClientLabel((prev) => prev || loadedClient.name);
-                setClientHostUrl((prev) => prev || loadedClient.host_url);
+
+                setClientLabel(
+                    (previous) =>
+                        previous ||
+                        loadedClient.name,
+                );
+
+                setClientHostUrl(
+                    (previous) =>
+                        previous ||
+                        loadedClient.host_url,
+                );
+
                 setDockError(null);
-            } catch (err: unknown) {
-                if (cancelled) return;
+            } catch (error: unknown) {
+                if (cancelled) {
+                    return;
+                }
 
                 setClient(null);
-                setDockError(err instanceof Error ? err.message : String(err));
+
+                setDockError(
+                    error instanceof Error
+                        ? error.message
+                        : String(error),
+                );
             } finally {
                 if (!cancelled) {
                     setLoaded(true);
@@ -233,173 +363,378 @@ export default function DockInner() {
         return () => {
             cancelled = true;
         };
-    }, [ragClientId, activeRagClientId]);
+    }, [
+        ragClientId,
+        activeRagClientId,
+    ]);
 
+    /*
+     * Signal readiness only after this RAG document has mounted.
+     * DockHost uses this handshake instead of trusting iframe onLoad.
+     */
     useEffect(() => {
-        const onMsg = (ev: MessageEvent<unknown>) => {
-            try {
-                if (isRawRagSessionMessage(ev.data)) {
-                    setSessionToken(ev.data.token);
-                    setSessionExp(
-                        typeof ev.data.exp === "number" ? ev.data.exp : undefined
-                    );
-                    setDockError(null);
-                    return;
-                }
-
-                if (isRawRagClientSelectedMessage(ev.data)) {
-                    setRagClientId(ev.data.ragClientId);
-                    setClientLabel(ev.data.label);
-                    setClientHostUrl(ev.data.hostUrl);
-                    setDockError(null);
-                    return;
-                }
-
-                if (isRawTargetSelectedMessage(ev.data)) {
-                    const nextSubjectId = ev.data.id ?? ev.data.subject_id;
-
-                    assert(nextSubjectId, "TARGET_SELECTED missing id/subject_id.");
-
-                    const a = (ev.data.attrs ?? {}) as Attrs;
-
-                    assert(
-                        a && typeof a === "object",
-                        "TARGET_SELECTED.attrs must be an object when provided."
-                    );
-
-                    setSubjectId(nextSubjectId);
-                    setAttrs(a);
-                    setDockError(null);
-                }
-            } catch (err: unknown) {
-                const text = err instanceof Error ? err.message : String(err || "");
-                setDockError(text || "Unknown dock error.");
-            }
+        const message: RagDockReadyMessage = {
+            type: "RAG_DOCK_READY",
+            frameId: getFrameId(),
         };
 
-        window.addEventListener("message", onMsg);
+        window.parent.postMessage(
+            message,
+            "*",
+        );
+    }, []);
+
+    useEffect(() => {
+        function onMessage(
+            event: MessageEvent<unknown>,
+        ): void {
+            try {
+                if (
+                    isRawRagSessionMessage(
+                        event.data,
+                    )
+                ) {
+                    setSessionToken(
+                        event.data.token,
+                    );
+
+                    setSessionExp(
+                        typeof event.data.exp ===
+                            "number"
+                            ? event.data.exp
+                            : undefined,
+                    );
+
+                    setDockError(null);
+                    return;
+                }
+
+                if (
+                    isRawRagClientSelectedMessage(
+                        event.data,
+                    )
+                ) {
+                    setRagClientId(
+                        event.data.ragClientId,
+                    );
+
+                    setClientLabel(
+                        event.data.label,
+                    );
+
+                    setClientHostUrl(
+                        event.data.hostUrl,
+                    );
+
+                    setDockError(null);
+                    return;
+                }
+
+                if (
+                    isRawTargetSelectedMessage(
+                        event.data,
+                    )
+                ) {
+                    const nextSubjectId =
+                        event.data.id ??
+                        event.data.subject_id;
+
+                    assert(
+                        nextSubjectId,
+                        "TARGET_SELECTED missing id/subject_id.",
+                    );
+
+                    const nextAttrs =
+                        (event.data.attrs ??
+                            {}) as Attrs;
+
+                    assert(
+                        isObject(nextAttrs),
+                        "TARGET_SELECTED.attrs must be an object when provided.",
+                    );
+
+                    setSubjectId(
+                        nextSubjectId,
+                    );
+
+                    setAttrs(nextAttrs);
+                    setDockError(null);
+                }
+            } catch (error: unknown) {
+                const text =
+                    error instanceof Error
+                        ? error.message
+                        : String(error || "");
+
+                setDockError(
+                    text ||
+                        "Unknown dock error.",
+                );
+            }
+        }
+
+        window.addEventListener(
+            "message",
+            onMessage,
+        );
 
         return () => {
-            window.removeEventListener("message", onMsg);
+            window.removeEventListener(
+                "message",
+                onMessage,
+            );
         };
     }, []);
 
     useEffect(() => {
-    const frameId =
-        new URLSearchParams(window.location.search).get("frameId") || "";
+        const root =
+            document.getElementById(
+                CONTENT_ROOT_ID,
+            );
 
-    const root = document.getElementById("rag-dock-content");
+        if (!(root instanceof HTMLElement)) {
+            console.warn(
+                `[DockInner] Missing #${CONTENT_ROOT_ID}; dock height reporting disabled.`,
+            );
 
-    if (!root) {
-        return;
-    }
-
-    let animationFrameId = 0;
-    let lastHeight = 0;
-    let disposed = false;
-
-    function reportHeight(): void {
-        if (disposed) {
             return;
         }
 
-        window.cancelAnimationFrame(animationFrameId);
+        /*
+         * Capture the narrowed element so TypeScript retains
+         * HTMLElement rather than HTMLElement | null inside
+         * nested callbacks.
+         */
+        const rootElement = root;
+        const frameId = getFrameId();
 
-        animationFrameId = window.requestAnimationFrame(() => {
+        let animationFrameId = 0;
+        let lastHeight = 0;
+        let disposed = false;
+
+        const settleTimerIds =
+            new Set<number>();
+
+        function reportHeight(): void {
             if (disposed) {
                 return;
             }
 
-            const height = measureDockHeight();
+            window.cancelAnimationFrame(
+                animationFrameId,
+            );
 
-            if (
-                height <= 0 ||
-                Math.abs(height - lastHeight) < 2
+            animationFrameId =
+                window.requestAnimationFrame(
+                    () => {
+                        if (disposed) {
+                            return;
+                        }
+
+                        const height =
+                            measureDockHeight(
+                                rootElement,
+                            );
+
+                        if (height <= 0) {
+                            return;
+                        }
+
+                        if (
+                            lastHeight > 0 &&
+                            Math.abs(
+                                height -
+                                    lastHeight,
+                            ) <
+                                HEIGHT_CHANGE_THRESHOLD
+                        ) {
+                            return;
+                        }
+
+                        lastHeight = height;
+
+                        const message:
+                            RagDockResizeMessage = {
+                                type:
+                                    "RAG_DOCK_RESIZE",
+                                frameId,
+                                height,
+                            };
+
+                        window.parent.postMessage(
+                            message,
+                            "*",
+                        );
+                    },
+                );
+        }
+
+        function scheduleReports(): void {
+            for (
+                const delay of
+                HEIGHT_SETTLE_DELAYS_MS
             ) {
-                return;
+                const timerId =
+                    window.setTimeout(() => {
+                        settleTimerIds.delete(
+                            timerId,
+                        );
+
+                        reportHeight();
+                    }, delay);
+
+                settleTimerIds.add(timerId);
+            }
+        }
+
+        scheduleReports();
+
+        const resizeObserver =
+            new ResizeObserver(() => {
+                scheduleReports();
+            });
+
+        resizeObserver.observe(
+            rootElement,
+        );
+
+        const mutationObserver =
+            new MutationObserver(() => {
+                scheduleReports();
+            });
+
+        mutationObserver.observe(
+            rootElement,
+            {
+                childList: true,
+                subtree: true,
+                characterData: true,
+            },
+        );
+
+        const onWindowResize = (): void => {
+            scheduleReports();
+        };
+
+        const onLayoutEnd = (): void => {
+            scheduleReports();
+        };
+
+        window.addEventListener(
+            "resize",
+            onWindowResize,
+        );
+
+        document.addEventListener(
+            "transitionend",
+            onLayoutEnd,
+            true,
+        );
+
+        document.addEventListener(
+            "animationend",
+            onLayoutEnd,
+            true,
+        );
+
+        /*
+         * Slow fallback only. ResizeObserver and MutationObserver
+         * handle normal layout updates.
+         */
+        const intervalId =
+            window.setInterval(
+                reportHeight,
+                HEIGHT_POLL_INTERVAL_MS,
+            );
+
+        return () => {
+            disposed = true;
+
+            window.cancelAnimationFrame(
+                animationFrameId,
+            );
+
+            for (
+                const timerId of
+                settleTimerIds
+            ) {
+                window.clearTimeout(
+                    timerId,
+                );
             }
 
-            lastHeight = height;
+            settleTimerIds.clear();
 
-            window.parent.postMessage(
-                {
-                    type: "RAG_DOCK_RESIZE",
-                    frameId,
-                    height,
-                },
-                "*",
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+
+            window.removeEventListener(
+                "resize",
+                onWindowResize,
             );
-        });
-    }
 
-    function scheduleReports(): void {
-        reportHeight();
-        window.setTimeout(reportHeight, 50);
-        window.setTimeout(reportHeight, 150);
-        window.setTimeout(reportHeight, 350);
-    }
+            document.removeEventListener(
+                "transitionend",
+                onLayoutEnd,
+                true,
+            );
 
-    scheduleReports();
+            document.removeEventListener(
+                "animationend",
+                onLayoutEnd,
+                true,
+            );
 
-    const resizeObserver = new ResizeObserver(scheduleReports);
-    resizeObserver.observe(root);
-
-    const mutationObserver = new MutationObserver(scheduleReports);
-
-    mutationObserver.observe(root, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-    });
-
-    window.addEventListener("resize", scheduleReports);
-
-    /*
-     * Slow fallback only. This should not drive normal sizing.
-     */
-    const intervalId = window.setInterval(
-        reportHeight,
-        1000,
-    );
-
-    return () => {
-        disposed = true;
-        window.cancelAnimationFrame(animationFrameId);
-        resizeObserver.disconnect();
-        mutationObserver.disconnect();
-        window.removeEventListener(
-            "resize",
-            scheduleReports,
-        );
-        window.clearInterval(intervalId);
-    };
-}, []);
+            window.clearInterval(
+                intervalId,
+            );
+        };
+    }, []);
 
     const forwardedAttrs = useMemo(() => {
-        if (!loaded || !client) return {};
-        if (!subjectId) return {};
+        if (
+            !loaded ||
+            !client ||
+            !subjectId
+        ) {
+            return {};
+        }
 
-        const allow = requireAllowlist(client.telemetry_messages);
+        const allow = requireAllowlist(
+            client.telemetry_messages,
+        );
 
         if (allow.length === 0) {
             return {};
         }
 
-        return pickAllowedAttrs(attrs, allow);
-    }, [attrs, loaded, client, subjectId]);
+        return pickAllowedAttrs(
+            attrs,
+            allow,
+        );
+    }, [
+        attrs,
+        loaded,
+        client,
+        subjectId,
+    ]);
 
     if (!loaded) {
-        return <div className="p-2 text-sm">Loading AI explanation...</div>;
+        return (
+            <div className="p-2 text-sm">
+                Loading AI explanation...
+            </div>
+        );
     }
 
     return (
         <main
-    id="rag-dock-content"
-    className="m-0 block h-auto min-h-0 w-full bg-transparent p-0"
-    style={{
-        overflow: "visible",
-    }}
->
+            id={CONTENT_ROOT_ID}
+            className="m-0 block h-auto min-h-0 w-full bg-transparent p-0"
+            style={{
+                overflow: "visible",
+            }}
+        >
             {dockError && (
                 <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
                     {dockError}
@@ -408,19 +743,22 @@ export default function DockInner() {
 
             {!ragClientId && (
                 <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
-                    Waiting for a RAG client selection...
+                    Waiting for a RAG client
+                    selection...
                 </div>
             )}
 
             {ragClientId && !client && (
                 <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
-                    Waiting for explainer configuration...
+                    Waiting for explainer
+                    configuration...
                 </div>
             )}
 
             {client && !subjectId && (
                 <div className="mb-2 border border-gray-500 bg-gray-100 px-2 py-1 text-xs">
-                    Waiting for a panel selection...
+                    Waiting for a panel
+                    selection...
                 </div>
             )}
 
@@ -428,18 +766,30 @@ export default function DockInner() {
                 <SmartExplainer
                     subjectId={subjectId}
                     attrs={forwardedAttrs}
-                    collection={client.collection}
-                    llm_model={client.llm_model}
-                    embed_model={client.embed_model}
+                    collection={
+                        client.collection
+                    }
+                    llm_model={
+                        client.llm_model
+                    }
+                    embed_model={
+                        client.embed_model
+                    }
                     prompt={client.prompt}
-                    chaining_mode={client.chaining_mode}
-                    telemetry_messages={client.telemetry_messages}
+                    chaining_mode={
+                        client.chaining_mode
+                    }
+                    telemetry_messages={
+                        client.telemetry_messages
+                    }
                     showControls={false}
                     showPanel={true}
                 />
             ) : (
                 <div className="border border-gray-500 bg-white px-2 py-3 text-sm">
-                    The dock is loaded, but no RAG client configuration has been resolved yet.
+                    The dock is loaded, but no
+                    RAG client configuration has
+                    been resolved yet.
                 </div>
             )}
 
