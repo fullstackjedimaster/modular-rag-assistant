@@ -848,15 +848,34 @@ body:has(.smart-explainer) {
         grid-template-columns: 1fr;
     }
 
-    .explain-answer-scroll {
-        height: 190px;
-        min-height: 190px;
-        max-height: 190px;
-    }
+    .explain-answer-scroll,
+.explain-heatmap-scroll {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
 
-    .explain-heatmap-scroll {
-        height: 230px;
-        min-height: 230px;
-        max-height: 230px;
-    }
+
+}
+
+html:has(#rag-dock-content),
+body:has(#rag-dock-content) {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#rag-dock-content {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
 }

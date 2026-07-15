@@ -134,23 +134,24 @@ function getFrameId(): string {
 }
 
 function measureDockHeight(): number {
-    const root =
-        document.getElementById("rag-dock-content") ??
-        document.body;
+    const root = document.getElementById("rag-dock-content");
 
-    const rootRect = root.getBoundingClientRect();
-    let deepestBottom = rootRect.bottom + window.scrollY;
-
-    for (const child of Array.from(root.children)) {
-        const rect = child.getBoundingClientRect();
-        deepestBottom = Math.max(deepestBottom, rect.bottom + window.scrollY);
+    if (!root) {
+        return 0;
     }
 
+    const rect = root.getBoundingClientRect();
+
+    /*
+     * Measure only actual dock content.
+     *
+     * Do not use body.scrollHeight, html.scrollHeight, clientHeight,
+     * or document.scrollingElement here. Those values include the iframe
+     * viewport and create an infinite resize feedback loop on mobile.
+     */
     return Math.ceil(
         Math.max(
-            deepestBottom,
-            rootRect.height,
-            root.scrollHeight,
+            rect.height,
             root.offsetHeight,
         ) + HEIGHT_PADDING,
     );
@@ -284,108 +285,95 @@ export default function DockInner() {
     }, []);
 
     useEffect(() => {
-        const frameId = getFrameId();
-        let animationFrameId = 0;
-        let lastHeight = 0;
-        let disposed = false;
-        const settleTimers = new Set<number>();
+    const frameId =
+        new URLSearchParams(window.location.search).get("frameId") || "";
 
-        function postHeight(): void {
-            if (disposed) return;
+    const root = document.getElementById("rag-dock-content");
 
-            window.cancelAnimationFrame(animationFrameId);
-            animationFrameId = window.requestAnimationFrame(() => {
-                if (disposed) return;
+    if (!root) {
+        return;
+    }
 
-                const height = measureDockHeight();
+    let animationFrameId = 0;
+    let lastHeight = 0;
+    let disposed = false;
 
-                if (
-                    lastHeight > 0 &&
-                    Math.abs(height - lastHeight) < HEIGHT_CHANGE_THRESHOLD
-                ) {
-                    return;
-                }
-
-                lastHeight = height;
-
-                window.parent.postMessage(
-                    { type: "RAG_DOCK_RESIZE", frameId, height },
-                    "*",
-                );
-            });
+    function reportHeight(): void {
+        if (disposed) {
+            return;
         }
 
-        function scheduleReports(): void {
-            for (const delay of HEIGHT_SETTLE_DELAYS_MS) {
-                const timerId = window.setTimeout(() => {
-                    settleTimers.delete(timerId);
-                    postHeight();
-                }, delay);
+        window.cancelAnimationFrame(animationFrameId);
 
-                settleTimers.add(timerId);
-            }
-        }
-
-        scheduleReports();
-
-        const resizeObserver = new ResizeObserver(scheduleReports);
-        resizeObserver.observe(document.documentElement);
-        resizeObserver.observe(document.body);
-
-        const root = document.getElementById("rag-dock-content");
-        if (root) resizeObserver.observe(root);
-
-        const mutationObserver = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                for (const node of Array.from(mutation.addedNodes)) {
-                    if (node instanceof HTMLElement) {
-                        resizeObserver.observe(node);
-                    }
-                }
+        animationFrameId = window.requestAnimationFrame(() => {
+            if (disposed) {
+                return;
             }
 
-            scheduleReports();
+            const height = measureDockHeight();
+
+            if (
+                height <= 0 ||
+                Math.abs(height - lastHeight) < 2
+            ) {
+                return;
+            }
+
+            lastHeight = height;
+
+            window.parent.postMessage(
+                {
+                    type: "RAG_DOCK_RESIZE",
+                    frameId,
+                    height,
+                },
+                "*",
+            );
         });
+    }
 
-        mutationObserver.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            characterData: true,
-        });
+    function scheduleReports(): void {
+        reportHeight();
+        window.setTimeout(reportHeight, 50);
+        window.setTimeout(reportHeight, 150);
+        window.setTimeout(reportHeight, 350);
+    }
 
-        const onLoad = () => scheduleReports();
-        const onResize = () => scheduleReports();
-        const onTransitionEnd = () => scheduleReports();
+    scheduleReports();
 
-        window.addEventListener("load", onLoad);
-        window.addEventListener("resize", onResize);
-        document.addEventListener("transitionend", onTransitionEnd, true);
-        document.addEventListener("animationend", onTransitionEnd, true);
+    const resizeObserver = new ResizeObserver(scheduleReports);
+    resizeObserver.observe(root);
 
-        const intervalId = window.setInterval(
-            postHeight,
-            HEIGHT_POLL_INTERVAL_MS,
+    const mutationObserver = new MutationObserver(scheduleReports);
+
+    mutationObserver.observe(root, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+    });
+
+    window.addEventListener("resize", scheduleReports);
+
+    /*
+     * Slow fallback only. This should not drive normal sizing.
+     */
+    const intervalId = window.setInterval(
+        reportHeight,
+        1000,
+    );
+
+    return () => {
+        disposed = true;
+        window.cancelAnimationFrame(animationFrameId);
+        resizeObserver.disconnect();
+        mutationObserver.disconnect();
+        window.removeEventListener(
+            "resize",
+            scheduleReports,
         );
-
-        return () => {
-            disposed = true;
-            window.cancelAnimationFrame(animationFrameId);
-
-            for (const timerId of settleTimers) {
-                window.clearTimeout(timerId);
-            }
-
-            settleTimers.clear();
-            resizeObserver.disconnect();
-            mutationObserver.disconnect();
-            window.removeEventListener("load", onLoad);
-            window.removeEventListener("resize", onResize);
-            document.removeEventListener("transitionend", onTransitionEnd, true);
-            document.removeEventListener("animationend", onTransitionEnd, true);
-            window.clearInterval(intervalId);
-        };
-    }, []);
+        window.clearInterval(intervalId);
+    };
+}, []);
 
     const forwardedAttrs = useMemo(() => {
         if (!loaded || !client) return {};
@@ -406,9 +394,12 @@ export default function DockInner() {
 
     return (
         <main
-            id="rag-dock-content"
-            className="m-0 h-auto min-h-0 w-full overflow-visible bg-transparent p-0"
-        >
+    id="rag-dock-content"
+    className="m-0 block h-auto min-h-0 w-full bg-transparent p-0"
+    style={{
+        overflow: "visible",
+    }}
+>
             {dockError && (
                 <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
                     {dockError}
