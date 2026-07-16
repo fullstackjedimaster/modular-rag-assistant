@@ -17,6 +17,11 @@
     --violet: #7c3aed;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+    /* Explainer sizing: change these first when tuning the dock. */
+    --explainer-max-width: 100%;
+    --answer-pane-height: 190px;
+    --heatmap-pane-height: 360px;
 }
 
 * {
@@ -390,19 +395,16 @@ button:disabled {
 
 .smart-explainer {
     width: 100%;
-    max-width: 338px;
+    max-width: none;
     min-height: 0;
     max-height: none;
     margin: 0;
     padding: 0.5rem;
     overflow: hidden;
-    overflow-x: hidden;
-    overflow-y: hidden;
     color: #0f172a;
     background: transparent;
     font-family: var(--sans), sans-serif;
     font-size: 13px;
-    box-sizing: border-box;
 }
 
 .smart-explainer *,
@@ -429,9 +431,7 @@ button:disabled {
     max-width: 100%;
     min-height: 0;
     max-height: none;
-    overflow: hidden;
-    overflow-x: hidden;
-    overflow-y: hidden;
+    overflow: visible;
     white-space: normal;
     word-break: normal;
 }
@@ -552,8 +552,9 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    min-height: 0;
+    width: 100%;
     max-width: 100%;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -579,9 +580,9 @@ button:disabled {
 
 .explain-answer-scroll {
     width: 100%;
-    height: clamp(160px, 27vh, 230px);
-    min-height: 160px;
-    max-height: 230px;
+    height: var(--answer-pane-height);
+    min-height: var(--answer-pane-height);
+    max-height: var(--answer-pane-height);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -661,16 +662,17 @@ button:disabled {
 /* Heatmap pane */
 
 .explain-heatmap-section {
-    min-height: 0;
+    width: 100%;
     max-width: 100%;
+    min-height: 0;
     overflow: hidden;
 }
 
 .explain-heatmap-scroll {
     width: 100%;
-    height: clamp(190px, 31vh, 270px);
-    min-height: 190px;
-    max-height: 270px;
+    height: var(--heatmap-pane-height);
+    min-height: var(--heatmap-pane-height);
+    max-height: var(--heatmap-pane-height);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -767,14 +769,12 @@ body:has(.smart-explainer) {
 .smart-explainer .fieldset-compact,
 .smart-explainer .fieldset-flash,
 .smart-explainer .groupbox-body,
-.smart-explainer .explanation-panel,
-.smart-explainer .explain-support-area,
-.smart-explainer .explain-answer-section,
-.smart-explainer .explain-heatmap-section {
+.smart-explainer .explanation-panel {
+    height: auto;
     min-height: 0;
     max-height: none;
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: visible;
 }
 
 /* These are the only vertical scrolling regions inside the explainer. */
@@ -787,7 +787,6 @@ body:has(.smart-explainer) {
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
 }
-
 
 /* misc older helpers kept harmless */
 
@@ -828,6 +827,11 @@ body:has(.smart-explainer) {
 }
 
 @media (max-width: 760px) {
+    :root {
+        --answer-pane-height: 180px;
+        --heatmap-pane-height: 320px;
+    }
+
     .rag-page-inner {
         padding: 4px;
     }
@@ -858,15 +862,29 @@ body:has(.smart-explainer) {
         grid-template-columns: 1fr;
     }
 
-    .explain-answer-scroll {
-        height: 190px;
-        min-height: 190px;
-        max-height: 190px;
+    .smart-explainer {
+        padding: 4px;
     }
+}
 
-    .explain-heatmap-scroll {
-        height: 230px;
-        min-height: 230px;
-        max-height: 230px;
-    }
+html:has(#rag-dock-content),
+body:has(#rag-dock-content) {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#rag-dock-content {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
 }
