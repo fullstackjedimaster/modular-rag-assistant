@@ -45,6 +45,22 @@ type RawRagClientSelectedMessage = {
     hostUrl?: string;
 };
 
+type HostCssVars = Record<string, string>;
+
+type HostThemeMetadata = {
+    app?: string;
+    mode?: string;
+    density?: string;
+    theme?: string;
+};
+
+type RawHostCssVarsMessage = {
+    type: "HOST_CSS_VARS";
+    frameId?: string;
+    vars: HostCssVars;
+    host?: HostThemeMetadata;
+};
+
 type RagDockReadyMessage = {
     type: "RAG_DOCK_READY";
     frameId?: string;
@@ -59,12 +75,16 @@ type RagDockResizeMessage = {
 const CONTENT_ROOT_ID = "rag-dock-content";
 
 const HEIGHT_CHANGE_THRESHOLD = 2;
+
 const HEIGHT_SETTLE_DELAYS_MS = [
     0,
     50,
     150,
     350,
 ];
+
+const CSS_CUSTOM_PROPERTY_PATTERN =
+    /^--[a-zA-Z0-9_-]+$/;
 
 function assert(
     condition: unknown,
@@ -129,6 +149,80 @@ function isRawRagClientSelectedMessage(
         isObject(value) &&
         value.type === "RAG_CLIENT_SELECTED" &&
         typeof value.ragClientId === "string"
+    );
+}
+
+function isHostThemeMetadata(
+    value: unknown,
+): value is HostThemeMetadata {
+    if (value === undefined) {
+        return true;
+    }
+
+    if (!isObject(value)) {
+        return false;
+    }
+
+    const allowedKeys = [
+        "app",
+        "mode",
+        "density",
+        "theme",
+    ];
+
+    for (const key of allowedKeys) {
+        const fieldValue = value[key];
+
+        if (
+            fieldValue !== undefined &&
+            typeof fieldValue !== "string"
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function isHostCssVars(
+    value: unknown,
+): value is HostCssVars {
+    if (!isObject(value)) {
+        return false;
+    }
+
+    for (const [name, cssValue] of Object.entries(value)) {
+        if (
+            !CSS_CUSTOM_PROPERTY_PATTERN.test(name) ||
+            typeof cssValue !== "string"
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function isRawHostCssVarsMessage(
+    value: unknown,
+): value is RawHostCssVarsMessage {
+    if (
+        !isObject(value) ||
+        value.type !== "HOST_CSS_VARS"
+    ) {
+        return false;
+    }
+
+    if (
+        value.frameId !== undefined &&
+        typeof value.frameId !== "string"
+    ) {
+        return false;
+    }
+
+    return (
+        isHostCssVars(value.vars) &&
+        isHostThemeMetadata(value.host)
     );
 }
 
@@ -238,6 +332,61 @@ function measureDockHeight(
     );
 }
 
+function applyHostCssVars(
+    root: HTMLElement,
+    vars: HostCssVars,
+): void {
+    for (const [name, value] of Object.entries(vars)) {
+        if (
+            !CSS_CUSTOM_PROPERTY_PATTERN.test(name)
+        ) {
+            continue;
+        }
+
+        root.style.setProperty(
+            name,
+            value.trim(),
+        );
+    }
+}
+
+function applyHostMetadata(
+    root: HTMLElement,
+    host?: HostThemeMetadata,
+): void {
+    if (!host) {
+        return;
+    }
+
+    if (host.app) {
+        root.dataset.hostApp =
+            host.app;
+    } else {
+        delete root.dataset.hostApp;
+    }
+
+    if (host.mode) {
+        root.dataset.hostMode =
+            host.mode;
+    } else {
+        delete root.dataset.hostMode;
+    }
+
+    if (host.density) {
+        root.dataset.hostDensity =
+            host.density;
+    } else {
+        delete root.dataset.hostDensity;
+    }
+
+    if (host.theme) {
+        root.dataset.hostTheme =
+            host.theme;
+    } else {
+        delete root.dataset.hostTheme;
+    }
+}
+
 export default function DockInner() {
     const params = useSearchParams();
 
@@ -308,6 +457,7 @@ export default function DockInner() {
                 setDockError(
                     `Invalid ragClientId: ${ragClientId}`,
                 );
+
                 setLoaded(true);
                 return;
             }
@@ -371,9 +521,12 @@ export default function DockInner() {
      * DockHost uses this handshake instead of trusting iframe onLoad.
      */
     useEffect(() => {
+        const frameId = getFrameId();
+
         const message: RagDockReadyMessage = {
             type: "RAG_DOCK_READY",
-            frameId: getFrameId(),
+            frameId:
+                frameId || undefined,
         };
 
         window.parent.postMessage(
@@ -386,7 +539,65 @@ export default function DockInner() {
         function onMessage(
             event: MessageEvent<unknown>,
         ): void {
+            /*
+             * Every dock-control message must come from the direct
+             * parent that owns this iframe.
+             */
+            if (
+                event.source !==
+                window.parent
+            ) {
+                return;
+            }
+
             try {
+                if (
+                    isRawHostCssVarsMessage(
+                        event.data,
+                    )
+                ) {
+                    const currentFrameId =
+                        getFrameId();
+
+                    if (
+                        event.data.frameId &&
+                        currentFrameId &&
+                        event.data.frameId !==
+                            currentFrameId
+                    ) {
+                        return;
+                    }
+
+                    const root =
+                        document.getElementById(
+                            CONTENT_ROOT_ID,
+                        );
+
+                    if (
+                        !(
+                            root instanceof
+                            HTMLElement
+                        )
+                    ) {
+                        throw new Error(
+                            `Missing #${CONTENT_ROOT_ID}; host CSS variables could not be applied.`,
+                        );
+                    }
+
+                    applyHostCssVars(
+                        root,
+                        event.data.vars,
+                    );
+
+                    applyHostMetadata(
+                        root,
+                        event.data.host,
+                    );
+
+                    setDockError(null);
+                    return;
+                }
+
                 if (
                     isRawRagSessionMessage(
                         event.data,
@@ -555,7 +766,9 @@ export default function DockInner() {
                             RagDockResizeMessage = {
                                 type:
                                     "RAG_DOCK_RESIZE",
-                                frameId,
+                                frameId:
+                                    frameId ||
+                                    undefined,
                                 height,
                             };
 
@@ -607,6 +820,15 @@ export default function DockInner() {
                 childList: true,
                 subtree: true,
                 characterData: true,
+                attributes: true,
+                attributeFilter: [
+                    "class",
+                    "style",
+                    "data-host-app",
+                    "data-host-mode",
+                    "data-host-density",
+                    "data-host-theme",
+                ],
             },
         );
 
@@ -672,7 +894,6 @@ export default function DockInner() {
                 onLayoutEnd,
                 true,
             );
-
         };
     }, []);
 
@@ -704,41 +925,90 @@ export default function DockInner() {
         subjectId,
     ]);
 
-
-     return (
+    return (
         <main
             id={CONTENT_ROOT_ID}
             className="m-0 block h-auto min-h-0 w-full bg-transparent p-0"
             style={{
                 overflow: "visible",
+                color: "var(--text, inherit)",
+                fontFamily:
+                    "var(--font-family, inherit)",
             }}
         >
             {!loaded ? (
-                <div className="p-2 text-sm">
+                <div
+                    className="p-2 text-sm"
+                    style={{
+                        color:
+                            "var(--text, inherit)",
+                    }}
+                >
                     Loading AI explanation...
                 </div>
             ) : (
                 <>
                     {dockError && (
-                        <div className="mb-2 border border-red-700 bg-red-100 px-2 py-1 text-xs text-red-800">
+                        <div
+                            className="mb-2 border px-2 py-1 text-xs"
+                            role="alert"
+                            style={{
+                                borderColor:
+                                    "var(--danger-border, #b91c1c)",
+                                background:
+                                    "var(--danger-bg, #fee2e2)",
+                                color:
+                                    "var(--danger-text, #991b1b)",
+                            }}
+                        >
                             {dockError}
                         </div>
                     )}
 
                     {!ragClientId && (
-                        <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
+                        <div
+                            className="mb-2 border px-2 py-1 text-xs"
+                            style={{
+                                borderColor:
+                                    "var(--warning-border, #a16207)",
+                                background:
+                                    "var(--warning-bg, #fef9c3)",
+                                color:
+                                    "var(--warning-text, var(--text, #111827))",
+                            }}
+                        >
                             Waiting for a RAG client selection...
                         </div>
                     )}
 
                     {ragClientId && !client && (
-                        <div className="mb-2 border border-yellow-700 bg-yellow-100 px-2 py-1 text-xs">
+                        <div
+                            className="mb-2 border px-2 py-1 text-xs"
+                            style={{
+                                borderColor:
+                                    "var(--warning-border, #a16207)",
+                                background:
+                                    "var(--warning-bg, #fef9c3)",
+                                color:
+                                    "var(--warning-text, var(--text, #111827))",
+                            }}
+                        >
                             Waiting for explainer configuration...
                         </div>
                     )}
 
                     {client && !subjectId && (
-                        <div className="mb-2 border border-gray-500 bg-gray-100 px-2 py-1 text-xs">
+                        <div
+                            className="mb-2 border px-2 py-1 text-xs"
+                            style={{
+                                borderColor:
+                                    "var(--border, #6b7280)",
+                                background:
+                                    "var(--muted-bg, var(--card, #f3f4f6))",
+                                color:
+                                    "var(--muted-text, var(--text, #111827))",
+                            }}
+                        >
                             Waiting for a panel selection...
                         </div>
                     )}
@@ -757,7 +1027,17 @@ export default function DockInner() {
                             showPanel={true}
                         />
                     ) : (
-                        <div className="border border-gray-500 bg-white px-2 py-3 text-sm">
+                        <div
+                            className="border px-2 py-3 text-sm"
+                            style={{
+                                borderColor:
+                                    "var(--border, #6b7280)",
+                                background:
+                                    "var(--card, #ffffff)",
+                                color:
+                                    "var(--text, #111827)",
+                            }}
+                        >
                             The dock is loaded, but no RAG client configuration has
                             been resolved yet.
                         </div>

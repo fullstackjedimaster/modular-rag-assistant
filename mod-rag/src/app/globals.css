@@ -1,25 +1,128 @@
 @import "tailwindcss";
 
+/*
+ * The dock runs on the Mod RAG origin, so it must load the host font itself.
+ * These URLs deliberately point at the IoT application that owns the assets.
+ */
+@font-face {
+    font-family: "Orbitron";
+    src: url("https://mesh-daq.fullstackjedi.dev/fonts/Orbitron-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Orbitron";
+    src: url("https://mesh-daq.fullstackjedi.dev/fonts/Orbitron-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Orbitron";
+    src: url("https://mesh-daq.fullstackjedi.dev/fonts/Orbitron-SemiBold.ttf") format("truetype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Orbitron";
+    src: url("https://mesh-daq.fullstackjedi.dev/fonts/Orbitron-Bold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Orbitron";
+    src: url("https://mesh-daq.fullstackjedi.dev/fonts/Orbitron-ExtraBold.ttf") format("truetype");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Orbitron";
+    src: url("https://mesh-daq.fullstackjedi.dev/fonts/Orbitron-Black.ttf") format("truetype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
+    /* Core fallback palette. Host-provided values override these on
+       #rag-dock-content without changing the standalone Mod RAG pages. */
     --bg: #f8fafc;
     --card: #ffffff;
     --card-soft: #f8fafc;
+    --surface-inset: #f1f5f9;
     --border: #cbd5e1;
     --border-strong: #64748b;
     --text: #0f172a;
     --muted: #64748b;
     --muted-soft: #94a3b8;
     --accent: #0284c7;
+    --accent-hover: #075985;
     --accent-soft: #e0f2fe;
     --ok: #10b981;
     --warn: #f59e0b;
     --err: #ef4444;
     --violet: #7c3aed;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 
-    /* Explainer sizing: change these first when tuning the dock. */
+    /* Typography contract */
+    --font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --sans: var(--font-family);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    /* Group-box contract */
+    --groupbox-bg: var(--card);
+    --groupbox-bg-flash: var(--card-soft);
+    --groupbox-border: var(--border);
+    --groupbox-border-strong: var(--border-strong);
+    --groupbox-border-width: 1px;
+    --groupbox-border-style: solid;
+    --groupbox-radius: 0;
+    --groupbox-padding: 7px;
+    --groupbox-shadow: none;
+    --groupbox-legend-color: var(--muted);
+    --groupbox-legend-size: 10px;
+    --groupbox-legend-weight: 900;
+    --groupbox-legend-transform: uppercase;
+    --groupbox-legend-tracking: 0.08em;
+
+    /* Button contract */
+    --button-bg: linear-gradient(135deg, #0ea5e9, #0369a1);
+    --button-bg-hover: linear-gradient(135deg, #38bdf8, #075985);
+    --button-bg-active: #075985;
+    --button-border: #075985;
+    --button-border-width: 1px;
+    --button-border-style: solid;
+    --button-text: #ffffff;
+    --button-radius: 0;
+    --button-padding-y: 4px;
+    --button-padding-x: 9px;
+    --button-font-size: 11px;
+    --button-font-weight: 800;
+    --button-text-decoration: none;
+
+    /* Form-control contract */
+    --control-bg: #ffffff;
+    --control-border: #94a3b8;
+    --control-text: var(--text);
+    --control-radius: 0;
+    --control-padding-y: 4px;
+    --control-padding-x: 6px;
+    --control-font-size: 12px;
+    --control-focus: var(--accent);
+    --control-focus-ring: rgba(2, 132, 199, 0.16);
+
+    /* Explainer sizing */
     --explainer-max-width: 100%;
+    --explainer-padding: var(--explainer-padding);
+    --explainer-gap: 6px;
     --answer-pane-height: 190px;
     --heatmap-pane-height: 360px;
 }
@@ -39,7 +142,7 @@ body {
 }
 
 body {
-    font-family: var(--sans), sans-serif;
+    font-family: var(--font-family);
     background: var(--bg);
     color: var(--text);
 }
@@ -86,7 +189,7 @@ code {
     line-height: 1.1;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .rag-subtitle {
@@ -164,9 +267,9 @@ code {
 
 .rag-button-secondary {
     padding: 3px 7px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border);
     background: #ffffff;
-    color: #0f172a;
+    color: var(--text);
     text-decoration: none;
 }
 
@@ -198,7 +301,7 @@ code {
 .rag-host-frame-card {
     width: 100%;
     overflow: hidden;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border);
     background: #ffffff;
     box-shadow: 0 14px 38px rgba(15, 23, 42, 0.12);
 }
@@ -247,7 +350,7 @@ code {
 .rag-client-table th {
     font-size: 9px;
     line-height: 1.1;
-    color: #64748b;
+    color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     text-align: left;
@@ -277,7 +380,7 @@ code {
     display: block;
     max-width: 100%;
     overflow: hidden;
-    color: #0f172a;
+    color: var(--text);
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 800;
@@ -322,29 +425,46 @@ select,
 textarea {
     width: 100%;
     max-width: 100%;
-    border: 1px solid #94a3b8;
-    background: #ffffff;
-    color: var(--text);
-    padding: 4px 6px;
-    font-size: 12px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--control-radius);
+    background: var(--control-bg);
+    color: var(--control-text);
+    padding:
+        var(--control-padding-y)
+        var(--control-padding-x);
+    font-size: var(--control-font-size);
     outline: none;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.16);
+    border-color: var(--control-focus);
+    box-shadow: 0 0 0 2px var(--control-focus-ring);
 }
 
 button {
-    border: 1px solid #075985;
-    background: linear-gradient(135deg, #0ea5e9, #0369a1);
-    color: white;
-    padding: 4px 9px;
+    border-width: var(--button-border-width);
+    border-style: var(--button-border-style);
+    border-color: var(--button-border);
+    border-radius: var(--button-radius);
+    background: var(--button-bg);
+    color: var(--button-text);
+    padding:
+        var(--button-padding-y)
+        var(--button-padding-x);
     cursor: pointer;
-    font-size: 11px;
-    font-weight: 800;
+    font-size: var(--button-font-size);
+    font-weight: var(--button-font-weight);
+    text-decoration: var(--button-text-decoration);
+}
+
+button:hover:not(:disabled) {
+    background: var(--button-bg-hover);
+}
+
+button:active:not(:disabled) {
+    background: var(--button-bg-active);
 }
 
 button:disabled {
@@ -357,32 +477,37 @@ button:disabled {
 .fieldset-section {
     min-width: 0;
     margin: 0;
-    padding: 0 7px 7px;
-    border: 1px solid #94a3b8;
+    padding:
+        0
+        var(--groupbox-padding)
+        var(--groupbox-padding);
+    border-width: var(--groupbox-border-width);
+    border-style: var(--groupbox-border-style);
+    border-color: var(--groupbox-border);
+    border-radius: var(--groupbox-radius);
+    background: var(--groupbox-bg);
+    box-shadow: var(--groupbox-shadow);
+    color: var(--text);
 }
 
 .fieldset-section legend {
     padding: 0 5px;
-    font-size: 10px;
+    color: var(--groupbox-legend-color);
+    font-size: var(--groupbox-legend-size);
     line-height: 1.1;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    color: #334155;
-    text-transform: uppercase;
+    font-weight: var(--groupbox-legend-weight);
+    letter-spacing: var(--groupbox-legend-tracking);
+    text-transform: var(--groupbox-legend-transform);
 }
 
 .fieldset-compact {
-    background: #ffffff;
+    background: var(--groupbox-bg);
 }
 
 .fieldset-flash {
-    border-color: #64748b;
-    background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.96)),
-            radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 18rem);
-    box-shadow:
-            0 18px 42px rgba(15, 23, 42, 0.14),
-            inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    border-color: var(--groupbox-border-strong);
+    background: var(--groupbox-bg-flash);
+    box-shadow: var(--groupbox-shadow);
 }
 
 .groupbox-body {
@@ -401,9 +526,9 @@ button:disabled {
     margin: 0;
     padding: 0.5rem;
     overflow: hidden;
-    color: #0f172a;
+    color: var(--text);
     background: transparent;
-    font-family: var(--sans), sans-serif;
+    font-family: var(--font-family);
     font-size: 13px;
 }
 
@@ -426,7 +551,7 @@ button:disabled {
 .explanation-panel {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--explainer-gap);
     width: 100%;
     max-width: 100%;
     min-height: 0;
@@ -469,7 +594,7 @@ button:disabled {
 }
 
 .rag-status-muted {
-    color: #64748b;
+    color: var(--muted);
 }
 
 .rag-status-info {
@@ -502,17 +627,17 @@ button:disabled {
     margin: 0;
     max-height: none;
     overflow: visible;
-    border: 1px solid #d7dee8;
+    border: 1px solid var(--border);
     background: rgba(248, 250, 252, 0.82);
     padding: 6px;
-    color: #334155;
+    color: var(--muted);
     font-family: var(--mono), sans-serif;
     font-size: 10px;
     line-height: 1.35;
 }
 
 .explain-banner {
-    color: #64748b;
+    color: var(--muted);
 }
 
 .explain-contexts {
@@ -570,7 +695,7 @@ button:disabled {
 
 .explain-answer-head h4 {
     margin: 0;
-    color: #0f172a;
+    color: var(--text);
     font-size: 12px;
     line-height: 1.1;
     font-weight: 900;
@@ -587,7 +712,7 @@ button:disabled {
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border);
     background:
         linear-gradient(
             180deg,
@@ -611,8 +736,8 @@ button:disabled {
     overflow: visible;
     border: 0;
     background: transparent;
-    color: #0f172a;
-    font-family: var(--sans), sans-serif;
+    color: var(--text);
+    font-family: var(--font-family);
     font-size: 13px;
     line-height: 1.48;
     white-space: pre-wrap;
@@ -684,7 +809,7 @@ button:disabled {
     max-width: 100%;
     min-height: 100%;
     overflow: hidden;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border);
     background:
         radial-gradient(
             circle at top left,
@@ -702,7 +827,7 @@ button:disabled {
 
 .saliency-title {
     margin-bottom: 7px;
-    color: #334155;
+    color: var(--muted);
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
@@ -725,7 +850,7 @@ button:disabled {
 .saliency-meter-shell {
     height: 13px;
     overflow: hidden;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border);
     background: #f1f5f9;
 }
 
@@ -748,7 +873,7 @@ button:disabled {
 }
 
 .saliency-empty {
-    color: #64748b;
+    color: var(--muted);
     font-size: 11px;
 }
 
@@ -887,4 +1012,24 @@ body:has(#rag-dock-content) {
     margin: 0;
     padding: 0;
     overflow: visible;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-family);
+}
+
+/*
+ * Host-mode component bridge.
+ * DockInner places transferred variables directly on #rag-dock-content, so
+ * descendants resolve the IoT group-box, button, form-control and sizing
+ * contract without affecting standalone Mod RAG management pages.
+ */
+#rag-dock-content .smart-explainer {
+    max-width: var(--explainer-max-width);
+    padding: var(--explainer-padding);
+    color: var(--text);
+    font-family: var(--font-family);
+}
+
+#rag-dock-content .explanation-panel {
+    gap: var(--explainer-gap);
 }
