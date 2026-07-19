@@ -1008,7 +1008,7 @@ body:has(#rag-dock-content) {
     margin: 0;
     padding: 0;
     overflow: visible;
-    background: transparent;
+    background: var(--chrome);
     color: var(--text);
     font-family: var(--font-family);
 }
