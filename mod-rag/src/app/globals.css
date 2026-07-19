@@ -537,8 +537,8 @@ button:disabled {
     margin: 0;
     padding: var(--explainer-padding);
     overflow: hidden;
-    color: var(--text);
-    background: var(--bg);
+    color: #000000;
+    background: var(--chrome);
     font-family: var(--font-family);
     font-size: 13px;
 }
