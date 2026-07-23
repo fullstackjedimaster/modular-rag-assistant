@@ -741,7 +741,7 @@ button:disabled {
     padding: 10px;
     overflow: visible;
     border: 0;
-    background: transparent;
+    background: var(--chrome);
     color: var(--text);
     font-family: var(--font-family);
     font-size: 13px;
