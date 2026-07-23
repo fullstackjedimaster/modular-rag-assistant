@@ -85,8 +85,8 @@
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
     /* Group-box contract */
-    --groupbox-bg: var(--card);
-    --groupbox-bg-flash: var(--card-soft);
+    --groupbox-bg: var(--chrome);
+    --groupbox-bg-flash: var(--chrome);
     --groupbox-border: var(--border);
     --groupbox-border-strong: var(--border-strong);
     --groupbox-border-width: 1px;
