@@ -85,8 +85,8 @@
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
     /* Group-box contract */
-    --groupbox-bg: var(--chrome);
-    --groupbox-bg-flash: var(--chrome);
+    --groupbox-bg: var(--card);
+    --groupbox-bg-flash: var(--card-soft);
     --groupbox-border: var(--border);
     --groupbox-border-strong: var(--border-strong);
     --groupbox-border-width: 1px;
@@ -741,7 +741,7 @@ button:disabled {
     padding: 10px;
     overflow: visible;
     border: 0;
-    background: var(--chrome);
+    background: transparent;
     color: var(--text);
     font-family: var(--font-family);
     font-size: 13px;
