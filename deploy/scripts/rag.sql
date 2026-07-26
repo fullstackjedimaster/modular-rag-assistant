@@ -90,7 +90,7 @@ END$$;
 -- CRUD: rag_client
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name uuid, p_host_url TEXT)
+CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name TEXT, p_host_url TEXT)
 RETURNS uuid AS $$
 DECLARE
 v_id uuid;
