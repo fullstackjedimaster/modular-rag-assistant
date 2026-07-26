@@ -90,13 +90,13 @@ END$$;
 -- CRUD: rag_client
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name uuid, p_host_url TEXT, p_collection TEXT, p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name uuid, p_host_url TEXT)
 RETURNS uuid AS $$
 DECLARE
 v_id uuid;
 BEGIN
-INSERT INTO rag.rag_client (name, host_url, collection,  llm_model, embed_model,prompt ,  chaining_mode )
-VALUES (p_name, p_host_url, p_collection, p_llm_model, p_embed_model, p_prompt ,  p_chaining_mode)
+INSERT INTO rag.rag_client (name, host_url)
+VALUES (p_name, p_host_url)
     RETURNING id INTO v_id;
 RETURN v_id;
 END;
