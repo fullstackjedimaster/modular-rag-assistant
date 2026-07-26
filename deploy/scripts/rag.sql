@@ -19,11 +19,11 @@ CREATE TABLE IF NOT EXISTS rag.rag_client (
                                               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                               name        TEXT NOT NULL UNIQUE,         -- formerly FRAME_ID
                                               host_url    TEXT NOT NULL,                -- URL/URI of host app including iframe URI
-                                              collection TEXT NOT NULL,
-                                              llm_model TEXT NOT NULL DEFAULT 'llama3.2',
-                                              embed_model text NOT NULL DEFAULT 'nomic-embed-text',
-                                              prompt    TEXT NOT NULL,
-                                              chaining_mode prompt_chaining_mode NOT NULL,
+                                              collection TEXT ,
+                                              llm_model TEXT  DEFAULT 'llama3.2',
+                                              embed_model text DEFAULT 'nomic-embed-text',
+                                              prompt    TEXT,
+                                              chaining_mode prompt_chaining_mode,
 
                                               created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS rag.telemetry_message (
                                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                                      rag_client_id  uuid NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
     message_name       TEXT NOT NULL,
-    message_value      TEXT NOT NULL,
+    message_value      TEXT,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (rag_client_id, message_name)
