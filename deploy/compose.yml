@@ -14,6 +14,12 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    command:
+      - postgres
+      - -c
+      - log_connections=on
+      - -c
+      - log_line_prefix=%m [%p] user=%u db=%d client=%h app=%a
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\"" ]
       interval: 3s
