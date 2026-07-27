@@ -97,7 +97,7 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
         host_url: hostUrl.trim(),
       });
 
-      router.push(`/hosts/${created.id}`);
+      router.push(`/client/${created.id}`);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : String(e));
     }
