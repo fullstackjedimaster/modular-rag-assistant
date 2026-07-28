@@ -14,6 +14,8 @@ from routers.db import init_db_pool, close_db_pool
 # ✅ your main rag client API (keep ONLY the /rag-clients version)
 from routers.routes_rag_clients import router as rag_clients_router  # adjust import if needed
 from routers.client_docs_router import router as client_docs_router
+from routers.document_ingest_router import router as document_ingest_router
+from routers.pdf_multimodal_router import router as pdf_multimodal_router
 
 try:
     from routers.embed_context_router import build_embed_context_router  # type: ignore
@@ -43,6 +45,8 @@ app.add_middleware(
 app.include_router(rag_clients_router)
 
 app.include_router(client_docs_router)
+app.include_router(document_ingest_router)
+app.include_router(pdf_multimodal_router)
 
 # ✅ embed/context router (nginx strips /api/ already)
 if build_embed_context_router:

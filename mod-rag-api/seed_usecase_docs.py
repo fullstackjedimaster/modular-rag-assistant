@@ -1,234 +1,158 @@
 #!/usr/bin/env python3
-"""
-Seed a single usecase's documents into Qdrant using OLLAMA embeddings.
-
-Usage:
-    python scripts/seed_usecase_docs.py <usecase_id>
-
-Required env vars:
-- QDRANT_URL           (e.g. http://qdrant:6333)
-- OLLAMA_BASE_URL      (e.g. http://ollama:11434)
-- OLLAMA_EMBED_MODEL   (e.g. nomic-embed-text)
-- EMBED_BATCH          (e.g. 64)
-
-Optional env vars:
-- CHUNK_SIZE_CHARS     (default: 1500)  [set it explicitly if you want; this script won't default silently]
-"""
-
+"""Seed TXT, Markdown, HTML, and text-based PDF documents into Qdrant."""
 from __future__ import annotations
 
 import argparse
-import json
 import os
-import sys
 import uuid
-from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import Iterable, List
 
 import httpx
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import VectorParams, Distance, Batch
+from qdrant_client.http.models import Batch, Distance, VectorParams
+
+from document_ingest import discover_documents, extract_document
 
 
-def _env(name: str) -> str:
-    v = os.getenv(name)
-    if not v:
-        raise SystemExit(f"[FATAL] Missing required env var: {name}")
-    return v
+def env(name: str, default: str | None = None, *, required: bool = False) -> str:
+    value = os.getenv(name, default)
+    if required and not value:
+        raise SystemExit(f'[FATAL] Missing required environment variable: {name}')
+    return value or ''
 
 
-def _env_int(name: str) -> int:
-    v = _env(name)
+def env_int(name: str, default: int) -> int:
+    raw = env(name, str(default))
     try:
-        return int(v)
-    except Exception:
-        raise SystemExit(f"[FATAL] Env var {name} must be int, got: {v!r}")
+        return int(raw)
+    except ValueError as exc:
+        raise SystemExit(f'[FATAL] {name} must be an integer, got {raw!r}') from exc
 
 
-
-EMBED_PROVIDER="ollama"
-OLLAMA_EMBED_MODEL="nomic-embed-text"
-EMBED_BATCH =16
-CHUNK_SIZE_CHARS = 1000
-CHUNK_OVERLAP_CHARS=200
-
-# Internal service URLs (compose service names)
-QDRANT_URL="http://127.0.0.1:6333"
-OLLAMA_BASE_URL="http://127.0.0.1:11434"
+QDRANT_URL = env('QDRANT_URL', 'http://qdrant:6333')
+OLLAMA_BASE_URL = env('OLLAMA_BASE_URL', 'http://ollama:11434')
+OLLAMA_EMBED_MODEL = env('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
+EMBED_BATCH = env_int('EMBED_BATCH', 16)
+CHUNK_SIZE_CHARS = env_int('CHUNK_SIZE_CHARS', 1200)
+CHUNK_OVERLAP_CHARS = env_int('CHUNK_OVERLAP_CHARS', 180)
 
 
-ROOT = Path(__file__).resolve()
-
-
-
-
-@dataclass
-class UsecaseConfig:
-    id: str
-    collection: str
-    source_dir: str
-
-
-# def load_usecase(uc_id: str) -> UsecaseConfig:
-#
-#     collection = uc.get("collection")
-#     if not collection:
-#         raise SystemExit(f"usecase '{uc_id}' missing 'collection'")
-#
-#     source_dir = uc.get("source_dir", uc_id)
-#     if not source_dir:
-#         raise SystemExit(f"usecase '{uc_id}' missing 'source_dir'")
-#
-#     return UsecaseConfig(id=uc_id, collection=collection, source_dir=source_dir)
-
-
-def discover_txt_files(folder: Path) -> List[Path]:
-    files = sorted(Path(folder).glob("**/*.txt"))
-    return [p for p in files if p.is_file()]
-
-
-def read_texts(paths: List[Path]) -> List[Tuple[str, str]]:
-    """
-    Returns list of (doc_id, content)
-    doc_id = stable UUIDv5 derived from path for idempotence across runs.
-    """
-    out: List[Tuple[str, str]] = []
-    for p in paths:
-        try:
-            content = p.read_text(encoding="utf-8", errors="ignore").strip()
-        except Exception:
-            content = ""
-        if not content:
-            continue
-        doc_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"file://{p.as_posix()}"))
-        out.append((doc_id, content))
-    return out
-
-
-def simple_chunk(text: str, max_chars: int) -> List[str]:
-    paras = [p.strip() for p in text.splitlines() if p.strip()]
+def chunk_text(text: str, max_chars: int, overlap_chars: int) -> List[str]:
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
     chunks: List[str] = []
-    cur: List[str] = []
-    cur_len = 0
-    for p in paras:
-        if cur_len + len(p) + 1 > max_chars and cur:
-            chunks.append("\n".join(cur))
-            cur, cur_len = [], 0
-        cur.append(p)
-        cur_len += len(p) + 1
-    if cur:
-        chunks.append("\n".join(cur))
+    current = ''
+
+    for paragraph in paragraphs:
+        candidate = f'{current}\n\n{paragraph}'.strip() if current else paragraph
+        if len(candidate) <= max_chars:
+            current = candidate
+            continue
+
+        if current:
+            chunks.append(current)
+            overlap = current[-overlap_chars:] if overlap_chars else ''
+            current = f'{overlap}\n\n{paragraph}'.strip()
+        else:
+            # A single giant paragraph still needs deterministic splitting.
+            step = max(1, max_chars - overlap_chars)
+            chunks.extend(paragraph[i:i + max_chars] for i in range(0, len(paragraph), step))
+            current = ''
+
+    if current:
+        chunks.append(current)
     return chunks
 
 
 def ollama_embed(texts: List[str]) -> List[List[float]]:
-    base = OLLAMA_BASE_URL.rstrip("/")
-    url = f"{base}/api/embed"
-    payload = {"model": OLLAMA_EMBED_MODEL, "input": texts}
-
-    with httpx.Client(timeout=120.0) as client:
-        r = client.post(url, json=payload)
-        if r.status_code >= 400:
-            raise SystemExit(f"[FATAL] Ollama embed failed {r.status_code}: {r.text}")
-
-    data = r.json()
-    embs = data.get("embeddings")
-    if not isinstance(embs, list) or not embs:
-        raise SystemExit(f"[FATAL] Bad embed response: {data}")
-
-    return [[float(v) for v in row] for row in embs]
+    response = httpx.post(
+        f'{OLLAMA_BASE_URL.rstrip("/")}/api/embed',
+        json={'model': OLLAMA_EMBED_MODEL, 'input': texts},
+        timeout=180.0,
+    )
+    response.raise_for_status()
+    embeddings = response.json().get('embeddings')
+    if not isinstance(embeddings, list) or len(embeddings) != len(texts):
+        raise RuntimeError(f'Unexpected Ollama embedding response: {response.text[:500]}')
+    return [[float(value) for value in row] for row in embeddings]
 
 
-def embed_dim() -> int:
-    v = ollama_embed(["__dim_probe__"])[0]
-    return int(len(v))
-
-
-def recreate_collection(client: QdrantClient, name: str, vec_size: int):
-    try:
-        client.get_collection(name)
-        exists = True
-    except Exception:
+def ensure_collection(client: QdrantClient, collection: str, vector_size: int, recreate: bool) -> None:
+    exists = client.collection_exists(collection)
+    if exists and recreate:
+        client.delete_collection(collection)
         exists = False
-
-    if exists:
-        client.delete_collection(name)
-
-    client.create_collection(
-        collection_name=name,
-        vectors_config=VectorParams(size=vec_size, distance=Distance.COSINE),
-    )
+    if not exists:
+        client.create_collection(
+            collection_name=collection,
+            vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+        )
 
 
-def seed_usecase(uc:UsecaseConfig):
-    src_folder = Path("/opt/stacks/modular-rag-assistant/mod-rag-api/source_docs")
-    if not src_folder.exists():
-        raise SystemExit(f"source folder not found: {src_folder}")
+def seed(source_dir: Path, collection: str, recreate: bool) -> None:
+    paths = discover_documents(source_dir)
+    if not paths:
+        raise SystemExit(f'No supported documents found under {source_dir}')
 
-    txt_files = discover_txt_files(src_folder)
-    if not txt_files:
-        raise SystemExit(f"No .txt files under {src_folder}.")
-
-    docs = read_texts(txt_files)
-
-    print(f"[seed] Usecase: {uc.id}")
-    print(f"[seed] Collection: {uc.collection}")
-    print(f"[seed] Source dir: {src_folder}")
-    print(f"[seed] Files: {len(txt_files)}")
-
-    vec_dim = embed_dim()
-    print(f"[seed] Ollama embed model: {OLLAMA_EMBED_MODEL}")
-    print(f"[seed] Embed dim: {vec_dim}")
-
+    vector_size = len(ollama_embed(['dimension probe'])[0])
     client = QdrantClient(url=QDRANT_URL)
+    ensure_collection(client, collection, vector_size, recreate)
 
-    print(f"[seed] Recreating collection '{uc.collection}' on {QDRANT_URL}")
-    recreate_collection(client, uc.collection, vec_dim)
-
-    points_ids: List[str] = []
+    ids: List[str] = []
+    vectors: List[List[float]] = []
     payloads: List[dict] = []
-    vectors_all: List[List[float]] = []
 
-    total_chunks = 0
-    for doc_id, content in docs:
-        chunks = simple_chunk(content, max_chars=CHUNK_SIZE_CHARS)
-        if not chunks:
+    for path in paths:
+        extracted = extract_document(path)
+        if not extracted.text:
+            print(f'[skip] No extractable text: {path}')
             continue
-        total_chunks += len(chunks)
 
-        for i in range(0, len(chunks), EMBED_BATCH):
-            subset = chunks[i : i + EMBED_BATCH]
-            vecs = ollama_embed(subset)
+        relative_source = str(path.relative_to(source_dir))
+        doc_id = uuid.uuid5(uuid.NAMESPACE_URL, f'{collection}:{relative_source}')
+        chunks = chunk_text(extracted.text, CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS)
+        print(f'[extract] {relative_source}: {len(extracted.text)} chars, {len(chunks)} chunks')
 
-            for j, ch in enumerate(subset):
-                pid = str(uuid.uuid5(uuid.UUID(doc_id), f"chunk-{i+j}"))
-                points_ids.append(pid)
-                payloads.append({"doc_id": doc_id, "text": ch, "source": str(src_folder)})
-                vectors_all.append(vecs[j])
+        for batch_start in range(0, len(chunks), EMBED_BATCH):
+            batch_chunks = chunks[batch_start:batch_start + EMBED_BATCH]
+            batch_vectors = ollama_embed(batch_chunks)
+            for offset, (chunk, vector) in enumerate(zip(batch_chunks, batch_vectors)):
+                chunk_no = batch_start + offset
+                ids.append(str(uuid.uuid5(doc_id, f'chunk-{chunk_no}')))
+                vectors.append(vector)
+                payloads.append({
+                    'doc_id': str(doc_id),
+                    'chunk_index': chunk_no,
+                    'text': chunk,
+                    'source': relative_source,
+                    'media_type': extracted.media_type,
+                    'page_count': extracted.page_count,
+                })
 
-    print(f"[seed] Chunks total: {total_chunks}")
-    print(f"[seed] Uploading {len(points_ids)} vectors to '{uc.collection}'")
+    if not ids:
+        raise SystemExit('No chunks were generated')
 
-    client.upsert(
-        collection_name=uc.collection,
-        points=Batch(ids=points_ids, vectors=vectors_all, payloads=payloads),
-        wait=True,
-    )
-
-    print("[seed] Done.")
-
-
-def main():
-
-
-    collection = "iot-wireless-mesh-daq_fault_docs"
-    uc_id = str(uuid.uuid4())
-
-    uc = UsecaseConfig(id=uc_id, collection=collection, source_dir="source_docs")
-
-    seed_usecase(uc)
+    for start in range(0, len(ids), 256):
+        client.upsert(
+            collection_name=collection,
+            points=Batch(
+                ids=ids[start:start + 256],
+                vectors=vectors[start:start + 256],
+                payloads=payloads[start:start + 256],
+            ),
+            wait=True,
+        )
+    print(f'[done] Upserted {len(ids)} chunks into {collection!r}')
 
 
-if __name__ == "__main__":
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--source-dir', default=env('SOURCE_DOCS_DIR', str(Path(__file__).parent / 'source_docs')))
+    parser.add_argument('--collection', required=True)
+    parser.add_argument('--recreate', action='store_true', help='Delete and recreate the collection before seeding')
+    args = parser.parse_args()
+    seed(Path(args.source_dir).expanduser().resolve(), args.collection, args.recreate)
+
+
+if __name__ == '__main__':
     main()

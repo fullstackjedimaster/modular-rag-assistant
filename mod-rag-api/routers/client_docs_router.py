@@ -14,8 +14,8 @@ def _p(p: str) -> Path:
 def _source_docs_dir() -> Path:
     # Mirror main.py behavior, but keep router self-contained.
     here = Path(__file__).parent.parent.resolve()  # /mod-rag-api
-    config_dir =  str(here / "config")
-    return  str(config_dir / "source_docs")
+    default = here / "source_docs"
+    return Path(os.getenv("SOURCE_DOCS_DIR", str(default))).expanduser().resolve()
 
 def _client_dir(rag_client_id: int) -> Path:
     base = _source_docs_dir()
