@@ -57,9 +57,9 @@ async def create_client(request: Request, body: CreateRagClientIn) -> Dict[str, 
 @router.get("/status", response_model=Dict[str, RagClientStatus])
 async def get_statuses(
     rag_client_ids: Optional[List[UUID]] = Query(default=None, alias="ragClientId"),
-    id_ids: Optional[List[UUID]] = Query(default=None, alias="id"),
+
 ) -> Dict[str, RagClientStatus]:
-    requested_ids = rag_client_ids or id_ids
+    requested_ids = rag_client_ids
 
     snap = REGISTRY.snapshot(requested_ids)
 

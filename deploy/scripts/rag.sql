@@ -19,11 +19,11 @@ CREATE TABLE IF NOT EXISTS rag.rag_client (
                                               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                               name        TEXT NOT NULL UNIQUE,         -- formerly FRAME_ID
                                               host_url    TEXT NOT NULL,                -- URL/URI of host app including iframe URI
-                                              collection TEXT ,
+                                              collection TEXT DEFAULT '',
                                               llm_model TEXT  DEFAULT 'llama3.2',
                                               embed_model text DEFAULT 'nomic-embed-text',
-                                              prompt    TEXT,
-                                              chaining_mode prompt_chaining_mode,
+                                              prompt    TEXT DEFAULT '',
+                                              chaining_mode prompt_chaining_mode DEFAULT 'none',
 
                                               created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
