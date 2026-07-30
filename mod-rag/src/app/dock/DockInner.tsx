@@ -62,9 +62,7 @@ export default function DockInner() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        const clientId = ragClientId;
-
-        if (!clientId) {
+        if (!ragClientId) {
             setClient(null);
             setLoading(false);
             setError("Missing ragClientId.");
@@ -73,7 +71,7 @@ export default function DockInner() {
 
         let cancelled = false;
 
-        async function loadClient(): Promise<void> {
+        async function loadClient(clientId: string): Promise<void> {
             setLoading(true);
             setError("");
 
@@ -99,7 +97,7 @@ export default function DockInner() {
             }
         }
 
-        void loadClient();
+        void loadClient(ragClientId);
 
         return () => {
             cancelled = true;
@@ -146,9 +144,9 @@ export default function DockInner() {
             return;
         }
 
-        function reportHeight(): void {
+        function reportHeight(element: HTMLElement): void {
             const height = Math.ceil(
-                rootElement.getBoundingClientRect().height,
+                element.getBoundingClientRect().height,
             );
 
             if (height === lastHeightRef.current) {
@@ -165,9 +163,12 @@ export default function DockInner() {
             window.parent.postMessage(message, "*");
         }
 
-        const observer = new ResizeObserver(reportHeight);
+        const observer = new ResizeObserver(() => {
+            reportHeight(rootElement);
+        });
+
         observer.observe(rootElement);
-        reportHeight();
+        reportHeight(rootElement);
 
         return () => observer.disconnect();
     }, []);
