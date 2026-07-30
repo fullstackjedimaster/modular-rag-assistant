@@ -359,7 +359,7 @@ message_name,
 message_value
 )
 VALUES
-(v_rag_client_id, 'status', 0),
+(v_rag_client_id, 'status', 0);
 
 RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
 
