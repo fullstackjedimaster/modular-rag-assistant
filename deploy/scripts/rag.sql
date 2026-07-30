@@ -310,4 +310,59 @@ RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
 
 END $$;
 
+DO $$
+DECLARE
+    v_rag_client_id UUID;
+BEGIN
+
+INSERT INTO rag.rag_client (
+name,
+host_url,
+collection,
+llm_model,
+embed_model,
+prompt,
+chaining_mode
+)
+VALUES (
+'React Dynamic Form Engine',
+'https://entity-client.fullstackjedi.dev/demo',
+'entity_docs',
+'llama3.2:latest',
+'nomic-embed-text:latest',
+'You are an HTML form and JSON expert/ Use ONLY the provided context to answer.
+
+# Rules
+- If the context does not contain the answer, say Insufficient context.
+- Focus on electrical reasoning.
+- Be concise (<= 6 bullet points).
+- Prefer concrete evidence (numbers, timestamps, MACs).
+
+# Context
+{context}
+
+# Question
+{question}
+
+# Output (bullets)
+- Likely cause(s):
+- Evidence:
+- Remediation:',
+        'append'
+    )
+RETURNING id
+INTO v_rag_client_id;
+
+INSERT INTO rag.telemetry_message (
+rag_client_id,
+message_name,
+message_value
+)
+VALUES
+(v_rag_client_id, 'status', 0),
+
+RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
+
+END $$;
+
 
