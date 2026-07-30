@@ -15,7 +15,7 @@ export default function EmbedHeightBoundary({
     const pathname = usePathname();
 
     /*
-     * /dock is a nested iframe with its own RAG_DOCK_RESIZE protocol.
+     * /dock is a nested iframe with its own DOCK_RESIZE protocol.
      * Mounting the generic EMBED_HEIGHT reporter there would create
      * two competing resize systems.
      */

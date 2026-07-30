@@ -1,31 +1,22 @@
-// /src/lib/env.ts
+function required(name: string, value: string | undefined): string {
+    if (!value) {
+        throw new Error(`Missing required environment variable: ${name}`);
+    }
 
-function required(name: string, value?: string): string {
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
+    return value;
 }
 
 export const settings = {
-  AI_RAG_API_BASE:
-    process.env.NEXT_PUBLIC_AI_RAG_API_BASE ||
-     "https://rag.fullstackjedi.dev",
-
-
-  AI_CORE_BASE:
-     process.env.NEXT_PUBLIC_AI_CORE_BASE ||
-      "https://ai-core.fullstackjedi.dev",
-
-  DATABASE_URL:
-   process.env.DATABASE_URL ||
-     "",
-
-  PORTFOLIO_LOCK_ENABLED:
-      process.env.NEXT_PUBLIC_PORTFOLIO_LOCK_ENABLED ||
-      "true",
-
-
+    AI_RAG_API_BASE: required(
+        "NEXT_PUBLIC_AI_RAG_API_BASE",
+        process.env.NEXT_PUBLIC_AI_RAG_API_BASE,
+    ),
+    AI_CORE_BASE: required(
+        "NEXT_PUBLIC_AI_CORE_BASE",
+        process.env.NEXT_PUBLIC_AI_CORE_BASE,
+    ),
+    PORTFOLIO_LOCK_ENABLED:
+        process.env.NEXT_PUBLIC_PORTFOLIO_LOCK_ENABLED === "true",
 } as const;
 
 export default settings;

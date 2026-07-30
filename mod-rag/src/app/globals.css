@@ -988,44 +988,39 @@ body:has(.smart-explainer) {
     }
 }
 
-html:has(#rag-dock-content),
-body:has(#rag-dock-content) {
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    max-height: none;
+html:has(.dock-content),
+body:has(.dock-content) {
     margin: 0;
     padding: 0;
     overflow: hidden;
 }
 
-#rag-dock-content {
-    display: block;
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
+.dock-content {
     background: var(--chrome);
     color: var(--text);
     font-family: var(--font-family);
 }
 
-/*
- * Host-mode component bridge.
- * DockInner places transferred variables directly on #rag-dock-content, so
- * descendants resolve the IoT group-box, button, form-control and sizing
- * contract without affecting standalone Mod RAG management pages.
- */
-#rag-dock-content .smart-explainer {
-    max-width: var(--explainer-max-width);
-    padding: var(--explainer-padding);
+.dock-notice {
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    background: var(--card);
     color: var(--text);
-    font-family: var(--font-family);
+    font-size: 0.75rem;
 }
 
-#rag-dock-content .explanation-panel {
+.dock-notice-error {
+    border-color: var(--danger-border, #b91c1c);
+    background: var(--danger-bg, #fee2e2);
+    color: var(--danger-text, #991b1b);
+}
+
+.dock-content .smart-explainer {
+    max-width: var(--explainer-max-width);
+    padding: var(--explainer-padding);
+}
+
+.dock-content .explanation-panel {
     gap: var(--explainer-gap);
 }

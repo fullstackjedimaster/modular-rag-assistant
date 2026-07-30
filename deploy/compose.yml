@@ -70,6 +70,10 @@ services:
     build:
       context: /opt/stacks/modular-rag-assistant
       dockerfile: deploy/docker/mod-rag/Dockerfile
+      args:
+        NEXT_PUBLIC_AI_RAG_API_BASE: ${NEXT_PUBLIC_AI_RAG_API_BASE}
+        NEXT_PUBLIC_AI_CORE_BASE: ${NEXT_PUBLIC_AI_CORE_BASE}
+        NEXT_PUBLIC_PORTFOLIO_LOCK_ENABLED: ${NEXT_PUBLIC_PORTFOLIO_LOCK_ENABLED}
     image: mod-rag:local
     env_file:
       - ./env/mod-rag.env

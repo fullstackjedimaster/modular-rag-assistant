@@ -12,7 +12,7 @@ import React, {
 import Link from "next/link";
 import { listRagClients, type RagClientRow } from "@/src/lib/ragClientApi";
 import {
-  parseSelectionMessage,
+  parseTargetSelectedMessage,
   type RagDockConnectMessage,
   type RagDockDisconnectMessage,
 } from "@/src/lib/messages";
@@ -30,17 +30,6 @@ function safeOrigin(url: string): string {
   return new URL(url).origin;
 }
 
-function dockUrlFor(ragClientId: string): string {
-  const origin =
-      typeof window !== "undefined"
-          ? window.location.origin
-          : "https://rag.fullstackjedi.dev";
-
-  const url = new URL("/dock", origin);
-  url.searchParams.set("ragClientId", ragClientId);
-  return url.toString();
-}
-
 function clampHeight(height: number): number {
   return Math.max(520, Math.min(height, 2600));
 }
@@ -54,12 +43,11 @@ export default function DashboardShell() {
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
     const [clientError, setClientError] = useState<string | null>(null);
-    const [hostFrameLoaded, setHostFrameLoaded] = useState(false);
+    const [hostReady, setHostReady] = useState(false);
     const [hostFrameHeight, setHostFrameHeight] = useState(1400);
     const [lastSelection, setLastSelection] = useState<string>("");
 
     const targetFrameRef = useRef<HTMLIFrameElement | null>(null);
-    const lastAutoConnectKeyRef = useRef<string>("");
 
     useEffect(() => {
       let cancelled = false;
@@ -126,14 +114,21 @@ export default function DashboardShell() {
         [targetOrigin]
     );
 
+    const discoverHost = useCallback(() => {
+      const targetWindow = targetFrameRef.current?.contentWindow;
+      if (!targetWindow) return;
+
+      targetWindow.postMessage(
+          { type: "RAG_HOST_DISCOVER" },
+          targetOrigin,
+      );
+    }, [targetOrigin]);
+
     const sendDockConnect = useCallback(
         (client: RagClientRow) => {
           const msg: RagDockConnectMessage = {
             type: "RAG_DOCK_CONNECT",
             ragClientId: client.id,
-            dockUrl: dockUrlFor(client.id),
-            hostUrl: client.host_url,
-            label: client.name,
           };
 
           sendMessageToTarget(msg);
@@ -142,10 +137,9 @@ export default function DashboardShell() {
     );
 
     const sendDockDisconnect = useCallback(
-        (client?: RagClientRow) => {
+        () => {
           const msg: RagDockDisconnectMessage = {
             type: "RAG_DOCK_DISCONNECT",
-            ragClientId: client?.id,
           };
 
           sendMessageToTarget(msg);
@@ -154,23 +148,13 @@ export default function DashboardShell() {
     );
 
     useEffect(() => {
-      if (!selectedClient) return;
-      if (!hostFrameLoaded) return;
+      setHostReady(false);
+    }, [targetUrl]);
 
-      const autoConnectKey = `${selectedClient.id}:${targetUrl}`;
-
-      if (lastAutoConnectKeyRef.current === autoConnectKey) return;
-
-      lastAutoConnectKeyRef.current = autoConnectKey;
-
-      const t = window.setTimeout(() => {
-        sendDockConnect(selectedClient);
-      }, 250);
-
-      return () => {
-        window.clearTimeout(t);
-      };
-    }, [selectedClient, targetUrl, hostFrameLoaded, sendDockConnect]);
+    useEffect(() => {
+      if (!selectedClient || !hostReady) return;
+      sendDockConnect(selectedClient);
+    }, [selectedClient, hostReady, sendDockConnect]);
 
     useEffect(() => {
       const onMessage = (ev: MessageEvent<unknown>) => {
@@ -179,7 +163,19 @@ export default function DashboardShell() {
         if (!targetWindow) return;
         if (ev.source !== targetWindow) return;
 
+        if (ev.origin !== targetOrigin) return;
+
         const data = ev.data;
+
+        if (
+            data &&
+            typeof data === "object" &&
+            "type" in data &&
+            data.type === "RAG_HOST_READY"
+        ) {
+          setHostReady(true);
+          return;
+        }
 
         if (
             data &&
@@ -193,11 +189,10 @@ export default function DashboardShell() {
           return;
         }
 
-        try {
-          const msg = parseSelectionMessage(ev.data);
-          setLastSelection(msg.id);
-        } catch {
-          // Ignore unrelated messages from the target iframe.
+        const message = parseTargetSelectedMessage(ev.data);
+
+        if (message) {
+          setLastSelection(message.id);
         }
       };
 
@@ -206,28 +201,22 @@ export default function DashboardShell() {
       return () => {
         window.removeEventListener("message", onMessage);
       };
-    }, []);
+    }, [targetOrigin]);
 
     function handleSelectClient(client: RagClientRow) {
       setSelectedClientId(client.id);
-      setHostFrameLoaded(false);
       setHostFrameHeight(1400);
       setLastSelection("");
-      lastAutoConnectKeyRef.current = "";
     }
 
     function handleConnectClient(client: RagClientRow) {
       setSelectedClientId(client.id);
-      lastAutoConnectKeyRef.current = "";
-
-      window.setTimeout(() => {
-        sendDockConnect(client);
-      }, hostFrameLoaded ? 0 : 300);
     }
 
     function handleDisconnectClient(client: RagClientRow) {
-      lastAutoConnectKeyRef.current = "";
-      sendDockDisconnect(client);
+      if (hostReady) {
+        sendDockDisconnect();
+      }
     }
 
     if (loadingClients) {
@@ -324,7 +313,6 @@ export default function DashboardShell() {
 
             <section className="rag-host-frame-card">
               <iframe
-                  key={selectedClient.id}
                   ref={targetFrameRef}
                   title={`${selectedClient.name} target host`}
                   src={targetUrl}
@@ -332,7 +320,7 @@ export default function DashboardShell() {
                   style={{
                     height: `${hostFrameHeight}px`,
                   }}
-                  onLoad={() => setHostFrameLoaded(true)}
+                  onLoad={discoverHost}
               />
             </section>
           </div>
