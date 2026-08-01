@@ -27,7 +27,7 @@ echo "[up] Building + starting entity-client stack"
 docker compose \
   -p "$COMPOSE_PROJECT_NAME" \
   -f "$DEPLOY_DIR"/compose.yml \
-  build --no-orphans
+  build --no-cache
 
 echo "[up] Building + starting entity-client stack"
 docker compose \
