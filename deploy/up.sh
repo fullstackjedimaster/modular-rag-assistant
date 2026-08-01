@@ -23,13 +23,20 @@ set -a
 source "$DEPLOY_DIR/env/mod-rag.env"
 set +a
 
-echo "[up] Building + starting IoT stack"
+echo "[up] Building + starting entity-client stack"
 docker compose \
   -p "$COMPOSE_PROJECT_NAME" \
   -f "$DEPLOY_DIR"/compose.yml \
-  up -d --build --force-recreate
+  build --no-orphans
+
+echo "[up] Building + starting entity-client stack"
+docker compose \
+  -p "$COMPOSE_PROJECT_NAME" \
+  -f "$DEPLOY_DIR"/compose.yml \
+  up -d
 
 echo "[up] Done"
+
 
 if [[ "$TAIL_LOGS" == "1" ]]; then
   docker compose \
