@@ -16,7 +16,7 @@ export const settings = {
         process.env.NEXT_PUBLIC_AI_CORE_BASE,
     ),
     EMBED_LOCK_ENABLED:
-        process.env.NEXT_PUBLIC_EMBED_LOCK_ENABLED === "false",
+        process.env.NEXT_PUBLIC_EMBED_LOCK_ENABLED,
 } as const;
 
 export default settings;
