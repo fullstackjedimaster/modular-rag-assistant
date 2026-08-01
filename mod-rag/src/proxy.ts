@@ -8,7 +8,7 @@ const TOKEN_COOKIE = "pf_embed_token";
 const SID_COOKIE = "pf_embed_sid";
 
 const EMBED_LOCK_ENABLED =
-    (process.env.EMBED_LOCK_ENABLED || "true").toLowerCase() === "true";
+    (process.env.EMBED_LOCK_ENABLED || "false").toLowerCase() ;
 
 const SESSION_SECONDS = 180;
 const SKEW_SECONDS = 30;
