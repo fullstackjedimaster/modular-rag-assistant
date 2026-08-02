@@ -34,6 +34,23 @@ class StatusRegistry:
 
             self._m[key] = st
 
+    def connect_exclusive(self, rag_client_id: UUID, detail: str = "") -> None:
+        key = str(rag_client_id)
+        now = _now_iso()
+
+        with self._lock:
+            for client_id, status in self._m.items():
+                if status.connected and client_id != key:
+                    status.connected = False
+                    status.detail = "switched"
+                    status.last_seen_at = now
+
+            status = self._m.get(key) or _Status()
+            status.connected = True
+            status.detail = detail or "connected"
+            status.last_seen_at = now
+            self._m[key] = status
+
     def set_connected(self, rag_client_id: UUID, connected: bool, detail: str = "") -> None:
         key = str(rag_client_id)
 

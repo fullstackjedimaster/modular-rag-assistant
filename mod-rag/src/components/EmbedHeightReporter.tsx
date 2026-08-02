@@ -11,7 +11,7 @@ const CHANGE_THRESHOLD = 2;
 const SETTLE_DELAYS_MS = [0, 50, 150, 350];
 const DOCK_RESIZE_EVENT = "rag-dock-resize";
 
-function parentOrigin(): string {
+function getParentOrigin(): string {
     const configured = new URLSearchParams(window.location.search).get(
         "embedParentOrigin",
     );
@@ -20,27 +20,27 @@ function parentOrigin(): string {
         try {
             return new URL(configured).origin;
         } catch {
-            // Fall through to document.referrer.
+            return "";
         }
     }
 
-    if (document.referrer) {
-        try {
-            return new URL(document.referrer).origin;
-        } catch {
-            // Fall through to wildcard for local development.
-        }
-    }
+    if (!document.referrer) return "";
 
-    return "*";
+    try {
+        return new URL(document.referrer).origin;
+    } catch {
+        return "";
+    }
 }
 
-function measure(root: HTMLElement): number {
-    const rect = root.getBoundingClientRect();
-
+function measure(element: HTMLElement): number {
+    const rectHeight = element.getBoundingClientRect().height;
     return Math.min(
         MAX_HEIGHT,
-        Math.max(1, Math.ceil(Math.max(rect.height, root.offsetHeight))),
+        Math.max(
+            1,
+            Math.ceil(Math.max(rectHeight, element.offsetHeight, element.scrollHeight)),
+        ),
     );
 }
 
@@ -48,22 +48,25 @@ export default function EmbedHeightReporter({
     contentRootId,
 }: EmbedHeightReporterProps) {
     useEffect(() => {
-        if (window.parent === window) {
-            return;
-        }
+        if (window.parent === window) return;
 
-        const root = document.getElementById(contentRootId);
-
-        if (!(root instanceof HTMLElement)) {
+        const rootElement = document.getElementById(contentRootId);
+        if (!(rootElement instanceof HTMLElement)) {
             console.warn(
                 `[EmbedHeightReporter] Missing #${contentRootId}; height reporting disabled.`,
             );
             return;
         }
 
-        const rootElement = root;
-        const targetOrigin = parentOrigin();
-        let frame = 0;
+        const targetOrigin = getParentOrigin();
+        if (!targetOrigin) {
+            console.warn(
+                "[EmbedHeightReporter] Parent origin is unavailable; height reporting disabled.",
+            );
+            return;
+        }
+
+        let animationFrame = 0;
         let lastHeight = 0;
         let disposed = false;
         const timers = new Set<number>();
@@ -71,8 +74,8 @@ export default function EmbedHeightReporter({
         function report(): void {
             if (disposed) return;
 
-            window.cancelAnimationFrame(frame);
-            frame = window.requestAnimationFrame(() => {
+            window.cancelAnimationFrame(animationFrame);
+            animationFrame = window.requestAnimationFrame(() => {
                 if (disposed) return;
 
                 const height = measure(rootElement);
@@ -101,15 +104,9 @@ export default function EmbedHeightReporter({
             }
         }
 
-        document.documentElement.style.overflow = "hidden";
-        document.body.style.overflow = "hidden";
-
         const resizeObserver = new ResizeObserver(schedule);
         resizeObserver.observe(rootElement);
 
-        // The dock adapter changes a descendant iframe's inline height.
-        // Attribute observation and the explicit event make that resize
-        // propagate through any number of nested embedding layers.
         const mutationObserver = new MutationObserver(schedule);
         mutationObserver.observe(rootElement, {
             childList: true,
@@ -119,22 +116,22 @@ export default function EmbedHeightReporter({
             attributeFilter: ["class", "style"],
         });
 
+        window.addEventListener("load", schedule);
         window.addEventListener("resize", schedule);
         window.addEventListener(DOCK_RESIZE_EVENT, schedule);
-        window.addEventListener("load", schedule);
 
         schedule();
 
         return () => {
             disposed = true;
-            window.cancelAnimationFrame(frame);
+            window.cancelAnimationFrame(animationFrame);
             for (const timer of timers) window.clearTimeout(timer);
             timers.clear();
             resizeObserver.disconnect();
             mutationObserver.disconnect();
+            window.removeEventListener("load", schedule);
             window.removeEventListener("resize", schedule);
             window.removeEventListener(DOCK_RESIZE_EVENT, schedule);
-            window.removeEventListener("load", schedule);
         };
     }, [contentRootId]);
 

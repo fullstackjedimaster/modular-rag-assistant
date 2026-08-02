@@ -32,7 +32,7 @@
     }
 
     var iframe = null;
-    var ready = false;
+    var dockReady = false;
     var currentClientId = "";
     var currentTarget = null;
 
@@ -42,19 +42,21 @@
     }
 
     function postToDock(message) {
-        if (!ready || !iframe || !iframe.contentWindow) return;
+        if (!dockReady || !iframe || !iframe.contentWindow) return;
         iframe.contentWindow.postMessage(message, dockOrigin);
     }
 
     function collectTheme() {
         var styles = window.getComputedStyle(mount);
         var vars = {};
+
         for (var index = 0; index < styles.length; index += 1) {
             var name = styles.item(index);
             if (!name || name.indexOf("--") !== 0) continue;
             var value = styles.getPropertyValue(name).trim();
             if (value) vars[name] = value;
         }
+
         return { type: "HOST_THEME", vars: vars, app: app, density: density };
     }
 
@@ -63,17 +65,23 @@
         if (currentTarget) postToDock(currentTarget);
     }
 
-    function connect(ragClientId) {
-        ragClientId = String(ragClientId || "").trim();
-        if (!ragClientId) throw new Error("ragClientId is required");
-        if (ragClientId === currentClientId && iframe) return;
+    function announceResize(height) {
+        window.dispatchEvent(
+            new CustomEvent("rag-dock-resize", { detail: { height: height } })
+        );
+    }
 
-        currentClientId = ragClientId;
-        ready = false;
+    function connect(ragClientId) {
+        var nextClientId = String(ragClientId || "").trim();
+        if (!nextClientId) throw new Error("ragClientId is required");
+        if (nextClientId === currentClientId && iframe) return;
+
+        currentClientId = nextClientId;
+        dockReady = false;
         mount.replaceChildren();
 
         var src = new URL(dockUrl.toString());
-        src.searchParams.set("ragClientId", ragClientId);
+        src.searchParams.set("ragClientId", nextClientId);
         src.searchParams.set("hostOrigin", window.location.origin);
 
         iframe = document.createElement("iframe");
@@ -89,24 +97,27 @@
         iframe.style.border = "0";
         iframe.style.background = "transparent";
         mount.appendChild(iframe);
+        announceResize(240);
     }
 
     function disconnect() {
         currentClientId = "";
-        ready = false;
+        dockReady = false;
         iframe = null;
         mount.replaceChildren();
-        window.dispatchEvent(new CustomEvent("rag-dock-resize"));
+        announceResize(0);
     }
 
     function select(target) {
-        if (!target || typeof target.id !== "string") return;
+        if (!target || typeof target.id !== "string" || !target.id) return;
+
         currentTarget = {
             type: "TARGET_SELECTED",
             id: target.id,
             attrs: target.attrs || {},
             source: target.source || app,
         };
+
         postToDock(currentTarget);
         postToParent(currentTarget);
     }
@@ -122,6 +133,7 @@
 
         if (event.source === window.parent) {
             if (!parentOrigin || event.origin !== parentOrigin) return;
+
             if (message.type === "RAG_HOST_DISCOVER") {
                 postToParent({ type: "RAG_HOST_READY" });
             } else if (message.type === "RAG_DOCK_CONNECT") {
@@ -137,7 +149,7 @@
         }
 
         if (message.type === "DOCK_READY") {
-            ready = true;
+            dockReady = true;
             syncDock();
             return;
         }
@@ -145,9 +157,7 @@
         if (message.type === "DOCK_RESIZE" && Number.isFinite(message.height)) {
             var height = Math.max(1, Math.min(5000, Math.ceil(message.height)));
             iframe.style.height = height + "px";
-            window.dispatchEvent(
-                new CustomEvent("rag-dock-resize", { detail: { height: height } })
-            );
+            announceResize(height);
         }
     }
 

@@ -26,4 +26,4 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 
 EMBED_SECRET = env("EMBED_SECRET", required=True)
-EMBED_LOCK_ENABLED = env("EMBED_LOCK_ENABLED", required=True)
+EMBED_LOCK_ENABLED = env_bool("EMBED_LOCK_ENABLED", default=False)

@@ -39,15 +39,20 @@ def install_embed_lock(
         if request.url.path in ALLOWED_PATHS:
             return await call_next(request)
 
-        token = request.cookies.get(TOKEN_COOKIE, "")
-        sid = request.cookies.get(SESSION_COOKIE, "")
+        header_token = (request.headers.get("x-embed-token") or "").strip()
+        cookie_token = (request.cookies.get(TOKEN_COOKIE) or "").strip()
+        sid = (request.cookies.get(SESSION_COOKIE) or "").strip()
 
         try:
-            verify_embed_token(
-                token,
-                audience=expected_aud,
-                sid=sid,
-            )
+            if header_token:
+                verify_embed_token(header_token, audience=expected_aud)
+            else:
+                verify_embed_token(
+                    cookie_token,
+                    audience=expected_aud,
+                    sid=sid,
+                    require_sid=True,
+                )
         except Exception:
             return forbidden_response()
 

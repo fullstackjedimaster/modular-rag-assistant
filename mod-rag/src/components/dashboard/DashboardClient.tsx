@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
     connectRagClient,
@@ -19,132 +20,139 @@ type DashboardClientProps = {
     onSelectClientAction?: (client: RagClientRow) => void;
     onConnectClientAction?: (client: RagClientRow) => void;
     onDisconnectClientAction?: (client: RagClientRow) => void;
+    onConnectedClientChangeAction?: (clientId: string) => void;
     compact?: boolean;
 };
 
+function findConnectedId(
+    rows: RagClientRow[],
+    statuses: Record<string, RagClientStatus>,
+): string {
+    return rows.find((row) => statuses[row.id]?.connected)?.id ?? "";
+}
+
 export default function DashboardClient({
-                                            selectedRagClientId,
-                                            onSelectClientAction,
-                                            onConnectClientAction,
-                                            onDisconnectClientAction,
-                                            compact = false,
-                                        }: DashboardClientProps) {
+    selectedRagClientId,
+    onSelectClientAction,
+    onConnectClientAction,
+    onDisconnectClientAction,
+    onConnectedClientChangeAction,
+    compact = false,
+}: DashboardClientProps) {
     const { disablePolling } = useAppMode();
 
     const [state, setState] = useState<LoadState>("idle");
-    const [err, setErr] = useState<string>("");
+    const [error, setError] = useState("");
     const [rows, setRows] = useState<RagClientRow[]>([]);
     const [statusById, setStatusById] = useState<Record<string, RagClientStatus>>({});
     const [busyId, setBusyId] = useState<string | null>(null);
 
-    const ids: RagClientRow["id"][] = useMemo(
-        () => rows.map((r) => r.id),
-        [rows]
+    const ids = useMemo(() => rows.map((row) => row.id), [rows]);
+    const connectedId = useMemo(
+        () => findConnectedId(rows, statusById),
+        [rows, statusById],
     );
 
-    const refreshStatuses = useCallback(async (nextIds: RagClientRow["id"][]) => {
-        if (nextIds.length === 0) {
+    const applyStatuses = useCallback(
+        (statuses: Record<string, RagClientStatus>) => {
+            setStatusById(statuses);
+            onConnectedClientChangeAction?.(findConnectedId(rows, statuses));
+        },
+        [onConnectedClientChangeAction, rows],
+    );
+
+    const refreshStatuses = useCallback(async () => {
+        if (ids.length === 0) {
             setStatusById({});
+            onConnectedClientChangeAction?.("");
             return;
         }
 
-        const statuses = await getRagClientStatuses(nextIds);
-        setStatusById(statuses);
-    }, []);
+        applyStatuses(await getRagClientStatuses(ids));
+    }, [applyStatuses, ids, onConnectedClientChangeAction]);
 
     const boot = useCallback(async () => {
         setState("loading");
-        setErr("");
+        setError("");
 
         try {
-            const list = await listRagClients();
+            const clients = await listRagClients();
+            setRows(clients);
 
-            setRows(list);
-            setState("ready");
-
-            if (list.length > 0) {
-                await refreshStatuses(list.map((r) => r.id));
+            if (clients.length > 0) {
+                const statuses = await getRagClientStatuses(
+                    clients.map((client) => client.id),
+                );
+                setStatusById(statuses);
+                onConnectedClientChangeAction?.(
+                    findConnectedId(clients, statuses),
+                );
+            } else {
+                setStatusById({});
+                onConnectedClientChangeAction?.("");
             }
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
 
-            setErr(msg);
+            setState("ready");
+        } catch (caught: unknown) {
+            setError(caught instanceof Error ? caught.message : String(caught));
             setState("error");
         }
-    }, [refreshStatuses]);
+    }, [onConnectedClientChangeAction]);
 
     useEffect(() => {
         void boot();
     }, [boot]);
 
     useEffect(() => {
-        if (disablePolling) return;
-        if (state !== "ready" || ids.length === 0) return;
+        if (disablePolling || state !== "ready" || ids.length === 0) return;
 
         let cancelled = false;
 
-        const tick = async () => {
+        async function tick(): Promise<void> {
             try {
                 const statuses = await getRagClientStatuses(ids);
-
-                if (!cancelled) {
-                    setStatusById(statuses);
-                }
+                if (!cancelled) applyStatuses(statuses);
             } catch {
-                // Status polling should not hard-fail dashboard.
+                // A transient status failure should not replace the dashboard.
             }
-        };
+        }
 
-        void tick();
-
-        const t = window.setInterval(tick, 2000);
-
+        const timer = window.setInterval(() => void tick(), 2000);
         return () => {
             cancelled = true;
-            window.clearInterval(t);
+            window.clearInterval(timer);
         };
-    }, [state, ids, disablePolling]);
+    }, [applyStatuses, disablePolling, ids, state]);
 
-    async function onConnect(row: RagClientRow) {
+    async function connect(row: RagClientRow): Promise<void> {
         setBusyId(row.id);
+        setError("");
 
         try {
-            const connectedId = rows.find(
-                (candidate) => statusById[candidate.id]?.connected,
-            )?.id;
-
-            if (connectedId && connectedId !== row.id) {
-                await disconnectRagClient(connectedId);
-            }
-
             await connectRagClient(row.id);
-            await refreshStatuses(ids);
-            onConnectClientAction?.(row);
+            await refreshStatuses();
             onSelectClientAction?.(row);
+            onConnectClientAction?.(row);
+        } catch (caught: unknown) {
+            setError(caught instanceof Error ? caught.message : String(caught));
         } finally {
             setBusyId(null);
         }
     }
 
-    async function onDisconnect(row: RagClientRow) {
+    async function disconnect(row: RagClientRow): Promise<void> {
         setBusyId(row.id);
+        setError("");
 
         try {
             await disconnectRagClient(row.id);
-            await refreshStatuses(ids);
+            await refreshStatuses();
             onDisconnectClientAction?.(row);
+        } catch (caught: unknown) {
+            setError(caught instanceof Error ? caught.message : String(caught));
         } finally {
             setBusyId(null);
         }
-    }
-
-    async function onToggleConnection(row: RagClientRow, connected: boolean) {
-        if (connected) {
-            await onDisconnect(row);
-            return;
-        }
-
-        await onConnect(row);
     }
 
     if (state === "loading" || state === "idle") {
@@ -155,9 +163,8 @@ export default function DashboardClient({
         return (
             <div className="rag-client-error-box">
                 <div className="rag-client-error-message">
-                    {err || "Failed to load."}
+                    {error || "Failed to load."}
                 </div>
-
                 <button
                     className="rag-link-button rag-retry-button"
                     onClick={() => void boot()}
@@ -171,73 +178,72 @@ export default function DashboardClient({
 
     return (
         <div className={compact ? "rag-client-list rag-client-list-compact" : "rag-client-list"}>
-            {!compact && (
+            {!compact ? (
                 <div className="rag-client-help">
-                    Select a host app to load it in the demo frame. Connect attaches the RAG dock inside that host app.
+                    Select a host to preview it. Connect attaches the one active RAG dock.
                 </div>
-            )}
+            ) : null}
+
+            {error ? <div className="rag-client-error-message">{error}</div> : null}
 
             <table className="rag-client-table">
                 <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Dock</th>
-                </tr>
+                    <tr>
+                        <th>Name</th>
+                        <th>Dock</th>
+                    </tr>
                 </thead>
-
                 <tbody>
-                {rows.map((row) => {
-                    const st = statusById[row.id];
-                    const connected = Boolean(st?.connected);
-                    const busy = busyId === row.id;
-                    const selected = selectedRagClientId === row.id;
-                    const anotherConnected = rows.some(
-                        (candidate) => candidate.id !== row.id && statusById[candidate.id]?.connected,
-                    );
+                    {rows.map((row) => {
+                        const connected = connectedId === row.id;
+                        const selected = selectedRagClientId === row.id;
+                        const busy = busyId === row.id;
+                        const label = busy
+                            ? "Working..."
+                            : connected
+                                ? "Disconnect"
+                                : connectedId
+                                    ? "Switch"
+                                    : "Connect";
 
-                    return (
-                        <tr
-                            key={row.id}
-                            className={selected ? "selected" : ""}
-                        >
-                            <td>
-                                <Link
-                                    href={`/hosts/${row.id}`}
-                                    title={row.host_url}
-                                    className="rag-client-name"
-                                >
-                                    {row.name}
-                                </Link>
-                            </td>
-
-                            <td>
-                                <button
-                                    type="button"
-                                    disabled={busyId !== null}
-                                    title={st?.detail || ""}
-                                    onClick={() => void onToggleConnection(row, connected)}
-                                    className="rag-link-button rag-connect-button"
-                                >
-                                    {busy
-                                        ? "Working..."
-                                        : connected
-                                            ? "Disconnect"
-                                            : anotherConnected
-                                                ? "Switch"
-                                                : "Connect"}
-                                </button>
+                        return (
+                            <tr key={row.id} className={selected ? "selected" : ""}>
+                                <td>
+                                    <button
+                                        type="button"
+                                        className="rag-client-name rag-link-button"
+                                        title={row.host_url}
+                                        onClick={() => onSelectClientAction?.(row)}
+                                    >
+                                        {row.name}
+                                    </button>
+                                    {!compact ? (
+                                        <Link href={`/hosts/${row.id}`} className="rag-client-manage-link">
+                                            Manage
+                                        </Link>
+                                    ) : null}
+                                </td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        disabled={busyId !== null}
+                                        title={statusById[row.id]?.detail || ""}
+                                        onClick={() => void (connected ? disconnect(row) : connect(row))}
+                                        className="rag-link-button rag-connect-button"
+                                    >
+                                        {label}
+                                    </button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                    {rows.length === 0 ? (
+                        <tr>
+                            <td className="rag-client-empty" colSpan={2}>
+                                No host apps configured yet.
                             </td>
                         </tr>
-                    );
-                })}
-
-                {rows.length === 0 && (
-                    <tr>
-                        <td className="rag-client-empty" colSpan={2}>
-                            No host apps configured yet.
-                        </td>
-                    </tr>
-                )}
+                    ) : null}
                 </tbody>
             </table>
         </div>

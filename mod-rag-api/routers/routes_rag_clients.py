@@ -119,8 +119,8 @@ async def connect_client(request: Request, rag_client_id: UUID) -> ConnectRespon
     if obj is None:
         raise HTTPException(status_code=404, detail="rag_client not found")
 
-    REGISTRY.set_connected(rag_client_id, True, detail="connect requested")
-    return ConnectResponse(ok=True, detail="connect requested")
+    REGISTRY.connect_exclusive(rag_client_id, detail="connected")
+    return ConnectResponse(ok=True, detail="connected")
 
 
 @router.post("/{rag_client_id}/disconnect", response_model=ConnectResponse)
