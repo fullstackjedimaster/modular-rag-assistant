@@ -58,6 +58,8 @@ export default function EmbedHeightReporter({
             return;
         }
 
+        const measuredRoot: HTMLElement = rootElement;
+
         const targetOrigin = getParentOrigin();
         if (!targetOrigin) {
             console.warn(
@@ -78,7 +80,7 @@ export default function EmbedHeightReporter({
             animationFrame = window.requestAnimationFrame(() => {
                 if (disposed) return;
 
-                const height = measure(rootElement);
+                const height = measure(measuredRoot);
                 if (
                     lastHeight > 0 &&
                     Math.abs(height - lastHeight) < CHANGE_THRESHOLD
@@ -105,10 +107,10 @@ export default function EmbedHeightReporter({
         }
 
         const resizeObserver = new ResizeObserver(schedule);
-        resizeObserver.observe(rootElement);
+        resizeObserver.observe(measuredRoot);
 
         const mutationObserver = new MutationObserver(schedule);
-        mutationObserver.observe(rootElement, {
+        mutationObserver.observe(measuredRoot, {
             childList: true,
             subtree: true,
             characterData: true,
