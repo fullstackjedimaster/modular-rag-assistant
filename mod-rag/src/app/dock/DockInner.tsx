@@ -55,6 +55,7 @@ export default function DockInner() {
     const lastHeightRef = useRef(0);
 
     const ragClientId = searchParams.get("ragClientId");
+    const hostOrigin = searchParams.get("hostOrigin") || "";
 
     const [client, setClient] = useState<RagClientFull | null>(null);
     const [target, setTarget] = useState<TargetSelectedMessage | null>(null);
@@ -108,9 +109,8 @@ export default function DockInner() {
         function onMessage(
             event: MessageEvent<HostThemeMessage | TargetSelectedMessage>,
         ): void {
-            if (event.source !== window.parent) {
-                return;
-            }
+            if (event.source !== window.parent) return;
+            if (!hostOrigin || event.origin !== hostOrigin) return;
 
             const message = event.data;
 
@@ -132,10 +132,10 @@ export default function DockInner() {
             type: "DOCK_READY",
         };
 
-        window.parent.postMessage(ready, "*");
+        if (hostOrigin) window.parent.postMessage(ready, hostOrigin);
 
         return () => window.removeEventListener("message", onMessage);
-    }, []);
+    }, [hostOrigin]);
 
     useEffect(() => {
         const rootElement = rootRef.current;
@@ -160,7 +160,7 @@ export default function DockInner() {
                 height,
             };
 
-            window.parent.postMessage(message, "*");
+            if (hostOrigin) window.parent.postMessage(message, hostOrigin);
         }
 
         const observer = new ResizeObserver(() => {
@@ -171,7 +171,7 @@ export default function DockInner() {
         reportHeight(rootElement);
 
         return () => observer.disconnect();
-    }, []);
+    }, [hostOrigin]);
 
     const forwardedAttrs = useMemo(() => {
         return client && target

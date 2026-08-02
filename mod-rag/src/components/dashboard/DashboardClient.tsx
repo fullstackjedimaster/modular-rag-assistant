@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
     connectRagClient,
+    disconnectRagClient,
     getRagClientStatuses,
     listRagClients,
     type RagClientRow,
@@ -20,20 +21,6 @@ type DashboardClientProps = {
     onDisconnectClientAction?: (client: RagClientRow) => void;
     compact?: boolean;
 };
-
-async function disconnectRagClient(ragClientId: string): Promise<void> {
-    const res = await fetch(`/api/rag-clients/${encodeURIComponent(ragClientId)}/disconnect`, {
-        method: "POST",
-        cache: "no-store",
-    });
-
-    if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(
-            `disconnectRagClient failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`
-        );
-    }
-}
 
 export default function DashboardClient({
                                             selectedRagClientId,
@@ -122,6 +109,14 @@ export default function DashboardClient({
         setBusyId(row.id);
 
         try {
+            const connectedId = rows.find(
+                (candidate) => statusById[candidate.id]?.connected,
+            )?.id;
+
+            if (connectedId && connectedId !== row.id) {
+                await disconnectRagClient(connectedId);
+            }
+
             await connectRagClient(row.id);
             await refreshStatuses(ids);
             onConnectClientAction?.(row);
@@ -196,6 +191,9 @@ export default function DashboardClient({
                     const connected = Boolean(st?.connected);
                     const busy = busyId === row.id;
                     const selected = selectedRagClientId === row.id;
+                    const anotherConnected = rows.some(
+                        (candidate) => candidate.id !== row.id && statusById[candidate.id]?.connected,
+                    );
 
                     return (
                         <tr
@@ -215,7 +213,7 @@ export default function DashboardClient({
                             <td>
                                 <button
                                     type="button"
-                                    disabled={busy}
+                                    disabled={busyId !== null}
                                     title={st?.detail || ""}
                                     onClick={() => void onToggleConnection(row, connected)}
                                     className="rag-link-button rag-connect-button"
@@ -224,7 +222,9 @@ export default function DashboardClient({
                                         ? "Working..."
                                         : connected
                                             ? "Disconnect"
-                                            : "Connect"}
+                                            : anotherConnected
+                                                ? "Switch"
+                                                : "Connect"}
                                 </button>
                             </td>
                         </tr>

@@ -33,7 +33,7 @@ export default function EmbedHeightBoundary({
                 {children}
             </div>
 
-            <EmbedHeightReporter />
+            <EmbedHeightReporter contentRootId="mod-rag-embed-content" />
         </>
     );
 }

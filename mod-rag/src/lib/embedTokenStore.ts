@@ -1,42 +1,32 @@
-// daq-ui/src/lib/embedTokenStore.ts
-const LS_KEY = "mod_rag_embed_token";
+const STORAGE_KEY = "pf_embed_token";
+const CHANGE_EVENT = "embed-token-changed";
 
 export function getEmbedToken(): string {
-    // 1) localStorage
-    if (typeof window !== "undefined") {
-        try {
-            const v = window.localStorage.getItem(LS_KEY);
-            if (v && v.trim()) return v.trim();
-        } catch {
-            // ignore
-        }
+    if (typeof window === "undefined") return "";
+
+    try {
+        return window.sessionStorage.getItem(STORAGE_KEY)?.trim() || "";
+    } catch {
+        return "";
     }
-
-    // 2) env fallback (bundled at build time)
-    const envToken = process.env.NEXT_PUBLIC_EMBED_TOKEN;
-    if (envToken && envToken.trim()) return envToken.trim();
-
-    return "";
 }
 
 export function setEmbedToken(token: string): void {
     if (typeof window === "undefined") return;
+
+    const value = token.trim();
     try {
-        if (!token || !token.trim()) {
-            window.localStorage.removeItem(LS_KEY);
-            return;
-        }
-        window.localStorage.setItem(LS_KEY, token.trim());
+        if (value) window.sessionStorage.setItem(STORAGE_KEY, value);
+        else window.sessionStorage.removeItem(STORAGE_KEY);
     } catch {
-        // ignore
+        // Storage may be unavailable in a hardened browser context.
     }
+
+    window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export function clearEmbedToken(): void {
-    if (typeof window === "undefined") return;
-    try {
-        window.localStorage.removeItem(LS_KEY);
-    } catch {
-        // ignore
-    }
+    setEmbedToken("");
 }
+
+export const EMBED_TOKEN_CHANGE_EVENT = CHANGE_EVENT;

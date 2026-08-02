@@ -20,6 +20,7 @@ import DashboardClient from "@/src/components/dashboard/DashboardClient";
 import PostMessageTap from "@/src/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/src/components/debug/useDebugFlags";
 import { useAppMode} from "@/src/contexts/AppModeContext";
+import { useEmbedToken } from "@/src/hooks/useEmbedToken";
 
 function DebugTapMount() {
   const { msgdebug } = useDebugFlags();
@@ -31,19 +32,26 @@ function safeOrigin(url: string): string {
 }
 
 function clampHeight(height: number): number {
-  return Math.max(520, Math.min(height, 2600));
+  return Math.max(240, Math.min(height, 5000));
 }
 
 
 export default function DashboardShell() {
 
   const { isReadOnly, isDemo } = useAppMode();
+  const embedToken = useEmbedToken();
+  const [selfOrigin, setSelfOrigin] = useState("");
+
+  useEffect(() => {
+    setSelfOrigin(window.location.origin);
+  }, []);
 
     const [ragClients, setRagClients] = useState<RagClientRow[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
     const [loadingClients, setLoadingClients] = useState<boolean>(true);
     const [clientError, setClientError] = useState<string | null>(null);
     const [hostReady, setHostReady] = useState(false);
+    const [connectedClientId, setConnectedClientId] = useState("");
     const [hostFrameHeight, setHostFrameHeight] = useState(1400);
     const [lastSelection, setLastSelection] = useState<string>("");
 
@@ -91,8 +99,13 @@ export default function DashboardShell() {
     }, [ragClients, selectedClientId]);
 
     const targetUrl = useMemo(() => {
-      return selectedClient?.host_url || "";
-    }, [selectedClient]);
+      if (!selectedClient) return "";
+
+      const url = new URL(selectedClient.host_url);
+      if (selfOrigin) url.searchParams.set("embedParentOrigin", selfOrigin);
+      if (embedToken) url.searchParams.set("pf_embed_token", embedToken);
+      return url.toString();
+    }, [selectedClient, embedToken, selfOrigin]);
 
     const targetOrigin = useMemo(() => {
       if (!selectedClient) return "*";
@@ -153,8 +166,9 @@ export default function DashboardShell() {
 
     useEffect(() => {
       if (!selectedClient || !hostReady) return;
+      if (connectedClientId !== selectedClient.id) return;
       sendDockConnect(selectedClient);
-    }, [selectedClient, hostReady, sendDockConnect]);
+    }, [selectedClient, connectedClientId, hostReady, sendDockConnect]);
 
     useEffect(() => {
       const onMessage = (ev: MessageEvent<unknown>) => {
@@ -181,7 +195,7 @@ export default function DashboardShell() {
             data &&
             typeof data === "object" &&
             "type" in data &&
-            data.type === "HOST_APP_HEIGHT" &&
+            data.type === "EMBED_HEIGHT" &&
             "height" in data &&
             typeof data.height === "number"
         ) {
@@ -210,13 +224,14 @@ export default function DashboardShell() {
     }
 
     function handleConnectClient(client: RagClientRow) {
+      setConnectedClientId(client.id);
       setSelectedClientId(client.id);
     }
 
     function handleDisconnectClient(client: RagClientRow) {
-      if (hostReady) {
-        sendDockDisconnect();
-      }
+      if (client.id !== connectedClientId) return;
+      if (hostReady) sendDockDisconnect();
+      setConnectedClientId("");
     }
 
     if (loadingClients) {

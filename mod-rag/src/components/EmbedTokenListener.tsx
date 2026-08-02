@@ -1,65 +1,61 @@
-// daq-ui/src/components/EmbedTokenListener.tsx
 "use client";
 
 import { useEffect } from "react";
 import { setEmbedToken } from "@/src/lib/embedTokenStore";
 
-function looksLikeJwt(t: string): boolean {
-    const s = (t || "").trim().replace(/^Bearer\s+/i, "");
-    if (!s) return false;
-    if (/\s/.test(s)) return false;
-    return (s.match(/\./g) || []).length === 2;
+type EmbedTokenMessage = {
+    type: "EMBED_TOKEN";
+    token: string;
+};
+
+function parentOrigin(): string {
+    const configured = new URLSearchParams(window.location.search).get(
+        "embedParentOrigin",
+    );
+
+    if (configured) {
+        try {
+            return new URL(configured).origin;
+        } catch {
+            // Fall through to document.referrer.
+        }
+    }
+
+    if (document.referrer) {
+        try {
+            return new URL(document.referrer).origin;
+        } catch {
+            // No trusted parent origin is available.
+        }
+    }
+
+    return "";
+}
+
+function isEmbedTokenMessage(value: unknown): value is EmbedTokenMessage {
+    if (!value || typeof value !== "object") return false;
+
+    const message = value as Partial<EmbedTokenMessage>;
+    return message.type === "EMBED_TOKEN" && typeof message.token === "string";
 }
 
 export default function EmbedTokenListener() {
     useEffect(() => {
-        // Accept token via URL query param when embedded (portfolio iframe)
-        try {
-            const params = new URLSearchParams(window.location.search);
-            const embedded = params.get("embed") === "1" || params.get("dock") === "1";
-            const qpRaw = (params.get("embed_token") || "").trim();
+        if (window.parent === window) return;
 
-            if (embedded && looksLikeJwt(qpRaw)) {
-                setEmbedToken(qpRaw);
+        const trustedParentOrigin = parentOrigin();
+        if (!trustedParentOrigin) return;
 
-                // Optional: strip embed_token from URL after storing
-                try {
-                    const u = new URL(window.location.href);
-                    u.searchParams.delete("embed_token");
-                    window.history.replaceState({}, "", u.toString());
-                } catch {
-                    // ignore
-                }
-            }
-        } catch {
-            // ignore
+        function onMessage(event: MessageEvent<unknown>): void {
+            if (event.source !== window.parent) return;
+            if (event.origin !== trustedParentOrigin) return;
+            if (!isEmbedTokenMessage(event.data)) return;
+
+            setEmbedToken(event.data.token);
         }
 
-        function handleMessage(ev: MessageEvent) {
-            // @ts-expect-error cuz
-            const data: never = ev.data;
-            if (!data || typeof data !== "object") return;
-
-            // Current portfolio format
-            // @ts-expect-error cuz
-            if (data.kind === "portfolio-embed-token" && typeof data.token === "string") {
-                // @ts-expect-error cuz
-                const t = data.token;
-                if (looksLikeJwt(t)) setEmbedToken(t);
-                return;
-            }
-
-            // Alternative common format (if you ever send this)
-            // @ts-expect-error cuz
-            if ((data.type === "SET_EMBED_TOKEN" || data.type === "EMBED_TOKEN") && typeof data.token === "string") {
-                // @ts-expect-error cuz
-                const t = data.token;
-                if (looksLikeJwt(t)) setEmbedToken(t);
-            }
-        }
-
-        window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
+        window.addEventListener("message", onMessage);
+        return () => window.removeEventListener("message", onMessage);
     }, []);
 
     return null;

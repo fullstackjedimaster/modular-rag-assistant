@@ -1,229 +1,169 @@
 (function () {
     "use strict";
 
+    if (window.RagDock) return;
+
     var script = document.currentScript;
+    if (!script) return;
 
-    if (!script) {
-        throw new Error("dock-host.js must run from a script element.");
-    }
-
-    var targetSelector = script.dataset.target;
-    var app = script.dataset.app;
-    var density = script.dataset.density;
-
-    if (!targetSelector || !app || !density) {
-        throw new Error(
-            "dock-host.js requires data-target, data-app, and data-density.",
-        );
-    }
-
+    var targetSelector = script.dataset.target || "#rag-dock";
     var mount = document.querySelector(targetSelector);
-
     if (!mount) {
-        throw new Error("Dock mount not found: " + targetSelector);
+        console.error("[RagDock] Missing mount element: " + targetSelector);
+        return;
     }
 
-    var dockUrl = new URL(script.dataset.dockUrl || "/dock", script.src);
+    var scriptUrl = new URL(script.src, window.location.href);
+    var dockUrl = new URL(script.dataset.dockUrl || "/dock", scriptUrl.origin);
     var dockOrigin = dockUrl.origin;
+    var app = script.dataset.app || "host-app";
+    var density = script.dataset.density || "compact";
+    var parentOrigin = "";
+
+    try {
+        var configuredParent = new URLSearchParams(window.location.search).get("embedParentOrigin");
+        parentOrigin = configuredParent
+            ? new URL(configuredParent).origin
+            : document.referrer
+                ? new URL(document.referrer).origin
+                : "";
+    } catch (_) {
+        parentOrigin = "";
+    }
+
     var iframe = null;
     var ready = false;
-    var selectedTarget = null;
-    var lastHeight = 0;
+    var currentClientId = "";
+    var currentTarget = null;
+
+    function postToParent(message) {
+        if (window.parent === window || !parentOrigin) return;
+        window.parent.postMessage(message, parentOrigin);
+    }
+
+    function postToDock(message) {
+        if (!ready || !iframe || !iframe.contentWindow) return;
+        iframe.contentWindow.postMessage(message, dockOrigin);
+    }
 
     function collectTheme() {
         var styles = window.getComputedStyle(mount);
         var vars = {};
-
         for (var index = 0; index < styles.length; index += 1) {
             var name = styles.item(index);
-
-            if (name.indexOf("--") === 0) {
-                vars[name] = styles.getPropertyValue(name).trim();
-            }
+            if (!name || name.indexOf("--") !== 0) continue;
+            var value = styles.getPropertyValue(name).trim();
+            if (value) vars[name] = value;
         }
-
-        return {
-            type: "HOST_THEME",
-            vars: vars,
-            app: app,
-            density: density,
-        };
-    }
-
-    function postToDock(message) {
-        if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage(message, dockOrigin);
-        }
+        return { type: "HOST_THEME", vars: vars, app: app, density: density };
     }
 
     function syncDock() {
         postToDock(collectTheme());
-
-        if (selectedTarget) {
-            postToDock(selectedTarget);
-        }
+        if (currentTarget) postToDock(currentTarget);
     }
 
-    function createFrame(ragClientId) {
+    function connect(ragClientId) {
+        ragClientId = String(ragClientId || "").trim();
+        if (!ragClientId) throw new Error("ragClientId is required");
+        if (ragClientId === currentClientId && iframe) return;
+
+        currentClientId = ragClientId;
+        ready = false;
+        mount.replaceChildren();
+
         var src = new URL(dockUrl.toString());
         src.searchParams.set("ragClientId", ragClientId);
+        src.searchParams.set("hostOrigin", window.location.origin);
 
         iframe = document.createElement("iframe");
         iframe.src = src.toString();
         iframe.title = "AI explanation dock";
         iframe.setAttribute(
             "sandbox",
-            "allow-scripts allow-same-origin allow-forms allow-popups allow-downloads",
+            "allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
         );
         iframe.style.display = "block";
         iframe.style.width = "100%";
-        iframe.style.height = "600px";
+        iframe.style.height = "240px";
         iframe.style.border = "0";
         iframe.style.background = "transparent";
-
-        mount.replaceChildren(iframe);
-        ready = false;
-        lastHeight = 600;
-    }
-
-    function connect(ragClientId) {
-        if (typeof ragClientId !== "string" || !ragClientId.trim()) {
-            throw new Error("RagDock.connect requires a ragClientId.");
-        }
-
-        createFrame(ragClientId.trim());
+        mount.appendChild(iframe);
     }
 
     function disconnect() {
+        currentClientId = "";
         ready = false;
         iframe = null;
-        lastHeight = 0;
         mount.replaceChildren();
+        window.dispatchEvent(new CustomEvent("rag-dock-resize"));
     }
 
     function select(target) {
-        if (
-            !target ||
-            typeof target.id !== "string" ||
-            typeof target.source !== "string" ||
-            !target.attrs ||
-            typeof target.attrs !== "object"
-        ) {
-            throw new Error("RagDock.select requires id, attrs, and source.");
-        }
-
-        selectedTarget = {
+        if (!target || typeof target.id !== "string") return;
+        currentTarget = {
             type: "TARGET_SELECTED",
             id: target.id,
-            attrs: target.attrs,
-            source: target.source,
+            attrs: target.attrs || {},
+            source: target.source || app,
         };
-
-        if (ready) {
-            postToDock(selectedTarget);
-        }
-
-        if (window.parent !== window) {
-            window.parent.postMessage(selectedTarget, dockOrigin);
-        }
-    }
-
-    function refreshTheme() {
-        if (ready) {
-            postToDock(collectTheme());
-        }
-    }
-
-    function applyHeight(height) {
-        if (!iframe || typeof height !== "number" || !Number.isFinite(height)) {
-            return;
-        }
-
-        var nextHeight = Math.max(240, Math.min(5000, Math.ceil(height)));
-
-        if (nextHeight === lastHeight) {
-            return;
-        }
-
-        lastHeight = nextHeight;
-        iframe.style.height = nextHeight + "px";
-    }
-
-    function isLocalCommand(event) {
-        return event.source === window && event.origin === window.location.origin;
-    }
-
-    function isControllerCommand(event) {
-        return event.source === window.parent && event.origin === dockOrigin;
+        postToDock(currentTarget);
+        postToParent(currentTarget);
     }
 
     function onMessage(event) {
         var message = event.data;
+        if (!message || typeof message !== "object") return;
 
-        if (!message || typeof message.type !== "string") {
+        if (event.source === window && event.origin === window.location.origin) {
+            if (message.type === "TARGET_SELECTED") select(message);
             return;
         }
 
-        if (
-            iframe &&
-            event.source === iframe.contentWindow &&
-            event.origin === dockOrigin
-        ) {
-            if (message.type === "DOCK_READY") {
-                ready = true;
-                syncDock();
-                return;
+        if (event.source === window.parent) {
+            if (!parentOrigin || event.origin !== parentOrigin) return;
+            if (message.type === "RAG_HOST_DISCOVER") {
+                postToParent({ type: "RAG_HOST_READY" });
+            } else if (message.type === "RAG_DOCK_CONNECT") {
+                connect(message.ragClientId);
+            } else if (message.type === "RAG_DOCK_DISCONNECT") {
+                disconnect();
             }
-
-            if (message.type === "DOCK_RESIZE") {
-                applyHeight(message.height);
-            }
-
             return;
         }
 
-        if (!isLocalCommand(event) && !isControllerCommand(event)) {
+        if (!iframe || event.source !== iframe.contentWindow || event.origin !== dockOrigin) {
             return;
         }
 
-        if (message.type === "RAG_HOST_DISCOVER" && isControllerCommand(event)) {
-            window.parent.postMessage({ type: "RAG_HOST_READY" }, dockOrigin);
+        if (message.type === "DOCK_READY") {
+            ready = true;
+            syncDock();
             return;
         }
 
-        if (message.type === "RAG_DOCK_CONNECT") {
-            connect(message.ragClientId);
-            return;
-        }
-
-        if (message.type === "RAG_DOCK_DISCONNECT") {
-            disconnect();
-            return;
-        }
-
-        if (message.type === "TARGET_SELECTED" && isLocalCommand(event)) {
-            select(message);
+        if (message.type === "DOCK_RESIZE" && Number.isFinite(message.height)) {
+            var height = Math.max(1, Math.min(5000, Math.ceil(message.height)));
+            iframe.style.height = height + "px";
+            window.dispatchEvent(
+                new CustomEvent("rag-dock-resize", { detail: { height: height } })
+            );
         }
     }
 
     window.addEventListener("message", onMessage);
 
-    window.RagDock = Object.freeze({
+    window.RagDock = {
         connect: connect,
         disconnect: disconnect,
         select: select,
-        refreshTheme: refreshTheme,
+        refreshTheme: syncDock,
         destroy: function () {
-            window.removeEventListener("message", onMessage);
             disconnect();
+            window.removeEventListener("message", onMessage);
             delete window.RagDock;
         },
-    });
+    };
 
-    var initialRagClientId = script.dataset.ragClientId;
-
-    if (initialRagClientId) {
-        connect(initialRagClientId);
-    }
-
+    postToParent({ type: "RAG_HOST_READY" });
 })();
