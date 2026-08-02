@@ -1,0 +1,107 @@
+// app/lib/clientContextApi.ts
+import {settings} from "@/src/lib/settings";
+
+export type ContentDocRow = {
+    id: string;
+    doc_name: string;
+    file_path: string;
+};
+
+export type ContextMessageRow = {
+    name: string;
+    value: string;
+};
+
+function apiBase(): string {
+    return (settings.AI_RAG_API_BASE || "").replace(/\/+$/, "");
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+    const base = apiBase();
+    const url = `${base}${path}`;
+
+    const resp = await fetch(url, {
+        ...init,
+        headers: {
+            "Content-Type": "application/json",
+            ...(init?.headers || {}),
+        },
+        cache: "no-store",
+    });
+
+    if (!resp.ok) {
+        const text = await resp.text().catch(() => "");
+        throw new Error(`HTTP ${resp.status} ${resp.statusText}${text ? `\n${text}` : ""}`);
+    }
+
+    const ct = resp.headers.get("content-type") || "";
+    if (ct.includes("application/json")) return (await resp.json()) as T;
+    return (await resp.text()) as unknown as T;
+}
+
+// -------------------------
+// Content Docs (DB rows)
+// -------------------------
+
+export async function listContentDocs(clientId: string): Promise<ContentDocRow[]> {
+    return apiFetch<ContentDocRow[]>(`/api/rag-clients/${clientId}/content-docs`);
+}
+
+export async function addContentDoc(
+    clientId: string,
+    body: { doc_name: string; file_path: string }
+): Promise<{ id: string }> {
+    return apiFetch<{ id: string }>(`/api/rag-clients/${clientId}/content-docs`, {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+}
+
+export async function updateContentDoc(
+    clientId: string,
+    docId: string,
+    body: { doc_name: string; file_path: string }
+): Promise<{ ok: true }> {
+    return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/content-docs/${docId}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+    });
+}
+
+export async function deleteContentDoc(clientId: string, docId: string): Promise<{ ok: true }> {
+    return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/content-docs/${docId}`, {
+        method: "DELETE",
+    });
+}
+
+// -------------------------
+// Context Messages
+// -------------------------
+
+export async function getContextMessages(clientId: number): Promise<ContextMessageRow[]> {
+    const res = await apiFetch<{ rows: ContextMessageRow[] }>(`/api/rag-clients/${clientId}/context-messages`);
+    return res.rows || [];
+}
+
+export async function saveContextMessages(clientId: number, rows: ContextMessageRow[]): Promise<{ ok: true }> {
+    return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/context-messages`, {
+        method: "PUT",
+        body: JSON.stringify({ rows }),
+    });
+}
+
+// -------------------------
+// System Prompt
+// -------------------------
+
+export async function getSystemPrompt(clientId: string): Promise<string> {
+    const res = await apiFetch<{ text: string }>(`/api/rag-clients/${clientId}/system-prompt`);
+    return res.text || "";
+}
+
+export async function saveSystemPrompt(clientId: string, text: string): Promise<{ ok: true }> {
+    return apiFetch<{ ok: true }>(`/api/rag-clients/${clientId}/system-prompt`, {
+        method: "PUT",
+        body: JSON.stringify({ text }),
+    });
+}
