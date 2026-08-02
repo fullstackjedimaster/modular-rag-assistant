@@ -61,6 +61,7 @@ export default function EmbedHeightReporter({
             return;
         }
 
+        const rootElement = root;
         const targetOrigin = parentOrigin();
         let frame = 0;
         let lastHeight = 0;
@@ -74,7 +75,7 @@ export default function EmbedHeightReporter({
             frame = window.requestAnimationFrame(() => {
                 if (disposed) return;
 
-                const height = measure(root);
+                const height = measure(rootElement);
                 if (
                     lastHeight > 0 &&
                     Math.abs(height - lastHeight) < CHANGE_THRESHOLD
@@ -104,13 +105,13 @@ export default function EmbedHeightReporter({
         document.body.style.overflow = "hidden";
 
         const resizeObserver = new ResizeObserver(schedule);
-        resizeObserver.observe(root);
+        resizeObserver.observe(rootElement);
 
         // The dock adapter changes a descendant iframe's inline height.
         // Attribute observation and the explicit event make that resize
         // propagate through any number of nested embedding layers.
         const mutationObserver = new MutationObserver(schedule);
-        mutationObserver.observe(root, {
+        mutationObserver.observe(rootElement, {
             childList: true,
             subtree: true,
             characterData: true,
