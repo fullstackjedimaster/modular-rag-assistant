@@ -1,52 +1,62 @@
-The normal voltage for a panel in this system is 39.0 volts and the normal current is 7.5 amps.
+Wireless Mesh DAQ — Solar Telemetry and Fault Interpretation Guide
 
-Fault Categories:
+Purpose
+This document describes the telemetry and fault states that the live Wireless Mesh DAQ demo currently supports. The assistant must distinguish raw measurements from interpreted fault states and must not claim unsupported diagnoses.
 
-1. OPEN_CIRCUIT
-   - Trigger: Panel power output near zero while irradiance is sufficient
-   - Thresholds:
-     - Po_mean < 0.02 * P_proj
-     - Irradiance_mean > 400 W/m²
+Live telemetry fields
+- voltage: panel voltage in volts (V)
+- current: panel current in amperes (A)
+- power: measured panel power in watts (W)
+- temperature: simulated panel temperature in degrees Celsius (°C)
+- irradiance: simulated plane-of-array solar irradiance in watts per square meter (W/m²)
+- expected_power: irradiance- and temperature-adjusted expected panel power in watts
+- performance_ratio: measured power divided by expected power
+- environmental_state: either low_irradiance or productive_irradiance
+- diagnostic_basis: the deterministic reason associated with the current status
 
-2. SNAPPED_DIODE
-   - Trigger: Voltage ratios indicate missing diode contribution
-   - Thresholds:
-     - Vo_mean deviates by ~3.5% steps from inverter voltage
-     - Proportional to number of diodes (1, 2, or 3 typically)
+Nominal reference
+At standard productive conditions, the simulated panel is approximately 39 V and 7.5 A, with nominal rated power of 292.5 W. Expected power is adjusted for irradiance and panel temperature. Higher panel temperature reduces expected power using a demonstration coefficient of approximately -0.4% per °C above 25 °C.
 
-3. POWER_DROP
-   - Trigger: Significant loss in panel output compared to expectations
-   - Thresholds:
-     - Po_mean or percent_loss < 95%
-     - Not an open circuit or snapped diode
+Supported status categories, in evaluation order
 
-4. DEAD_PANEL
-   - Trigger: Avg panel voltage is too low
-   - Thresholds:
-     - Avg_voltage < 1.5 V
+1. LOW_IRRADIANCE — informational
+Trigger: irradiance < 100 W/m².
+Meaning: sunlight is too low for meaningful electrical fault diagnosis. Low output under this condition is not treated as a panel fault.
 
-5. LOW_VOLTAGE
-   - Trigger: Panel/system voltage is below operating range
-   - Thresholds:
-     - Voltage < 20 V
+2. DEAD_PANEL — critical
+Trigger: irradiance >= 400 W/m², voltage <= 1.5 V, and current <= 0.15 A.
+Meaning: the panel is producing neither useful voltage nor current despite adequate sunlight.
 
-6. LOW_POWER
-   - Trigger: Low average power output
-   - Thresholds:
-     - Power < 10 W
+3. SHORT_CIRCUIT — critical
+Trigger: irradiance >= 400 W/m², voltage <= 2.0 V, and current >= 5.0 A.
+Meaning: voltage has collapsed while current remains abnormally high.
 
-7. GROSS_POWER_DROP
-   - Trigger: Severe drop in output
-   - Thresholds:
-     - Power loss > 50%
-     - Often due to shade or weather
+4. OPEN_CIRCUIT — high
+Trigger: irradiance >= 400 W/m², voltage >= 25 V, current <= 0.15 A, and power <= the greater of 5 W or 2% of expected power.
+Meaning: voltage is present but current and power are near zero despite adequate sunlight.
 
-8. SHADING
-   - Trigger: Intermittent or clustered power drop
-   - Contextual
+5. OVER_TEMPERATURE — warning
+Trigger: panel temperature >= 70 °C.
+Meaning: panel temperature is above the demo warning threshold. This threshold is configurable and should be replaced by the manufacturer limit in a real installation.
 
-9. INVERTER_OFFLINE / STRING_OFFLINE
-   - Trigger: Loss of data or link with inverter or string node
-   - Contextual / Missing heartbeats
+6. GROSS_POWER_DROP — high
+Trigger: irradiance >= 300 W/m², expected power >= 25 W, and performance_ratio < 0.50.
+Meaning: measured power is less than half of the irradiance- and temperature-adjusted expectation.
 
+7. POSSIBLE_SHADING — warning
+Trigger: irradiance >= 400 W/m², expected power >= 25 W, and performance_ratio < 0.75 after higher-priority faults are excluded.
+Meaning: output is materially below expectation. The demo labels this possible shading because a single panel sample cannot prove shade without peer, spatial, or time-series comparison.
 
+8. LOW_VOLTAGE — warning
+Trigger: irradiance >= 200 W/m² and voltage is greater than 1.5 V but below 20 V.
+Meaning: panel voltage is below its expected operating range under useful sunlight.
+
+9. NORMAL
+Meaning: telemetry is consistent with the simulated irradiance- and temperature-adjusted operating envelope.
+
+Interpretation rules
+- Temperature and irradiance are telemetry measurements, not fault categories by themselves.
+- LOW_IRRADIANCE is an environmental state and should not be described as equipment failure.
+- Use expected_power and performance_ratio when explaining power loss.
+- Do not diagnose snapped diodes, inverter-offline, string-offline, degradation, soiling, or confirmed shading from the current demo because those require additional sensors, peer comparison, heartbeat history, or specialized models.
+- When evidence is insufficient, say what is known from telemetry and what additional evidence is needed.
