@@ -3,7 +3,7 @@ export type Attrs = Record<string, AttrValue>;
 
 export type RagDockConnectMessage = {
     type: "RAG_DOCK_CONNECT";
-    ragClientId: string;
+    ragHostId: string;
 };
 
 export type RagDockDisconnectMessage = {

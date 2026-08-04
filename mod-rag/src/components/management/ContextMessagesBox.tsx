@@ -1,5 +1,5 @@
 // app/components/management/ContentDocsBox.tsx
-"use client";
+"use host";
 
 import React, { useEffect, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
@@ -10,10 +10,10 @@ import {
     listContentDocs,
     updateContentDoc,
     type ContentDocRow,
-} from "@/src/lib/clientContextApi";
+} from "@/src/lib/hostContextApi";
 
-export default function ContentDocsBox(props: { clientId: string }) {
-    const { clientId } = props;
+export default function ContentDocsBox(props: { hostId: string }) {
+    const { hostId } = props;
     const { isReadOnly } = useAppMode();
 
     const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
         setNote("");
         setBusy(true);
         try {
-            const list = await listContentDocs(clientId);
+            const list = await listContentDocs(hostId);
             setRows(list || []);
         } catch (e: unknown) {
             setNote(e instanceof Error ? e.message : String(e));
@@ -40,7 +40,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
     useEffect(() => {
         void refresh();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [clientId]);
+    }, [hostId]);
 
     async function onAdd() {
         setNote("");
@@ -62,7 +62,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
 
         setBusy(true);
         try {
-            await addContentDoc(clientId, { doc_name: dn, file_path: fp });
+            await addContentDoc(hostId, { doc_name: dn, file_path: fp });
             setDocName("");
             setFilePath("");
             await refresh();
@@ -83,7 +83,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
         }
         setBusy(true);
         try {
-            await updateContentDoc(clientId, docId, {
+            await updateContentDoc(hostId, docId, {
                 doc_name: next.doc_name.trim(),
                 file_path: next.file_path.trim(),
             });
@@ -106,7 +106,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
         setNote("");
         setBusy(true);
         try {
-            await deleteContentDoc(clientId, docId);
+            await deleteContentDoc(hostId, docId);
             await refresh();
             setNote("Deleted.");
         } catch (e: unknown) {
@@ -117,7 +117,7 @@ export default function ContentDocsBox(props: { clientId: string }) {
     }
 
     return (
-        <GroupBox title="1) Content docs (client_context)">
+        <GroupBox title="1) Content docs (host_context)">
             <div className="grid gap-3">
                 <div className="grid gap-2">
                     <div className="text-xs text-gray-600">

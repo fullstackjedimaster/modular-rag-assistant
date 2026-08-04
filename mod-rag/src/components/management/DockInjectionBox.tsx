@@ -1,50 +1,50 @@
 // app/components/management/DockInjectionBox.tsx
-"use client";
+"use host";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
-  connectRagClient,
-  getRagClientStatuses,
-  listRagClients,
-  type RagClientRow,
-  type RagClientStatus,
-} from "@/src/lib/ragClientApi";
+  connectRagHost,
+  getRagHostStatuses,
+  listRagHosts,
+  type RagHostRow,
+  type RagHostStatus,
+} from "@/src/lib/ragHostApi";
 
-type RagClientId = RagClientRow["id"];
+type RagHostId = RagHostRow["id"];
 
 export default function DockInjectionBox(props: {
-  clientId?: RagClientId;
-  selectedId?: RagClientId;
+  hostId?: RagHostId;
+  selectedId?: RagHostId;
 }) {
-  const { clientId, selectedId } = props;
+  const { hostId, selectedId } = props;
   const { isReadOnly } = useAppMode();
 
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
-  const [clients, setClients] = useState<RagClientRow[]>([]);
-  const [pickedId, setPickedId] = useState<RagClientId | null>(null);
+  const [hosts, setHosts] = useState<RagHostRow[]>([]);
+  const [pickedId, setPickedId] = useState<RagHostId | null>(null);
 
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusNote, setStatusNote] = useState("");
-  const [status, setStatus] = useState<RagClientStatus | null>(null);
+  const [status, setStatus] = useState<RagHostStatus | null>(null);
 
-  const preferredId = useMemo<RagClientId | null>(() => {
-    return clientId || selectedId || null;
-  }, [clientId, selectedId]);
+  const preferredId = useMemo<RagHostId | null>(() => {
+    return hostId || selectedId || null;
+  }, [hostId, selectedId]);
 
   const picked = useMemo(() => {
     if (pickedId == null) return null;
-    return clients.find((c) => c.id === pickedId) || null;
-  }, [clients, pickedId]);
+    return hosts.find((c) => c.id === pickedId) || null;
+  }, [hosts, pickedId]);
 
-  const refreshStatus = useCallback(async (id: RagClientId) => {
+  const refreshStatus = useCallback(async (id: RagHostId) => {
     setStatusBusy(true);
     setStatusNote("");
 
     try {
-      const map = await getRagClientStatuses([id]);
+      const map = await getRagHostStatuses([id]);
       setStatus(map?.[id] || null);
     } catch (e: unknown) {
       setStatus(null);
@@ -54,15 +54,15 @@ export default function DockInjectionBox(props: {
     }
   }, []);
 
-  const refreshClients = useCallback(async () => {
+  const refreshHosts = useCallback(async () => {
     setBusy(true);
     setNote("");
 
     try {
-      const list = await listRagClients();
+      const list = await listRagHosts();
       const next = list || [];
 
-      setClients(next);
+      setHosts(next);
 
       const ids = next.map((x) => x.id);
 
@@ -79,7 +79,7 @@ export default function DockInjectionBox(props: {
 
       setPickedId((prev) => (prev != null && ids.includes(prev) ? prev : ids[0]));
     } catch (e: unknown) {
-      setClients([]);
+      setHosts([]);
       setPickedId(null);
       setStatus(null);
       setNote(e instanceof Error ? e.message : String(e));
@@ -89,16 +89,16 @@ export default function DockInjectionBox(props: {
   }, [preferredId]);
 
   useEffect(() => {
-    void refreshClients();
-  }, [refreshClients]);
+    void refreshHosts();
+  }, [refreshHosts]);
 
   useEffect(() => {
     if (preferredId == null) return;
 
-    if (clients.some((c) => c.id === preferredId)) {
+    if (hosts.some((c) => c.id === preferredId)) {
       setPickedId(preferredId);
     }
-  }, [preferredId, clients]);
+  }, [preferredId, hosts]);
 
   useEffect(() => {
     if (pickedId == null) {
@@ -135,8 +135,8 @@ export default function DockInjectionBox(props: {
     setBusy(true);
 
     try {
-      await connectRagClient(picked.id);
-      setNote("Connect triggered. If the client is reachable, dock injection should occur.");
+      await connectRagHost(picked.id);
+      setNote("Connect triggered. If the host is reachable, dock injection should occur.");
       await refreshStatus(picked.id);
     } catch (e: unknown) {
       setNote(e instanceof Error ? e.message : String(e));
@@ -153,9 +153,9 @@ export default function DockInjectionBox(props: {
   return (
     <GroupBox title="5) Dock injection">
       <div className="grid gap-3">
-        {clients.length === 0 ? (
+        {hosts.length === 0 ? (
           <div className="text-xs text-gray-600">
-            No RAG clients found yet. Create one first (Client Name + Host URL).
+            No RAG hosts found yet. Create one first (Host Name + Host URL).
           </div>
         ) : (
           <>
@@ -164,10 +164,10 @@ export default function DockInjectionBox(props: {
             <select
               className="rounded border px-2 py-2 text-sm"
               value={pickedId ?? ""}
-              onChange={(e) => setPickedId(e.target.value as RagClientId)}
+              onChange={(e) => setPickedId(e.target.value as RagHostId)}
               disabled={busy || isReadOnly}
             >
-              {clients.map((c) => (
+              {hosts.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} - {c.host_url}
                 </option>
@@ -242,10 +242,10 @@ export default function DockInjectionBox(props: {
                   <button
                     type="button"
                     className="rounded border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-                    onClick={() => void refreshClients()}
+                    onClick={() => void refreshHosts()}
                     disabled={busy}
                   >
-                    Refresh Clients
+                    Refresh Hosts
                   </button>
                 </div>
               </div>

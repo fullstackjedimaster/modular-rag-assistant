@@ -1,13 +1,13 @@
-"use client";
+"use host";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { SmartExplainer } from "@/src/components/SmartExplainer";
 import {
-    getRagClient,
-    type RagClientFull,
-} from "@/src/lib/ragClientApi";
+    getRagHost,
+    type RagHostFull,
+} from "@/src/lib/ragHostApi";
 import type {
     Attrs,
     DockReadyMessage,
@@ -29,11 +29,11 @@ function applyTheme(root: HTMLElement, message: HostThemeMessage): void {
 
 function selectTelemetryAttrs(
     attrs: Attrs,
-    client: RagClientFull,
+    host: RagHostFull,
 ): ForwardedAttrs {
     const selected: ForwardedAttrs = {};
 
-    for (const telemetryMessage of client.telemetry_messages) {
+    for (const telemetryMessage of host.telemetry_messages) {
         const name = telemetryMessage.message_name;
         const value = attrs[name];
 
@@ -54,37 +54,37 @@ export default function DockInner() {
     const rootRef = useRef<HTMLElement>(null);
     const lastHeightRef = useRef(0);
 
-    const ragClientId = searchParams.get("ragClientId");
+    const ragHostId = searchParams.get("ragHostId");
     const hostOrigin = searchParams.get("hostOrigin") || "";
 
-    const [client, setClient] = useState<RagClientFull | null>(null);
+    const [host, setHost] = useState<RagHostFull | null>(null);
     const [target, setTarget] = useState<TargetSelectedMessage | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (!ragClientId) {
-            setClient(null);
+        if (!ragHostId) {
+            setHost(null);
             setLoading(false);
-            setError("Missing ragClientId.");
+            setError("Missing ragHostId.");
             return;
         }
 
         let cancelled = false;
 
-        async function loadClient(clientId: string): Promise<void> {
+        async function loadHost(hostId: string): Promise<void> {
             setLoading(true);
             setError("");
 
             try {
-                const loadedClient = await getRagClient(clientId);
+                const loadedHost = await getRagHost(hostId);
 
                 if (!cancelled) {
-                    setClient(loadedClient);
+                    setHost(loadedHost);
                 }
             } catch (loadError: unknown) {
                 if (!cancelled) {
-                    setClient(null);
+                    setHost(null);
                     setError(
                         loadError instanceof Error
                             ? loadError.message
@@ -98,12 +98,12 @@ export default function DockInner() {
             }
         }
 
-        void loadClient(ragClientId);
+        void loadHost(ragHostId);
 
         return () => {
             cancelled = true;
         };
-    }, [ragClientId]);
+    }, [ragHostId]);
 
     useEffect(() => {
         function onMessage(
@@ -174,10 +174,10 @@ export default function DockInner() {
     }, [hostOrigin]);
 
     const forwardedAttrs = useMemo(() => {
-        return client && target
-            ? selectTelemetryAttrs(target.attrs, client)
+        return host && target
+            ? selectTelemetryAttrs(target.attrs, host)
             : {};
-    }, [client, target]);
+    }, [host, target]);
 
     return (
         <main ref={rootRef} className="dock-content">
@@ -189,9 +189,9 @@ export default function DockInner() {
 
             {loading ? (
                 <div className="dock-notice">Loading AI explanation...</div>
-            ) : !client ? (
+            ) : !host ? (
                 <div className="dock-notice dock-notice-error">
-                    RAG client configuration could not be loaded.
+                    RAG host configuration could not be loaded.
                 </div>
             ) : !target ? (
                 <div className="dock-notice">
@@ -201,12 +201,12 @@ export default function DockInner() {
                 <SmartExplainer
                     subjectId={target.id}
                     attrs={forwardedAttrs}
-                    collection={client.collection}
-                    llm_model={client.llm_model}
-                    embed_model={client.embed_model}
-                    prompt={client.prompt}
-                    chaining_mode={client.chaining_mode}
-                    telemetry_messages={client.telemetry_messages}
+                    collection={host.collection}
+                    llm_model={host.llm_model}
+                    embed_model={host.embed_model}
+                    prompt={host.prompt}
+                    chaining_mode={host.chaining_mode}
+                    telemetry_messages={host.telemetry_messages}
                     showControls={false}
                     showPanel={true}
                 />

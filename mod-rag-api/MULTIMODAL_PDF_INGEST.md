@@ -48,7 +48,7 @@ The Ollama REST vision API accepts base64 images in the message `images` array.
 ### Start an ingestion job
 
 ```http
-POST /rag-clients/{rag_client_id}/docs/pdf-multimodal
+POST /rag-hosts/{rag_host_id}/docs/pdf-multimodal
 Content-Type: multipart/form-data
 ```
 
@@ -62,7 +62,7 @@ Example:
 
 ```bash
 curl -X POST \
-  'http://localhost:8002/rag-clients/CLIENT_ID/docs/pdf-multimodal?mode=all&dpi=160' \
+  'http://localhost:8002/rag-hosts/CLIENT_ID/docs/pdf-multimodal?mode=all&dpi=160' \
   -F 'file=@database-design.pdf'
 ```
 
@@ -71,7 +71,7 @@ The response is HTTP 202 and contains a `job_id`.
 ### Read job status
 
 ```bash
-curl 'http://localhost:8002/rag-clients/CLIENT_ID/docs/pdf-multimodal/jobs/JOB_ID'
+curl 'http://localhost:8002/rag-hosts/CLIENT_ID/docs/pdf-multimodal/jobs/JOB_ID'
 ```
 
 Statuses are `queued`, `running`, `complete`, or `failed`.
@@ -79,13 +79,13 @@ Statuses are `queued`, `running`, `complete`, or `failed`.
 ### List jobs
 
 ```bash
-curl 'http://localhost:8002/rag-clients/CLIENT_ID/docs/pdf-multimodal/jobs'
+curl 'http://localhost:8002/rag-hosts/CLIENT_ID/docs/pdf-multimodal/jobs'
 ```
 
 ### Preview normalized output
 
 ```bash
-curl 'http://localhost:8002/rag-clients/CLIENT_ID/docs/pdf-multimodal/jobs/JOB_ID/preview'
+curl 'http://localhost:8002/rag-hosts/CLIENT_ID/docs/pdf-multimodal/jobs/JOB_ID/preview'
 ```
 
 ## Output location
@@ -93,19 +93,19 @@ curl 'http://localhost:8002/rag-clients/CLIENT_ID/docs/pdf-multimodal/jobs/JOB_I
 Original PDF:
 
 ```text
-source_docs/client_<rag_client_id>/<filename>.pdf
+source_docs/host_<rag_host_id>/<filename>.pdf
 ```
 
 Normalized Markdown:
 
 ```text
-source_docs/client_<rag_client_id>/_normalized/<filename>.pdf.multimodal.md
+source_docs/host_<rag_host_id>/_normalized/<filename>.pdf.multimodal.md
 ```
 
 Persistent job state:
 
 ```text
-source_docs/client_<rag_client_id>/_jobs/<job_id>.json
+source_docs/host_<rag_host_id>/_jobs/<job_id>.json
 ```
 
 ## Seeding into Qdrant
@@ -119,8 +119,8 @@ Example:
 
 ```bash
 python seed_usecase_docs.py \
-  --source-dir source_docs/client_CLIENT_ID/_normalized \
-  --collection entity_client_docs
+  --source-dir source_docs/host_CLIENT_ID/_normalized \
+  --collection entity_host_docs
 ```
 
 For a production version, the next step is a persistent queue such as Redis/RQ, Celery, Dramatiq, or an application jobs table. FastAPI `BackgroundTasks` is appropriate for the portfolio proof of concept, but a process restart interrupts an active job.

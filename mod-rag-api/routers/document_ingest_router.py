@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from document_ingest import SUPPORTED_EXTENSIONS, extract_document
 
-router = APIRouter(prefix='/rag-clients', tags=['document-ingest'])
+router = APIRouter(prefix='/rag-hosts', tags=['document-ingest'])
 
 
 def source_docs_dir() -> Path:
@@ -17,16 +17,16 @@ def source_docs_dir() -> Path:
     return Path(getenv('SOURCE_DOCS_DIR', str(default))).expanduser().resolve()
 
 
-def client_dir(rag_client_id: int) -> Path:
-    return source_docs_dir() / f'client_{rag_client_id}'
+def host_dir(rag_host_id: int) -> Path:
+    return source_docs_dir() / f'host_{rag_host_id}'
 
 
 def safe_name(name: str) -> str:
     return Path(name).name
 
 
-@router.post('/{rag_client_id}/docs/ingest')
-async def ingest_documents(rag_client_id: int, files: List[UploadFile] = File(...)):
+@router.post('/{rag_host_id}/docs/ingest')
+async def ingest_documents(rag_host_id: int, files: List[UploadFile] = File(...)):
     """Save originals and produce normalized UTF-8 text for preview/seeding.
 
     This route performs extraction and normalization only. It deliberately does
@@ -36,7 +36,7 @@ async def ingest_documents(rag_client_id: int, files: List[UploadFile] = File(..
     if not files:
         raise HTTPException(status_code=400, detail='No files supplied')
 
-    original_dir = client_dir(rag_client_id)
+    original_dir = host_dir(rag_host_id)
     normalized_dir = original_dir / '_normalized'
     original_dir.mkdir(parents=True, exist_ok=True)
     normalized_dir.mkdir(parents=True, exist_ok=True)
@@ -72,4 +72,4 @@ async def ingest_documents(rag_client_id: int, files: List[UploadFile] = File(..
             destination.unlink(missing_ok=True)
             results.append({'filename': filename, 'ok': False, 'error': str(exc)})
 
-    return {'rag_client_id': rag_client_id, 'documents': results}
+    return {'rag_host_id': rag_host_id, 'documents': results}

@@ -1,5 +1,5 @@
 // app/components/management/ContentDocsBox.tsx
-"use client";
+"use host";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
@@ -10,14 +10,14 @@ import {
   listContentDocs,
   updateContentDoc,
   type ContentDocRow,
-} from "@/src/lib/clientContextApi";
-import type { RagClientFull } from "@/src/lib/ragClientApi";
+} from "@/src/lib/hostContextApi";
+import type { RagHostFull } from "@/src/lib/ragHostApi";
 
-type RagClientId = RagClientFull["id"];
+type RagHostId = RagHostFull["id"];
 type ContentDocId = ContentDocRow["id"];
 
-export default function ContentDocsBox(props: { clientId: RagClientId }) {
-  const { clientId } = props;
+export default function ContentDocsBox(props: { hostId: RagHostId }) {
+  const { hostId } = props;
   const { isReadOnly } = useAppMode();
 
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
     setBusy(true);
 
     try {
-      const list = await listContentDocs(clientId);
+      const list = await listContentDocs(hostId);
       setRows(list || []);
     } catch (e: unknown) {
       setNote(e instanceof Error ? e.message : String(e));
@@ -40,7 +40,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
     } finally {
       setBusy(false);
     }
-  }, [clientId]);
+  }, [hostId]);
 
   useEffect(() => {
     void refresh();
@@ -70,7 +70,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
     setBusy(true);
 
     try {
-      await addContentDoc(clientId, { doc_name: dn, file_path: fp });
+      await addContentDoc(hostId, { doc_name: dn, file_path: fp });
       setDocName("");
       setFilePath("");
       await refresh();
@@ -93,7 +93,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
     setBusy(true);
 
     try {
-      await updateContentDoc(clientId, docId, {
+      await updateContentDoc(hostId, docId, {
         doc_name: next.doc_name.trim(),
         file_path: next.file_path.trim(),
       });
@@ -119,7 +119,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
     setBusy(true);
 
     try {
-      await deleteContentDoc(clientId, docId);
+      await deleteContentDoc(hostId, docId);
       await refresh();
       setNote("Deleted.");
     } catch (e: unknown) {
@@ -130,7 +130,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
   }
 
   return (
-    <section className="knowledge-base-panel" aria-labelledby="knowledge-base-title"><div className="knowledge-base-heading"><p className="management-eyebrow">Knowledge Base</p><h2 id="knowledge-base-title">Documents</h2><p>Add manuals, specifications, guides, and other source material used to ground this client’s answers.</p></div>
+    <section className="knowledge-base-panel" aria-labelledby="knowledge-base-title"><div className="knowledge-base-heading"><p className="management-eyebrow">Knowledge Base</p><h2 id="knowledge-base-title">Documents</h2><p>Add manuals, specifications, guides, and other source material used to ground this host’s answers.</p></div>
       <div className="grid gap-3">
         <div className="grid gap-2">
           <div className="text-xs text-gray-600">

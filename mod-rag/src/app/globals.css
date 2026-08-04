@@ -207,7 +207,7 @@ code {
     color: var(--muted);
 }
 
-.rag-client-header {
+.rag-host-header {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -218,14 +218,14 @@ code {
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.rag-client-topline {
+.rag-host-topline {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
 
-.rag-client-title-wrap {
+.rag-host-title-wrap {
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -325,7 +325,7 @@ code {
 
 /* compact client list */
 
-.rag-client-list {
+.rag-host-list {
     width: 100%;
     max-width: 420px;
     overflow: hidden;
@@ -333,30 +333,30 @@ code {
     color: var(--muted);
 }
 
-.rag-client-list-compact {
+.rag-host-list-compact {
     max-width: 360px;
 }
 
-.rag-client-help {
+.rag-host-help {
     margin-bottom: 3px;
     font-size: 10px;
     color: var(--muted);
 }
 
-.rag-client-table {
+.rag-host-table {
     width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
 }
 
-.rag-client-table th,
-.rag-client-table td {
+.rag-host-table th,
+.rag-host-table td {
     padding: 2px 5px;
     border-bottom: 1px solid #e2e8f0;
     vertical-align: middle;
 }
 
-.rag-client-table th {
+.rag-host-table th {
     font-size: 9px;
     line-height: 1.1;
     color: var(--muted);
@@ -366,26 +366,26 @@ code {
     font-weight: 800;
 }
 
-.rag-client-table th:first-child,
-.rag-client-table td:first-child {
+.rag-host-table th:first-child,
+.rag-host-table td:first-child {
     width: 72%;
 }
 
-.rag-client-table th:last-child,
-.rag-client-table td:last-child {
+.rag-host-table th:last-child,
+.rag-host-table td:last-child {
     width: 28%;
     text-align: right;
 }
 
-.rag-client-table tr.selected td {
+.rag-host-table tr.selected td {
     background: #eff6ff;
 }
 
-.rag-client-table tr:hover td {
+.rag-host-table tr:hover td {
     background: #f8fafc;
 }
 
-.rag-client-name {
+.rag-host-name {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -396,7 +396,7 @@ code {
     text-decoration: none;
 }
 
-.rag-client-name:hover {
+.rag-host-name:hover {
     color: var(--accent);
     text-decoration: underline;
 }
@@ -406,20 +406,20 @@ code {
     font-size: 10px;
 }
 
-.rag-client-loading,
-.rag-client-error-message,
-.rag-client-empty {
+.rag-host-loading,
+.rag-host-error-message,
+.rag-host-empty {
     font-size: 11px;
     color: var(--muted);
 }
 
-.rag-client-error-box {
+.rag-host-error-box {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.rag-client-error-message {
+.rag-host-error-message {
     color: #b91c1c;
 }
 
@@ -957,13 +957,13 @@ body:has(.smart-explainer) {
         padding: 4px;
     }
 
-    .rag-client-topline {
+    .rag-host-topline {
         align-items: flex-start;
         flex-direction: column;
     }
 
-    .rag-client-list,
-    .rag-client-list-compact {
+    .rag-host-list,
+    .rag-host-list-compact {
         max-width: 100%;
     }
 
@@ -1038,7 +1038,7 @@ body { background:#020617; color:#e5e7eb; }
 .knowledge-base-heading h2 { margin:0; font-size:1.45rem; color:#f8fafc; }
 .knowledge-base-heading p:last-child { color:#94a3b8; line-height:1.55; }
 .management-eyebrow { margin:0 0 5px; color:#38bdf8; font-size:.72rem; font-weight:850; letter-spacing:.15em; text-transform:uppercase; }
-.rag-client-name { color:#dbeafe !important; }
-.rag-client-detail-link { margin-left:8px; font-size:.68rem; color:#38bdf8; }
+.rag-host-name { color:#dbeafe !important; }
+.rag-host-detail-link { margin-left:8px; font-size:.68rem; color:#38bdf8; }
 .rag-connect-button:disabled { opacity:.75; cursor:default; text-decoration:none; }
 @media(max-width:640px){.management-shell{padding:14px}.knowledge-base-panel{padding:14px}}

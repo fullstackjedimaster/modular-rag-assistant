@@ -1,14 +1,14 @@
-"use client";
+"use host";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
-import DashboardClient from "@/src/components/dashboard/DashboardClient";
+import DashboardHost from "@/src/components/dashboard/DashboardHost";
 import PostMessageTap from "@/src/components/debug/PostMessageTap";
 import { useDebugFlags } from "@/src/components/debug/useDebugFlags";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import { useEmbedToken } from "@/src/hooks/useEmbedToken";
-import { listRagClients, type RagClientRow } from "@/src/lib/ragClientApi";
+import { listRagHosts, type RagHostRow } from "@/src/lib/ragHostApi";
 import { parseTargetSelectedMessage } from "@/src/lib/messages";
 
 const DEFAULT_HOST_HEIGHT = 600;
@@ -30,9 +30,9 @@ export default function DashboardShell() {
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     const [browserOrigin, setBrowserOrigin] = useState("");
-    const [clients, setClients] = useState<RagClientRow[]>([]);
-    const [selectedClientId, setSelectedClientId] = useState("");
-    const [connectedClientId, setConnectedClientId] = useState("");
+    const [hosts, setHosts] = useState<RagHostRow[]>([]);
+    const [selectedHostId, setSelectedHostId] = useState("");
+    const [connectedHostId, setConnectedHostId] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [hostReady, setHostReady] = useState(false);
@@ -51,14 +51,14 @@ export default function DashboardShell() {
             setError("");
 
             try {
-                const rows = await listRagClients();
+                const rows = await listRagHosts();
                 if (cancelled) return;
-                setClients(rows);
-                setSelectedClientId((current) => current || rows[0]?.id || "");
+                setHosts(rows);
+                setSelectedHostId((current) => current || rows[0]?.id || "");
             } catch (caught: unknown) {
                 if (!cancelled) {
-                    setClients([]);
-                    setSelectedClientId("");
+                    setHosts([]);
+                    setSelectedHostId("");
                     setError(caught instanceof Error ? caught.message : String(caught));
                 }
             } finally {
@@ -72,28 +72,28 @@ export default function DashboardShell() {
         };
     }, []);
 
-    const selectedClient = useMemo(
-        () => clients.find((client) => client.id === selectedClientId) ?? clients[0] ?? null,
-        [clients, selectedClientId],
+    const selectedHost = useMemo(
+        () => hosts.find((host) => host.id === selectedHostId) ?? hosts[0] ?? null,
+        [hosts, selectedHostId],
     );
 
     const selectedOrigin = useMemo(() => {
-        if (!selectedClient) return "";
+        if (!selectedHost) return "";
         try {
-            return new URL(selectedClient.host_url).origin;
+            return new URL(selectedHost.host_url).origin;
         } catch {
             return "";
         }
-    }, [selectedClient]);
+    }, [selectedHost]);
 
     const selectedUrl = useMemo(() => {
-        if (!selectedClient || !browserOrigin) return "";
+        if (!selectedHost || !browserOrigin) return "";
 
-        const url = new URL(selectedClient.host_url);
+        const url = new URL(selectedHost.host_url);
         url.searchParams.set("embedParentOrigin", browserOrigin);
         if (embedToken) url.searchParams.set("pf_embed_token", embedToken);
         return url.toString();
-    }, [browserOrigin, embedToken, selectedClient]);
+    }, [browserOrigin, embedToken, selectedHost]);
 
     const postToHost = useCallback((message: object) => {
         const targetWindow = iframeRef.current?.contentWindow;
@@ -110,12 +110,12 @@ export default function DashboardShell() {
         setHostReady(false);
         setHostHeight(DEFAULT_HOST_HEIGHT);
         setLastSelection("");
-    }, [selectedClientId]);
+    }, [selectedHostId]);
 
     useEffect(() => {
-        if (!hostReady || !selectedClient || connectedClientId !== selectedClient.id) return;
-        postToHost({ type: "RAG_DOCK_CONNECT", ragClientId: selectedClient.id });
-    }, [connectedClientId, hostReady, postToHost, selectedClient]);
+        if (!hostReady || !selectedHost || connectedHostId !== selectedHost.id) return;
+        postToHost({ type: "RAG_DOCK_CONNECT", ragHostId: selectedHost.id });
+    }, [connectedHostId, hostReady, postToHost, selectedHost]);
 
     useEffect(() => {
         function onMessage(event: MessageEvent<unknown>): void {
@@ -143,20 +143,20 @@ export default function DashboardShell() {
         return () => window.removeEventListener("message", onMessage);
     }, [selectedOrigin]);
 
-    function selectClient(client: RagClientRow): void {
-        setSelectedClientId(client.id);
+    function selectHost(host: RagHostRow): void {
+        setSelectedHostId(host.id);
     }
 
-    function connectClient(client: RagClientRow): void {
-        setConnectedClientId(client.id);
-        setSelectedClientId(client.id);
+    function connectHost(host: RagHostRow): void {
+        setConnectedHostId(host.id);
+        setSelectedHostId(host.id);
     }
 
-    function disconnectClient(client: RagClientRow): void {
-        if (client.id === selectedClient?.id && hostReady) {
+    function disconnectHost(host: RagHostRow): void {
+        if (host.id === selectedHost?.id && hostReady) {
             postToHost({ type: "RAG_DOCK_DISCONNECT" });
         }
-        setConnectedClientId((current) => current === client.id ? "" : current);
+        setConnectedHostId((current) => current === host.id ? "" : current);
     }
 
     if (loading) {
@@ -164,21 +164,21 @@ export default function DashboardShell() {
             <main className="rag-page">
                 <div className="rag-page-inner rag-page-inner-narrow">
                     <h1 className="rag-title">Modular RAG Assistant Demo</h1>
-                    <p className="rag-subtitle">Loading RAG clients...</p>
+                    <p className="rag-subtitle">Loading RAG hosts...</p>
                 </div>
             </main>
         );
     }
 
-    if (error || !selectedClient) {
+    if (error || !selectedHost) {
         return (
             <main className="rag-page">
                 <div className="rag-page-inner rag-page-inner-narrow">
                     <h1 className="rag-title">Modular RAG Assistant Demo</h1>
-                    <div className="rag-error">{error || "No RAG clients are configured."}</div>
+                    <div className="rag-error">{error || "No RAG hosts are configured."}</div>
                     <div className="rag-toolbar">
-                        <Link href="/clients" className="rag-button rag-button-secondary">
-                            {isDemo ? "View RAG Clients" : "Manage RAG Clients"}
+                        <Link href="/hosts" className="rag-button rag-button-secondary">
+                            {isDemo ? "View RAG Hosts" : "Manage RAG Hosts"}
                         </Link>
                     </div>
                 </div>
@@ -189,9 +189,9 @@ export default function DashboardShell() {
     return (
         <main className="rag-page">
             <div className="rag-page-inner">
-                <header className="rag-client-header">
-                    <div className="rag-client-topline">
-                        <div className="rag-client-title-wrap">
+                <header className="rag-host-header">
+                    <div className="rag-host-topline">
+                        <div className="rag-host-title-wrap">
                             {lastSelection ? (
                                 <p className="rag-last-selection">
                                     target: <span>{lastSelection}</span>
@@ -199,18 +199,18 @@ export default function DashboardShell() {
                             ) : null}
                         </div>
                         {!isReadOnly ? (
-                            <Link href="/client/new" className="rag-button rag-button-secondary">
-                                New Client
+                            <Link href="/host/new" className="rag-button rag-button-secondary">
+                                New Host
                             </Link>
                         ) : null}
                     </div>
 
-                    <DashboardClient
-                        selectedRagClientId={selectedClient.id}
-                        onSelectClientAction={selectClient}
-                        onConnectClientAction={connectClient}
-                        onDisconnectClientAction={disconnectClient}
-                        onConnectedClientChangeAction={setConnectedClientId}
+                    <DashboardHost
+                        selectedRagHostId={selectedHost.id}
+                        onSelectHostAction={selectHost}
+                        onConnectHostAction={connectHost}
+                        onDisconnectHostAction={disconnectHost}
+                        onConnectedHostChangeAction={setConnectedHostId}
                         compact
                     />
                 </header>
@@ -218,9 +218,9 @@ export default function DashboardShell() {
                 <section className="rag-host-frame-card">
                     {selectedUrl ? (
                         <iframe
-                            key={selectedClient.id}
+                            key={selectedHost.id}
                             ref={iframeRef}
-                            title={`${selectedClient.name} target host`}
+                            title={`${selectedHost.name} target host`}
                             src={selectedUrl}
                             className="rag-host-frame"
                             style={{ height: `${hostHeight}px` }}

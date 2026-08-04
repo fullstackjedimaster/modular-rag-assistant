@@ -1,5 +1,5 @@
 // ai-ui/src/context/AISettingsContext.tsx
-"use client";
+"use host";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 

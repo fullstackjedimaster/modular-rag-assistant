@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import React, { Suspense } from "react";
 import DockInner from "./DockInner";

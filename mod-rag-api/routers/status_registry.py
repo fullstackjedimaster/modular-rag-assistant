@@ -22,8 +22,8 @@ class StatusRegistry:
         self._lock = threading.Lock()
         self._m: Dict[str, _Status] = {}
 
-    def touch(self, rag_client_id: UUID, detail: str = "") -> None:
-        key = str(rag_client_id)
+    def touch(self, rag_host_id: UUID, detail: str = "") -> None:
+        key = str(rag_host_id)
 
         with self._lock:
             st = self._m.get(key) or _Status()
@@ -34,13 +34,13 @@ class StatusRegistry:
 
             self._m[key] = st
 
-    def connect_exclusive(self, rag_client_id: UUID, detail: str = "") -> None:
-        key = str(rag_client_id)
+    def connect_exclusive(self, rag_host_id: UUID, detail: str = "") -> None:
+        key = str(rag_host_id)
         now = _now_iso()
 
         with self._lock:
-            for client_id, status in self._m.items():
-                if status.connected and client_id != key:
+            for host_id, status in self._m.items():
+                if status.connected and host_id != key:
                     status.connected = False
                     status.detail = "switched"
                     status.last_seen_at = now
@@ -51,8 +51,8 @@ class StatusRegistry:
             status.last_seen_at = now
             self._m[key] = status
 
-    def set_connected(self, rag_client_id: UUID, connected: bool, detail: str = "") -> None:
-        key = str(rag_client_id)
+    def set_connected(self, rag_host_id: UUID, connected: bool, detail: str = "") -> None:
+        key = str(rag_host_id)
 
         with self._lock:
             st = self._m.get(key) or _Status()
@@ -68,7 +68,7 @@ class StatusRegistry:
         with self._lock:
             if only_ids:
                 ids = {str(x) for x in only_ids}
-                return {rag_client_id: self._m.get(rag_client_id, _Status()) for rag_client_id in ids}
+                return {rag_host_id: self._m.get(rag_host_id, _Status()) for rag_host_id in ids}
 
             return dict(self._m)
 

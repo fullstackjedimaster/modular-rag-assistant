@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import React, { useMemo } from "react";
 import GroupBox from "@/src/components/GroupBox";

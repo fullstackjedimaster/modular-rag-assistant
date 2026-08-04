@@ -1,5 +1,5 @@
 // app/contexts/AppModeContext.tsx
-"use client";
+"use host";
 
 import {
   createContext,

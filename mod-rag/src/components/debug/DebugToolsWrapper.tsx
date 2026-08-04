@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import ErudaLoader from "@/src/components/debug/ErudaLoader";
 import { useDebugFlags } from "@/src/components/debug/useDebugFlags";

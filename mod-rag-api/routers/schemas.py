@@ -12,7 +12,7 @@ from uuid import UUID
 # Runtime status
 # ---------------------------
 
-class RagClientStatus(BaseModel):
+class RagHostStatus(BaseModel):
     connected: bool = False
     detail: str = ""
     last_seen_at: Optional[str] = None  # ISO string
@@ -27,7 +27,7 @@ class ConnectResponse(BaseModel):
 # DB rows
 # ---------------------------
 
-class RagClientRow(BaseModel):
+class RagHostRow(BaseModel):
     id: UUID
     name: str
     host_url: str
@@ -60,12 +60,12 @@ PromptChainingMode = Literal["append","replace","none"]
 # Input models
 # ---------------------------
 
-class CreateRagClientIn(BaseModel):
+class CreateRagHostIn(BaseModel):
     name: str = Field(..., min_length=1)
     host_url: str = Field(..., min_length=1)
 
 
-class UpdateRagClientIn(BaseModel):
+class UpdateRagHostIn(BaseModel):
     name: str = Field(..., min_length=1)
     host_url: str = Field(..., min_length=1)
 
@@ -81,11 +81,11 @@ class TelemetryMessageIn(BaseModel):
 
 
 # ---------------------------
-# Nested client JSON (from rag.get_rag_client_json)
+# Nested host JSON (from rag.get_rag_host_json)
 # ---------------------------
 
 
-class RagClientFull(BaseModel):
+class RagHostFull(BaseModel):
     id: UUID
     name: str
     host_url: str

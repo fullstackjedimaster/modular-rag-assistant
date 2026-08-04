@@ -1,6 +1,6 @@
 # routers/embed_context_router.py
 """
-Embed + context ingestion router (client_context-based)
+Embed + context ingestion router (host_context-based)
 
 Design goals:
 - No external JWT deps (uses stdlib HMAC-signed token)
@@ -8,7 +8,7 @@ Design goals:
 - Token scopes for:
     - "rag:ask"
     - "context:write"
-- Optional short-lived retention of context events in-memory (per rag_client_id + entity_id)
+- Optional short-lived retention of context events in-memory (per rag_host_id + entity_id)
 - Admin-gated session mint endpoint
 
 Env vars:
@@ -119,7 +119,7 @@ def _redact_payload(payload: Any, redact_fields: Iterable[str]) -> Any:
         return out
     return payload
 
-# In-memory store: (rag_client_id, entity_id) -> deque[events]
+# In-memory store: (rag_host_id, entity_id) -> deque[events]
 _CONTEXT: Dict[Tuple[str, str], Deque[Dict[str, Any]]] = defaultdict(lambda: deque())
 
 def _purge_old(q: Deque[Dict[str, Any]], ret: Retention) -> None:
@@ -134,7 +134,7 @@ def _purge_old(q: Deque[Dict[str, Any]], ret: Retention) -> None:
 
 class EmbedSessionRequest(BaseModel):
     target: str = Field(..., description="Logical target name (e.g. 'ai-panel')")
-    rag_client_id: str = Field(..., description="RAG client id (rag_clients.id)")
+    rag_host_id: str = Field(..., description="RAG host id (rag_hosts.id)")
     frame_id: str = Field(..., description="Unique iframe id on the host page")
     origin: Optional[str] = Field(None, description="Host page origin (https://...)")
     scopes: List[str] = Field(default_factory=lambda: ["rag:ask", "context:write"])
@@ -146,7 +146,7 @@ class EmbedSessionResponse(BaseModel):
     session_id: str
 
 class ContextEvent(BaseModel):
-    rag_client_id: str
+    rag_host_id: str
     entity_id: Optional[str] = None
     event_type: str
     payload: Dict[str, Any] = Field(default_factory=dict)
@@ -224,7 +224,7 @@ def build_embed_context_router() -> APIRouter:
         payload: Dict[str, Any] = {
             "typ": "mrp_embed",
             "sid": session_id,
-            "rag_client_id": str(req.rag_client_id),
+            "rag_host_id": str(req.rag_host_id),
             "frame_id": req.frame_id,
             "target": req.target,
             "scopes": req.scopes,
@@ -243,14 +243,14 @@ def build_embed_context_router() -> APIRouter:
         ev: ContextEvent,
         tok: Dict[str, Any] = Depends(require_scope("context:write")),
     ):
-        tok_client_id = tok.get("rag_client_id")
-        if tok_client_id is not None and int(tok_client_id) != int(ev.rag_client_id):
-            raise HTTPException(status_code=403, detail="Token does not allow this rag_client_id")
+        tok_host_id = tok.get("rag_host_id")
+        if tok_host_id is not None and int(tok_host_id) != int(ev.rag_host_id):
+            raise HTTPException(status_code=403, detail="Token does not allow this rag_host_id")
 
         entity_id = (ev.entity_id or tok.get("entity_id") or "global").strip() or "global"
 
         stored_event: Dict[str, Any] = {
-            "rag_client_id": str(ev.rag_client_id),
+            "rag_host_id": str(ev.rag_host_id),
             "entity_id": entity_id,
             "event_type": ev.event_type,
             "payload": _redact_payload(ev.payload, redact_fields=[]),
@@ -258,7 +258,7 @@ def build_embed_context_router() -> APIRouter:
             "_ts_s": _now(),
         }
 
-        key = (str(ev.rag_client_id), entity_id)
+        key = (str(ev.rag_host_id), entity_id)
         q = _CONTEXT[key]
         q.append(stored_event)
 
@@ -270,16 +270,16 @@ def build_embed_context_router() -> APIRouter:
 
     @router.get("/context/recent")
     async def get_recent_context(
-        rag_client_id: str,
+        rag_host_id: str,
         entity_id: Optional[str] = None,
         tok: Dict[str, Any] = Depends(require_scope("rag:ask")),
     ):
-        tok_rag_client_id = tok.get("rag_client_id")
-        if tok_rag_client_id is not None and str(tok_rag_client_id) != str(rag_client_id):
-            raise HTTPException(status_code=403, detail="Token does not allow this rag_client_id")
+        tok_rag_host_id = tok.get("rag_host_id")
+        if tok_rag_host_id is not None and str(tok_rag_host_id) != str(rag_host_id):
+            raise HTTPException(status_code=403, detail="Token does not allow this rag_host_id")
 
         eid = (entity_id or tok.get("entity_id") or "global").strip() or "global"
-        key = (str(rag_client_id), eid)
+        key = (str(rag_host_id), eid)
         q = _CONTEXT.get(key, deque())
 
         ret = _retention()
@@ -292,7 +292,7 @@ def build_embed_context_router() -> APIRouter:
             events_view.append(e2)
 
         return {
-            "rag_client_id": str(rag_client_id),
+            "rag_host_id": str(rag_host_id),
             "entity_id": eid,
             "events": events_view,
             "retention": ret.__dict__,

@@ -15,7 +15,7 @@ END$$;
 -- Tables
 -- =========================
 
-CREATE TABLE IF NOT EXISTS rag.rag_client (
+CREATE TABLE IF NOT EXISTS rag.rag_host (
                                               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                               name        TEXT NOT NULL UNIQUE,         -- formerly FRAME_ID
                                               host_url    TEXT NOT NULL,                -- URL/URI of host app including iframe URI
@@ -32,22 +32,22 @@ CREATE TABLE IF NOT EXISTS rag.rag_client (
 
 CREATE TABLE IF NOT EXISTS rag.content_doc (
                                               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                               rag_client_id  uuid NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
+                                               rag_host_id  uuid NOT NULL REFERENCES rag.rag_host(id) ON DELETE CASCADE,
     doc_name           TEXT NOT NULL,
     file_path          TEXT NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (rag_client_id, doc_name)
+    UNIQUE (rag_host_id, doc_name)
     );
 
 CREATE TABLE IF NOT EXISTS rag.telemetry_message (
                                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                                     rag_client_id  uuid NOT NULL REFERENCES rag.rag_client(id) ON DELETE CASCADE,
+                                                     rag_host_id  uuid NOT NULL REFERENCES rag.rag_host(id) ON DELETE CASCADE,
     message_name       TEXT NOT NULL,
     message_value      TEXT,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (rag_client_id, message_name)
+    UNIQUE (rag_host_id, message_name)
     );
 
 
@@ -63,9 +63,9 @@ $$ LANGUAGE plpgsql;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'rag_client_set_updated_at') THEN
-CREATE TRIGGER rag_client_set_updated_at
-    BEFORE UPDATE ON rag.rag_client
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'rag_host_set_updated_at') THEN
+CREATE TRIGGER rag_host_set_updated_at
+    BEFORE UPDATE ON rag.rag_host
     FOR EACH ROW EXECUTE FUNCTION rag.set_updated_at();
 END IF;
 
@@ -87,25 +87,25 @@ END$$;
 
 
 -- =========================
--- CRUD: rag_client
+-- CRUD: rag_host
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_rag_client(p_name TEXT, p_host_url TEXT)
+CREATE OR REPLACE FUNCTION rag.create_rag_host(p_name TEXT, p_host_url TEXT)
 RETURNS uuid AS $$
 DECLARE
 v_id uuid;
 BEGIN
-INSERT INTO rag.rag_client (name, host_url)
+INSERT INTO rag.rag_host (name, host_url)
 VALUES (p_name, p_host_url)
     RETURNING id INTO v_id;
 RETURN v_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rag.update_rag_client(p_id uuid, p_name TEXT, p_host_url TEXT, p_collection TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
+CREATE OR REPLACE FUNCTION rag.update_rag_host(p_id uuid, p_name TEXT, p_host_url TEXT, p_collection TEXT,  p_llm_model TEXT, p_embed_model TEXT, p_prompt TEXT,  p_chaining_mode prompt_chaining_mode)
 RETURNS VOID AS $$
 BEGIN
-UPDATE rag.rag_client
+UPDATE rag.rag_host
 SET name = p_name,
     host_url = p_host_url,
     collection = p_collection,
@@ -118,19 +118,19 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION rag.delete_rag_client(p_id uuid)
+CREATE OR REPLACE FUNCTION rag.delete_rag_host(p_id uuid)
 RETURNS VOID AS $$
 BEGIN
-DELETE FROM rag.rag_client WHERE id = p_id;
+DELETE FROM rag.rag_host WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rag.list_rag_clients()
+CREATE OR REPLACE FUNCTION rag.list_rag_hosts()
 RETURNS TABLE (id uuid, name TEXT, host_url TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ) AS $$
 BEGIN
 RETURN QUERY
 SELECT rc.id, rc.name, rc.host_url, rc.created_at, rc.updated_at
-FROM rag.rag_client rc
+FROM rag.rag_host rc
 ORDER BY rc.name;
 END;
 $$ LANGUAGE plpgsql;
@@ -139,7 +139,7 @@ $$ LANGUAGE plpgsql;
 -- CRUD: content_doc
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_content_doc(p_rag_client_id uuid, p_doc_name TEXT, p_file_path TEXT)
+CREATE OR REPLACE FUNCTION rag.create_content_doc(p_rag_host_id uuid, p_doc_name TEXT, p_file_path TEXT)
 RETURNS uuid AS $$
 DECLARE
 
@@ -147,8 +147,8 @@ DECLARE
 BEGIN
 
 
-INSERT INTO rag.content_doc (rag_client_id, doc_name, file_path)
-VALUES (p_rag_client_id, p_doc_name, p_file_path)
+INSERT INTO rag.content_doc (rag_host_id, doc_name, file_path)
+VALUES (p_rag_host_id, p_doc_name, p_file_path)
     RETURNING id INTO v_id;
 
 RETURN v_id;
@@ -176,7 +176,7 @@ $$ LANGUAGE plpgsql;
 -- CRUD: telemetry_message
 -- =========================
 
-CREATE OR REPLACE FUNCTION rag.create_telemetry_message(p_rag_client_id uuid, p_message_name TEXT, p_message_value TEXT)
+CREATE OR REPLACE FUNCTION rag.create_telemetry_message(p_rag_host_id uuid, p_message_name TEXT, p_message_value TEXT)
 RETURNS uuid AS $$
 DECLARE
 
@@ -184,8 +184,8 @@ DECLARE
 BEGIN
 
 
-INSERT INTO rag.telemetry_message (rag_client_id, message_name, message_value)
-VALUES (p_rag_client_id, p_message_name, p_message_value)
+INSERT INTO rag.telemetry_message (rag_host_id, message_name, message_value)
+VALUES (p_rag_host_id, p_message_name, p_message_value)
     RETURNING id INTO v_id;
 
 RETURN v_id;
@@ -211,31 +211,31 @@ $$ LANGUAGE plpgsql;
 
 
 
-CREATE OR REPLACE FUNCTION rag.get_rag_client_json(p_rag_client_id uuid)
+CREATE OR REPLACE FUNCTION rag.get_rag_host_json(p_rag_host_id uuid)
 RETURNS JSONB AS $$
 DECLARE
-v_client JSONB;
+v_host JSONB;
 
 BEGIN
-SELECT to_jsonb(rc) INTO v_client
-FROM rag.rag_client rc
-WHERE rc.id = p_rag_client_id;
+SELECT to_jsonb(rc) INTO v_host
+FROM rag.rag_host rc
+WHERE rc.id = p_rag_host_id;
 
-IF v_client IS NULL THEN
+IF v_host IS NULL THEN
         RETURN NULL;
 END IF;
 
 
 
 RETURN jsonb_build_object(
-        'id', (v_client->>'id')::uuid,
-        'name', v_client->>'name',
-        'host_url', v_client->>'host_url',
-        'collection', v_client->>'collection',
-        'llm_model', v_client->>'llm_model',
-        'embed_model', v_client->>'embed_model',
-        'prompt', v_client->>'prompt',
-        'chaining_mode', v_client->>'chaining_mode',
+        'id', (v_host->>'id')::uuid,
+        'name', v_host->>'name',
+        'host_url', v_host->>'host_url',
+        'collection', v_host->>'collection',
+        'llm_model', v_host->>'llm_model',
+        'embed_model', v_host->>'embed_model',
+        'prompt', v_host->>'prompt',
+        'chaining_mode', v_host->>'chaining_mode',
         'telemetry_messages', COALESCE(
                     (SELECT jsonb_agg(jsonb_build_object(
                             'id', tm.id,
@@ -243,7 +243,7 @@ RETURN jsonb_build_object(
                             'message_value', tm.message_value
                                       ) ORDER BY tm.message_name)
                      FROM rag.telemetry_message tm
-                     WHERE tm.rag_client_id = p_rag_client_id),
+                     WHERE tm.rag_host_id = p_rag_host_id),
                     '[]'::jsonb
                                   )
        );
@@ -252,10 +252,10 @@ $$ LANGUAGE plpgsql;
 
 DO $$
 DECLARE
-    v_rag_client_id UUID;
+    v_rag_host_id UUID;
 BEGIN
 
-INSERT INTO rag.rag_client (
+INSERT INTO rag.rag_host (
 name,
 host_url,
 collection,
@@ -291,31 +291,31 @@ VALUES (
         'append'
     )
 RETURNING id
-INTO v_rag_client_id;
+INTO v_rag_host_id;
 
 INSERT INTO rag.telemetry_message (
-rag_client_id,
+rag_host_id,
 message_name,
 message_value
 )
 VALUES
-(v_rag_client_id, 'status', 0),
-(v_rag_client_id, 'voltage', 0),
-(v_rag_client_id, 'current', 0),
-(v_rag_client_id, 'power', 0),
-(v_rag_client_id, 'temperature', 0);
+(v_rag_host_id, 'status', 0),
+(v_rag_host_id, 'voltage', 0),
+(v_rag_host_id, 'current', 0),
+(v_rag_host_id, 'power', 0),
+(v_rag_host_id, 'temperature', 0);
 
 
-RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
+RAISE NOTICE 'Created rag_host_id=%', v_rag_host_id;
 
 END $$;
 
 DO $$
 DECLARE
-    v_rag_client_id UUID;
+    v_rag_host_id UUID;
 BEGIN
 
-INSERT INTO rag.rag_client (
+INSERT INTO rag.rag_host (
 name,
 host_url,
 collection,
@@ -351,17 +351,17 @@ VALUES (
         'append'
     )
 RETURNING id
-INTO v_rag_client_id;
+INTO v_rag_host_id;
 
 INSERT INTO rag.telemetry_message (
-rag_client_id,
+rag_host_id,
 message_name,
 message_value
 )
 VALUES
-(v_rag_client_id, 'status', 0);
+(v_rag_host_id, 'status', 0);
 
-RAISE NOTICE 'Created rag_client_id=%', v_rag_client_id;
+RAISE NOTICE 'Created rag_host_id=%', v_rag_host_id;
 
 END $$;
 

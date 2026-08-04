@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configure the Mesh DAQ RAG client telemetry allow-list through the Mod RAG API."""
+"""Configure the Mesh DAQ RAG host telemetry allow-list through the Mod RAG API."""
 from __future__ import annotations
 import argparse
 import httpx
@@ -20,10 +20,10 @@ FIELDS = {
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", required=True)
-    parser.add_argument("--client-id", required=True)
+    parser.add_argument("--host-id", required=True)
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
-    path = f"{base}/api/rag-clients/{args.client_id}/telemetry-messages"
+    path = f"{base}/api/rag-hosts/{args.host_id}/telemetry-messages"
     with httpx.Client(timeout=30) as client:
         current = client.get(path).json()
         by_name = {row["message_name"]: row for row in current}

@@ -1,50 +1,50 @@
-"use client";
+"use host";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
-    connectRagClient,
-    disconnectRagClient,
-    getRagClientStatuses,
-    listRagClients,
-    type RagClientRow,
-    type RagClientStatus,
-} from "@/src/lib/ragClientApi";
+    connectRagHost,
+    disconnectRagHost,
+    getRagHostStatuses,
+    listRagHosts,
+    type RagHostRow,
+    type RagHostStatus,
+} from "@/src/lib/ragHostApi";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
-type DashboardClientProps = {
-    selectedRagClientId?: string;
-    onSelectClientAction?: (client: RagClientRow) => void;
-    onConnectClientAction?: (client: RagClientRow) => void;
-    onDisconnectClientAction?: (client: RagClientRow) => void;
-    onConnectedClientChangeAction?: (clientId: string) => void;
+type DashboardHostProps = {
+    selectedRagHostId?: string;
+    onSelectHostAction?: (host: RagHostRow) => void;
+    onConnectHostAction?: (host: RagHostRow) => void;
+    onDisconnectHostAction?: (host: RagHostRow) => void;
+    onConnectedHostChangeAction?: (hostId: string) => void;
     compact?: boolean;
 };
 
 function findConnectedId(
-    rows: RagClientRow[],
-    statuses: Record<string, RagClientStatus>,
+    rows: RagHostRow[],
+    statuses: Record<string, RagHostStatus>,
 ): string {
     return rows.find((row) => statuses[row.id]?.connected)?.id ?? "";
 }
 
-export default function DashboardClient({
-    selectedRagClientId,
-    onSelectClientAction,
-    onConnectClientAction,
-    onDisconnectClientAction,
-    onConnectedClientChangeAction,
+export default function DashboardHost({
+    selectedRagHostId,
+    onSelectHostAction,
+    onConnectHostAction,
+    onDisconnectHostAction,
+    onConnectedHostChangeAction,
     compact = false,
-}: DashboardClientProps) {
+}: DashboardHostProps) {
     const { disablePolling } = useAppMode();
 
     const [state, setState] = useState<LoadState>("idle");
     const [error, setError] = useState("");
-    const [rows, setRows] = useState<RagClientRow[]>([]);
-    const [statusById, setStatusById] = useState<Record<string, RagClientStatus>>({});
+    const [rows, setRows] = useState<RagHostRow[]>([]);
+    const [statusById, setStatusById] = useState<Record<string, RagHostStatus>>({});
     const [busyId, setBusyId] = useState<string | null>(null);
 
     const ids = useMemo(() => rows.map((row) => row.id), [rows]);
@@ -54,42 +54,42 @@ export default function DashboardClient({
     );
 
     const applyStatuses = useCallback(
-        (statuses: Record<string, RagClientStatus>) => {
+        (statuses: Record<string, RagHostStatus>) => {
             setStatusById(statuses);
-            onConnectedClientChangeAction?.(findConnectedId(rows, statuses));
+            onConnectedHostChangeAction?.(findConnectedId(rows, statuses));
         },
-        [onConnectedClientChangeAction, rows],
+        [onConnectedHostChangeAction, rows],
     );
 
     const refreshStatuses = useCallback(async () => {
         if (ids.length === 0) {
             setStatusById({});
-            onConnectedClientChangeAction?.("");
+            onConnectedHostChangeAction?.("");
             return;
         }
 
-        applyStatuses(await getRagClientStatuses(ids));
-    }, [applyStatuses, ids, onConnectedClientChangeAction]);
+        applyStatuses(await getRagHostStatuses(ids));
+    }, [applyStatuses, ids, onConnectedHostChangeAction]);
 
     const boot = useCallback(async () => {
         setState("loading");
         setError("");
 
         try {
-            const clients = await listRagClients();
-            setRows(clients);
+            const hosts = await listRagHosts();
+            setRows(hosts);
 
-            if (clients.length > 0) {
-                const statuses = await getRagClientStatuses(
-                    clients.map((client) => client.id),
+            if (hosts.length > 0) {
+                const statuses = await getRagHostStatuses(
+                    hosts.map((host) => host.id),
                 );
                 setStatusById(statuses);
-                onConnectedClientChangeAction?.(
-                    findConnectedId(clients, statuses),
+                onConnectedHostChangeAction?.(
+                    findConnectedId(hosts, statuses),
                 );
             } else {
                 setStatusById({});
-                onConnectedClientChangeAction?.("");
+                onConnectedHostChangeAction?.("");
             }
 
             setState("ready");
@@ -97,7 +97,7 @@ export default function DashboardClient({
             setError(caught instanceof Error ? caught.message : String(caught));
             setState("error");
         }
-    }, [onConnectedClientChangeAction]);
+    }, [onConnectedHostChangeAction]);
 
     useEffect(() => {
         void boot();
@@ -110,7 +110,7 @@ export default function DashboardClient({
 
         async function tick(): Promise<void> {
             try {
-                const statuses = await getRagClientStatuses(ids);
+                const statuses = await getRagHostStatuses(ids);
                 if (!cancelled) applyStatuses(statuses);
             } catch {
                 // A transient status failure should not replace the dashboard.
@@ -124,15 +124,15 @@ export default function DashboardClient({
         };
     }, [applyStatuses, disablePolling, ids, state]);
 
-    async function connect(row: RagClientRow): Promise<void> {
+    async function connect(row: RagHostRow): Promise<void> {
         setBusyId(row.id);
         setError("");
 
         try {
-            await connectRagClient(row.id);
+            await connectRagHost(row.id);
             await refreshStatuses();
-            onSelectClientAction?.(row);
-            onConnectClientAction?.(row);
+            onSelectHostAction?.(row);
+            onConnectHostAction?.(row);
         } catch (caught: unknown) {
             setError(caught instanceof Error ? caught.message : String(caught));
         } finally {
@@ -140,14 +140,14 @@ export default function DashboardClient({
         }
     }
 
-    async function disconnect(row: RagClientRow): Promise<void> {
+    async function disconnect(row: RagHostRow): Promise<void> {
         setBusyId(row.id);
         setError("");
 
         try {
-            await disconnectRagClient(row.id);
+            await disconnectRagHost(row.id);
             await refreshStatuses();
-            onDisconnectClientAction?.(row);
+            onDisconnectHostAction?.(row);
         } catch (caught: unknown) {
             setError(caught instanceof Error ? caught.message : String(caught));
         } finally {
@@ -156,13 +156,13 @@ export default function DashboardClient({
     }
 
     if (state === "loading" || state === "idle") {
-        return <div className="rag-client-loading">Loading...</div>;
+        return <div className="rag-host-loading">Loading...</div>;
     }
 
     if (state === "error") {
         return (
-            <div className="rag-client-error-box">
-                <div className="rag-client-error-message">
+            <div className="rag-host-error-box">
+                <div className="rag-host-error-message">
                     {error || "Failed to load."}
                 </div>
                 <button
@@ -177,16 +177,16 @@ export default function DashboardClient({
     }
 
     return (
-        <div className={compact ? "rag-client-list rag-client-list-compact" : "rag-client-list"}>
+        <div className={compact ? "rag-host-list rag-host-list-compact" : "rag-host-list"}>
             {!compact ? (
-                <div className="rag-client-help">
+                <div className="rag-host-help">
                     Select a host to preview it. Connect attaches the one active RAG dock.
                 </div>
             ) : null}
 
-            {error ? <div className="rag-client-error-message">{error}</div> : null}
+            {error ? <div className="rag-host-error-message">{error}</div> : null}
 
-            <table className="rag-client-table">
+            <table className="rag-host-table">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -196,7 +196,7 @@ export default function DashboardClient({
                 <tbody>
                     {rows.map((row) => {
                         const connected = connectedId === row.id;
-                        const selected = selectedRagClientId === row.id;
+                        const selected = selectedRagHostId === row.id;
                         const busy = busyId === row.id;
                         const label = busy ? "Working..." : connected ? "Connected" : connectedId ? "Use Dock" : "Connect";
 
@@ -205,13 +205,13 @@ export default function DashboardClient({
                                 <td>
                                     <button
                                         type="button"
-                                        className="rag-client-name rag-link-button"
+                                        className="rag-host-name rag-link-button"
                                         title={row.host_url}
-                                        onClick={() => onSelectClientAction?.(row)}
+                                        onClick={() => onSelectHostAction?.(row)}
                                     >
                                         {row.name}
                                     </button>
-                                    <Link href={`/client/${row.id}`} className="rag-client-detail-link" aria-label={`Open ${row.name} client settings`}>Manage</Link>
+                                    <Link href={`/host/${row.id}`} className="rag-host-detail-link" aria-label={`Open ${row.name} host settings`}>Manage</Link>
                                 </td>
                                 <td>
                                     <button
@@ -229,7 +229,7 @@ export default function DashboardClient({
                     })}
                     {rows.length === 0 ? (
                         <tr>
-                            <td className="rag-client-empty" colSpan={2}>
+                            <td className="rag-host-empty" colSpan={2}>
                                 No host apps configured yet.
                             </td>
                         </tr>

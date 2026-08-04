@@ -3,7 +3,7 @@
 ## Ownership
 
 - Portfolio owns outer demo iframe creation, portfolio tokens, and outer iframe height.
-- Mod RAG owns `dock-host.js`, the dock protocol, the dock iframe, RAG client configuration, and exclusive connection state.
+- Mod RAG owns `dock-host.js`, the dock protocol, the dock iframe, RAG host configuration, and exclusive connection state.
 - IoT and Entity Client own only their application UI and `TARGET_SELECTED` data.
 - Every iframe layer reports only its own rendered height to its direct parent.
 
@@ -26,7 +26,7 @@ The child receives `embedParentOrigin` in its URL and validates both `event.sour
 Controller to host:
 
 - `RAG_HOST_DISCOVER`
-- `RAG_DOCK_CONNECT { ragClientId }`
+- `RAG_DOCK_CONNECT { ragHostId }`
 - `RAG_DOCK_DISCONNECT`
 
 Host to controller:
@@ -49,7 +49,7 @@ Dock to host:
 
 - `dock-host.js` is loaded after React hydration, not through raw server-rendered `<script>` markup.
 - Host iframe identity and origin change together; changing host recreates the iframe.
-- The API enforces one connected RAG client at a time.
+- The API enforces one connected RAG host at a time.
 - All connection links derive from one `connectedId`: Connect, Disconnect, or Switch.
 - Nested dock resize dispatches `rag-dock-resize`; the host remeasures and reports outward.
 - Embed-lock booleans are parsed as booleans, not truthy strings.

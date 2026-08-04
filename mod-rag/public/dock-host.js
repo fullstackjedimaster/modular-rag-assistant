@@ -33,7 +33,7 @@
 
     var iframe = null;
     var dockReady = false;
-    var currentClientId = "";
+    var currentHostId = "";
     var currentTarget = null;
 
     function postToParent(message) {
@@ -71,17 +71,17 @@
         );
     }
 
-    function connect(ragClientId) {
-        var nextClientId = String(ragClientId || "").trim();
-        if (!nextClientId) throw new Error("ragClientId is required");
-        if (nextClientId === currentClientId && iframe) return;
+    function connect(ragHostId) {
+        var nextHostId = String(ragHostId || "").trim();
+        if (!nextHostId) throw new Error("ragHostId is required");
+        if (nextHostId === currentHostId && iframe) return;
 
-        currentClientId = nextClientId;
+        currentHostId = nextHostId;
         dockReady = false;
         mount.replaceChildren();
 
         var src = new URL(dockUrl.toString());
-        src.searchParams.set("ragClientId", nextClientId);
+        src.searchParams.set("ragHostId", nextHostId);
         src.searchParams.set("hostOrigin", window.location.origin);
 
         iframe = document.createElement("iframe");
@@ -101,7 +101,7 @@
     }
 
     function disconnect() {
-        currentClientId = "";
+        currentHostId = "";
         dockReady = false;
         iframe = null;
         mount.replaceChildren();
@@ -137,7 +137,7 @@
             if (message.type === "RAG_HOST_DISCOVER") {
                 postToParent({ type: "RAG_HOST_READY" });
             } else if (message.type === "RAG_DOCK_CONNECT") {
-                connect(message.ragClientId);
+                connect(message.ragHostId);
             } else if (message.type === "RAG_DOCK_DISCONNECT") {
                 disconnect();
             }

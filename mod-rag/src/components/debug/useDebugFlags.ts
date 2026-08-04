@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";

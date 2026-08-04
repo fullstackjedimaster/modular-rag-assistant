@@ -1,5 +1,5 @@
 // ai-ui/src/components/SaliencyLegend.tsx
-"use client";
+"use host";
 
 export default function SaliencyLegend() {
     return (

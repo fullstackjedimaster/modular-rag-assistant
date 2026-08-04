@@ -1,4 +1,4 @@
-// Simple feature-flag resolver for client code.
+// Simple feature-flag resolver for host code.
 // Priority: URL param > localStorage > env > default
 
 export function resolveBooleanFlag(opts: {

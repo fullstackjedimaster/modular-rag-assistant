@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import { useMemo } from "react";
 import type { SentenceScore } from "@/src/lib/types";

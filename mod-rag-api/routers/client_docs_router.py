@@ -1,4 +1,4 @@
-# routers/client_docs_router.py
+# routers/host_docs_router.py
 from __future__ import annotations
 
 import os
@@ -17,37 +17,37 @@ def _source_docs_dir() -> Path:
     default = here / "source_docs"
     return Path(os.getenv("SOURCE_DOCS_DIR", str(default))).expanduser().resolve()
 
-def _client_dir(rag_client_id: int) -> Path:
+def _host_dir(rag_host_id: int) -> Path:
     base = _source_docs_dir()
-    return base / f"client_{int(rag_client_id)}"
+    return base / f"host_{int(rag_host_id)}"
 
 def _safe_filename(name: str) -> str:
     # Keep only the name portion; prevent path tricks.
     return Path(name).name
 
 
-router = APIRouter(prefix="/rag-clients", tags=["client-docs"])
+router = APIRouter(prefix="/rag-hosts", tags=["host-docs"])
 
 
-@router.get("/{rag_client_id}/docs/list")
-async def list_client_docs(rag_client_id: int):
-    d = _client_dir(rag_client_id)
+@router.get("/{rag_host_id}/docs/list")
+async def list_host_docs(rag_host_id: int):
+    d = _host_dir(rag_host_id)
     if not d.exists():
-        return {"rag_client_id": int(rag_client_id), "files": []}
+        return {"rag_host_id": int(rag_host_id), "files": []}
 
     if not d.is_dir():
-        raise HTTPException(status_code=500, detail=f"Client docs path is not a directory: {d}")
+        raise HTTPException(status_code=500, detail=f"Host docs path is not a directory: {d}")
 
     files = sorted([p.name for p in d.iterdir() if p.is_file()])
-    return {"rag_client_id": int(rag_client_id), "files": files}
+    return {"rag_host_id": int(rag_host_id), "files": files}
 
 
-@router.post("/{rag_client_id}/docs/upload")
-async def upload_client_docs(rag_client_id: int, files: List[UploadFile] = File(...)):
+@router.post("/{rag_host_id}/docs/upload")
+async def upload_host_docs(rag_host_id: int, files: List[UploadFile] = File(...)):
     if not files:
-        return {"rag_client_id": int(rag_client_id), "saved": []}
+        return {"rag_host_id": int(rag_host_id), "saved": []}
 
-    d = _client_dir(rag_client_id)
+    d = _host_dir(rag_host_id)
     d.mkdir(parents=True, exist_ok=True)
 
     saved: List[str] = []
@@ -64,4 +64,4 @@ async def upload_client_docs(rag_client_id: int, files: List[UploadFile] = File(
         out_path.write_bytes(data)
         saved.append(name)
 
-    return {"rag_client_id": int(rag_client_id), "saved": saved}
+    return {"rag_host_id": int(rag_host_id), "saved": saved}

@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import { useEffect } from "react";
 import { setEmbedToken } from "@/src/lib/embedTokenStore";

@@ -1,16 +1,16 @@
 // app/components/management/SystemPromptBox.tsx
-"use client";
+"use host";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";
 import { useAppMode } from "@/src/contexts/AppModeContext";
-import { getSystemPrompt, saveSystemPrompt } from "@/src/lib/clientContextApi";
-import type { RagClientFull } from "@/src/lib/ragClientApi";
+import { getSystemPrompt, saveSystemPrompt } from "@/src/lib/hostContextApi";
+import type { RagHostFull } from "@/src/lib/ragHostApi";
 
-type RagClientId = RagClientFull["id"];
+type RagHostId = RagHostFull["id"];
 
-export default function SystemPromptBox(props: { clientId: RagClientId }) {
-  const { clientId } = props;
+export default function SystemPromptBox(props: { hostId: RagHostId }) {
+  const { hostId } = props;
   const { isReadOnly } = useAppMode();
 
   const [busy, setBusy] = useState(false);
@@ -26,7 +26,7 @@ export default function SystemPromptBox(props: { clientId: RagClientId }) {
     setNote("");
 
     try {
-      const t = await getSystemPrompt(clientId);
+      const t = await getSystemPrompt(hostId);
       setLoadedText(t || "");
       setText(t || "");
     } catch (e: unknown) {
@@ -36,7 +36,7 @@ export default function SystemPromptBox(props: { clientId: RagClientId }) {
     } finally {
       setBusy(false);
     }
-  }, [clientId]);
+  }, [hostId]);
 
   useEffect(() => {
     void refresh();
@@ -52,7 +52,7 @@ export default function SystemPromptBox(props: { clientId: RagClientId }) {
     setNote("");
 
     try {
-      await saveSystemPrompt(clientId, text);
+      await saveSystemPrompt(hostId, text);
       setNote("Saved system prompt.");
       await refresh();
     } catch (e: unknown) {
@@ -63,10 +63,10 @@ export default function SystemPromptBox(props: { clientId: RagClientId }) {
   }
 
   return (
-    <GroupBox title="3) System prompt (client_context)">
+    <GroupBox title="3) System prompt (host_context)">
       <div className="grid gap-3">
         <div className="text-xs text-gray-600">
-          This is the per-client system prompt blob. Prompt chaining can be added later using your
+          This is the per-host system prompt blob. Prompt chaining can be added later using your
           existing <code className="ml-1">rag.prompt</code> table if you want.
         </div>
 

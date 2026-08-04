@@ -11,9 +11,9 @@ from fastapi.staticfiles import StaticFiles
 
 from routers.db import init_db_pool, close_db_pool
 
-# ✅ your main rag client API (keep ONLY the /rag-clients version)
-from routers.routes_rag_clients import router as rag_clients_router  # adjust import if needed
-from routers.client_docs_router import router as client_docs_router
+# ✅ your main rag host API (keep ONLY the /rag-hosts version)
+from routers.routes_rag_hosts import router as rag_hosts_router  # adjust import if needed
+from routers.host_docs_router import router as host_docs_router
 from routers.document_ingest_router import router as document_ingest_router
 from routers.pdf_multimodal_router import router as pdf_multimodal_router
 
@@ -41,10 +41,10 @@ app.add_middleware(
 )
 
 
-# ✅ primary DB-backed client_context API
-app.include_router(rag_clients_router)
+# ✅ primary DB-backed host_context API
+app.include_router(rag_hosts_router)
 
-app.include_router(client_docs_router)
+app.include_router(host_docs_router)
 app.include_router(document_ingest_router)
 app.include_router(pdf_multimodal_router)
 

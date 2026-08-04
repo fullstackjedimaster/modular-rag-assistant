@@ -1,4 +1,4 @@
-"use client";
+"use host";
 
 import {
     useEffect,
@@ -17,7 +17,7 @@ import { useStream } from "@/src/hooks/useStream";
 import {
     PromptChainingMode,
     type TelemetryMessage,
-} from "@/src/lib/ragClientApi";
+} from "@/src/lib/ragHostApi";
 import { settings } from "@/src/lib/settings";
 
 type AttrValue =

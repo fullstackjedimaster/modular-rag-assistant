@@ -1,10 +1,10 @@
-"use client";
+"use host";
 
 import Link from "next/link";
-import DashboardClient from "@/src/components/dashboard/DashboardClient";
+import DashboardHost from "@/src/components/dashboard/DashboardHost";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 
-export default function ClientsPage() {
+export default function HostsPage() {
     const { isDemo, isReadOnly } = useAppMode();
 
     return (
@@ -13,10 +13,10 @@ export default function ClientsPage() {
                 <header className="space-y-2">
                     <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1">
-                            <h1 className="text-xl font-semibold">RAG Clients</h1>
+                            <h1 className="text-xl font-semibold">RAG Hosts</h1>
                             <p className="text-sm text-gray-600">
                                 {isDemo
-                                    ? "View configured host apps and client details. Demo mode disables configuration edits and status polling."
+                                    ? "View configured host apps and host details. Demo mode disables configuration edits and status polling."
                                     : "Configure host apps, track connection status, and manage dock-enabled demos."}
                             </p>
                         </div>
@@ -31,17 +31,17 @@ export default function ClientsPage() {
 
                             {!isReadOnly ? (
                                 <Link
-                                    href="/client/new"
+                                    href="/host/new"
                                     className="border rounded px-3 py-2 text-sm hover:bg-gray-50"
                                 >
-                                    Configure New Client
+                                    Configure New Host
                                 </Link>
                             ) : null}
                         </div>
                     </div>
                 </header>
 
-                <DashboardClient />
+                <DashboardHost />
             </div>
         </main>
     );

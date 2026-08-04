@@ -1,5 +1,5 @@
 // ai-ui/src/components/TokenSaliencyInline.tsx
-"use client";
+"use host";
 
 import { useMemo, useState } from "react";
 

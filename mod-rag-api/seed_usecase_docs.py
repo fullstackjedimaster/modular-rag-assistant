@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Iterable, List
 
 import httpx
-from qdrant_client import QdrantClient
+from qdrant_host import QdrantClient
 from qdrant_client.http.models import Batch, Distance, VectorParams
 
 from document_ingest import discover_documents, extract_document

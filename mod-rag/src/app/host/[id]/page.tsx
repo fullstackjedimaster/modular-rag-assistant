@@ -1,4 +1,4 @@
-// app/client/[id]/page.tsx
+// app/host/[id]/page.tsx
 import ManagementShell from "@/src/components/management/ManagementShell";
 
 
@@ -9,7 +9,7 @@ type PageProps = {
     }>;
 };
 
-export default async function ClientPage({ params }: PageProps) {
+export default async function HostPage({ params }: PageProps) {
     const { id } = await params;
-    return <ManagementShell mode="edit" clientId={id} />;
+    return <ManagementShell mode="edit" hostId={id} />;
 }
