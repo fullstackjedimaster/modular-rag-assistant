@@ -1,4 +1,4 @@
-"use host"
+"use client"
 
 import { useEffect, useState } from "react"
 // NOTE: getStatusLabel lives in your main lib now

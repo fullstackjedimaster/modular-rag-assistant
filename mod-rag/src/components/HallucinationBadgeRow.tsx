@@ -1,4 +1,4 @@
-"use host";
+"use client";
 
 type MetricIntent = "good" | "warn" | "bad";
 

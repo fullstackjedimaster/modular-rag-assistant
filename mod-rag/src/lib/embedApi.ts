@@ -1,5 +1,5 @@
 // daq-ui/src/lib/embedApi.ts
-"use host";
+"use client";
 
 import { useEmbedToken } from "@/src/hooks/useEmbedToken";
 

@@ -1,5 +1,5 @@
 // app/components/management/DockInjectionBox.tsx
-"use host";
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";

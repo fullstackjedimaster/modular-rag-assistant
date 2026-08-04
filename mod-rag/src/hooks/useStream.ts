@@ -1,5 +1,5 @@
 // /ai-ui/src/hooks/useStream.ts
-"use host";
+"use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
 

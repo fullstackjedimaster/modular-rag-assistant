@@ -1,5 +1,5 @@
 // app/components/management/ContentDocsBox.tsx
-"use host";
+"use client";
 
 import React, { useEffect, useState } from "react";
 import GroupBox from "@/src/components/GroupBox";

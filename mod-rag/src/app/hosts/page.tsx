@@ -1,4 +1,4 @@
-"use host";
+"use client";
 
 import Link from "next/link";
 import DashboardHost from "@/src/components/dashboard/DashboardHost";

@@ -1,4 +1,4 @@
-"use host";
+"use client";
 
 import React from "react";
 
