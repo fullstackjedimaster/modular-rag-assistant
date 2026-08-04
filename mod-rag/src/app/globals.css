@@ -1042,3 +1042,23 @@ body { background:#020617; color:#e5e7eb; }
 .rag-host-detail-link { margin-left:8px; font-size:.68rem; color:#38bdf8; }
 .rag-connect-button:disabled { opacity:.75; cursor:default; text-decoration:none; }
 @media(max-width:640px){.management-shell{padding:14px}.knowledge-base-panel{padding:14px}}
+
+
+/* Final RAG Host UX pass */
+.rag-host-header { background: linear-gradient(180deg,#071827,#03111d); border:1px solid #173c54; border-radius:14px; padding:12px; color:#e5eef5; }
+.rag-host-list,.rag-host-list-compact { background:transparent; border:0; color:#e5eef5; }
+.rag-host-table { background:#081522; border:1px solid #28465c; border-collapse:separate; border-spacing:0; }
+.rag-host-table th { background:#0c2132; color:#9ed9f6; text-transform:uppercase; letter-spacing:.1em; font-size:.68rem; }
+.rag-host-table td { background:#0a1826; color:#dbeafe; border-color:#20394d; }
+.rag-host-table tr.selected td { background:#123047; }
+.rag-host-table tr:hover td { background:#10273a; }
+.rag-host-primary-link { color:#e5f5ff; font-weight:750; text-decoration:none; }
+.rag-host-primary-link:hover { color:#38bdf8; text-decoration:underline; }
+.rag-connect-button { color:#38bdf8 !important; }
+.rag-connect-button:disabled { color:#7dd3fc !important; opacity:.8; cursor:default; }
+.management-actions-bottom { display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; border:1px solid rgba(148,163,184,.24); border-radius:14px; background:rgba(15,23,42,.96); padding:16px 18px; }
+.management-actions-bottom button,.management-actions-bottom a { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid rgba(56,189,248,.36); background:#0c4a6e; color:#f8fafc; padding:9px 15px; text-decoration:none; font-weight:750; }
+.management-actions-bottom .management-delete { background:#7f1d1d; border-color:rgba(248,113,113,.4); }
+.management-shell input:disabled { opacity:.78; cursor:not-allowed; }
+.telemetry-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+.empty-state { border:1px dashed rgba(148,163,184,.28); border-radius:9px; padding:12px; color:#94a3b8; font-size:.78rem; }

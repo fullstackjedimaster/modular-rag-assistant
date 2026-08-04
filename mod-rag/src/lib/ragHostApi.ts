@@ -35,7 +35,6 @@ export type ContentDoc = {
 export type TelemetryMessage = {
     id: string;
     message_name: string;
-    message_value: string;
 };
 
 export type PromptChainingMode = "append" | "replace" | "none";

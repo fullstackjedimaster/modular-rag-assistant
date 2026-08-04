@@ -138,3 +138,13 @@ async def call_jsonb(request: Request, fn: str, *args: Any) -> Any:
             ) from e
 
     return v
+
+
+async def fetch_rows(request: Request, sql: str, *args: Any) -> List[Dict[str, Any]]:
+    pool = _pool_from_request(request)
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql, *args)
+            return [dict(row) for row in rows]
+    except asyncpg.PostgresError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

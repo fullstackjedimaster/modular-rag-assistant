@@ -145,7 +145,7 @@ BEGIN
     SELECT
         p_rag_host_id,
         trim(item->>'name'),
-        COALESCE(item->>'value', '')
+        ''
     FROM jsonb_array_elements(COALESCE(NULLIF(p_rows, ''), '[]')::jsonb) AS item
     WHERE trim(COALESCE(item->>'name', '')) <> '';
 END;

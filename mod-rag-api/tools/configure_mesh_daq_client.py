@@ -28,7 +28,7 @@ def main() -> None:
         current = client.get(path).json()
         by_name = {row["message_name"]: row for row in current}
         for name, description in FIELDS.items():
-            body = {"message_name": name, "message_value": description}
+            body = {"message_name": name}
             if name in by_name:
                 row_id = by_name[name]["id"]
                 response = client.put(f"{path}/{row_id}", json=body)

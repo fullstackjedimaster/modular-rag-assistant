@@ -46,7 +46,6 @@ class ContentDocRow(BaseModel):
 class TelemetryMessageRow(BaseModel):
     id: UUID
     message_name: str
-    message_value: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -77,7 +76,6 @@ class ContentDocIn(BaseModel):
 
 class TelemetryMessageIn(BaseModel):
     message_name: str = Field(..., min_length=1)
-    message_value: str = Field(..., min_length=1)
 
 
 # ---------------------------

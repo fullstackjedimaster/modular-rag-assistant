@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from routers.db import call_jsonb, call_rows, call_val
+from routers.db import call_jsonb, call_rows, fetch_rows, call_val
 from routers.schemas import (
     ConnectResponse,
     ContentDocIn,
@@ -32,7 +32,6 @@ class SystemPromptBody(BaseModel):
 
 class ContextMessageIn(BaseModel):
     name: str = Field(..., min_length=1)
-    value: str = ""
 
 
 class ContextMessagesBody(BaseModel):
@@ -154,7 +153,7 @@ async def disconnect_host(rag_host_id: UUID) -> ConnectResponse:
 
 @router.get("/{rag_host_id}/content-docs", response_model=List[ContentDocRow])
 async def list_content_docs(request: Request, rag_host_id: UUID) -> List[ContentDocRow]:
-    rows = await call_rows(request, "rag.list_content_docs_by_host", rag_host_id)
+    rows = await fetch_rows(request, "SELECT id, doc_name, file_path, created_at, updated_at FROM rag.content_doc WHERE rag_host_id = $1 ORDER BY doc_name", rag_host_id)
     return [ContentDocRow(**row) for row in rows]
 
 
@@ -226,7 +225,7 @@ async def add_telemetry_message(
         "rag.create_telemetry_message",
         rag_host_id,
         body.message_name,
-        body.message_value,
+        "",
     )
     return {"id": str(new_id)}
 
@@ -244,7 +243,7 @@ async def update_telemetry_message(
         rag_host_id,
         message_id,
         body.message_name,
-        body.message_value,
+        "",
     )
     return {"ok": True}
 
@@ -274,7 +273,6 @@ async def get_context_messages(request: Request, rag_host_id: UUID) -> Dict[str,
             {
                 "id": str(row["id"]),
                 "name": row["message_name"],
-                "value": row.get("message_value") or "",
             }
             for row in rows
         ]
@@ -291,7 +289,7 @@ async def replace_context_messages(
         request,
         "rag.replace_telemetry_messages_for_host",
         rag_host_id,
-        json.dumps([row.model_dump() for row in body.rows]),
+        json.dumps([{"name": row.name} for row in body.rows]),
     )
     return {"ok": True}
 

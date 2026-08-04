@@ -11,7 +11,6 @@ export type ContentDocRow = {
 export type ContextMessageRow = {
     id?: string;
     name: string;
-    value: string;
 };
 
 function apiBase(): string {
