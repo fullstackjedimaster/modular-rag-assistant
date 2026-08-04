@@ -325,7 +325,7 @@ prompt,
 chaining_mode
 )
 VALUES (
-'React Dynamic Form Engine',
+'Dynamic Form Engine',
 'https://entity-client.fullstackjedi.dev/demo',
 'entity_docs',
 'llama3.2:latest',
@@ -353,13 +353,13 @@ VALUES (
 RETURNING id
 INTO v_rag_host_id;
 
-INSERT INTO rag.telemetry_message (
+INSERT INTO rag.content_doc (
 rag_host_id,
-message_name,
-message_value
+doc_name,
+file_path
 )
 VALUES
-(v_rag_host_id, 'status', 0);
+(v_rag_host_id, '001.txt', '/opt/stacks/modulatr-rag-assistant/mod-rag-api/source_docs');
 
 RAISE NOTICE 'Created rag_host_id=%', v_rag_host_id;
 
