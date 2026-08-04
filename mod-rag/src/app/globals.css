@@ -1024,3 +1024,21 @@ body:has(.dock-content) {
 .dock-content .explanation-panel {
     gap: var(--explainer-gap);
 }
+
+
+/* Standalone Mod RAG application theme; dock host styling remains isolated. */
+body { background:#020617; color:#e5e7eb; }
+.management-shell { display:grid; gap:18px; width:min(1120px,100%); margin:0 auto; padding:24px; }
+.management-shell fieldset { border:1px solid rgba(148,163,184,.24); border-radius:14px; background:rgba(15,23,42,.96); box-shadow:0 18px 45px rgba(0,0,0,.28); padding:18px; }
+.management-shell legend { color:#38bdf8; font-weight:800; letter-spacing:.06em; }
+.management-shell input,.management-shell textarea,.management-shell select { width:100%; border:1px solid rgba(148,163,184,.28); border-radius:9px; background:#020617; color:#e5e7eb; padding:10px 12px; }
+.management-shell button,.management-shell a { border-radius:999px !important; border:1px solid rgba(56,189,248,.36) !important; background:#0c4a6e !important; color:#f8fafc !important; font-weight:750; }
+.knowledge-base-panel { border:1px solid rgba(56,189,248,.34); border-radius:16px; background:linear-gradient(180deg,rgba(14,116,144,.14),rgba(15,23,42,.96)); box-shadow:0 20px 48px rgba(0,0,0,.3); padding:20px; }
+.knowledge-base-heading { margin-bottom:18px; }
+.knowledge-base-heading h2 { margin:0; font-size:1.45rem; color:#f8fafc; }
+.knowledge-base-heading p:last-child { color:#94a3b8; line-height:1.55; }
+.management-eyebrow { margin:0 0 5px; color:#38bdf8; font-size:.72rem; font-weight:850; letter-spacing:.15em; text-transform:uppercase; }
+.rag-client-name { color:#dbeafe !important; }
+.rag-client-detail-link { margin-left:8px; font-size:.68rem; color:#38bdf8; }
+.rag-connect-button:disabled { opacity:.75; cursor:default; text-decoration:none; }
+@media(max-width:640px){.management-shell{padding:14px}.knowledge-base-panel{padding:14px}}

@@ -198,13 +198,7 @@ export default function DashboardClient({
                         const connected = connectedId === row.id;
                         const selected = selectedRagClientId === row.id;
                         const busy = busyId === row.id;
-                        const label = busy
-                            ? "Working..."
-                            : connected
-                                ? "Disconnect"
-                                : connectedId
-                                    ? "Switch"
-                                    : "Connect";
+                        const label = busy ? "Working..." : connected ? "Connected" : connectedId ? "Use Dock" : "Connect";
 
                         return (
                             <tr key={row.id} className={selected ? "selected" : ""}>
@@ -217,18 +211,14 @@ export default function DashboardClient({
                                     >
                                         {row.name}
                                     </button>
-                                    {!compact ? (
-                                        <Link href={`/hosts/${row.id}`} className="rag-client-manage-link">
-                                            Manage
-                                        </Link>
-                                    ) : null}
+                                    <Link href={`/client/${row.id}`} className="rag-client-detail-link" aria-label={`Open ${row.name} client settings`}>Manage</Link>
                                 </td>
                                 <td>
                                     <button
                                         type="button"
-                                        disabled={busyId !== null}
+                                        disabled={busyId !== null || connected}
                                         title={statusById[row.id]?.detail || ""}
-                                        onClick={() => void (connected ? disconnect(row) : connect(row))}
+                                        onClick={() => { if (!connected) void connect(row); }}
                                         className="rag-link-button rag-connect-button"
                                     >
                                         {label}

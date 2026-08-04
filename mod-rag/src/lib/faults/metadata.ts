@@ -1,14 +1,53 @@
-import { FaultMetadata } from "./types.js";
+// ai-core/faults/metadata.ts
+
+import { FaultMetadata } from "./types"
 
 export const FAULTS_METADATA: Record<string, FaultMetadata> = {
-  DEAD_PANEL: { label: "Dead Panel", threshold: 1.5, unit: "volts", color: "#CCCCCC", priority: 4 },
-  OPEN_CIRCUIT: { label: "Open Circuit", threshold: 0.02, unit: "expected_power_ratio", color: "#FF6B6B", priority: 3 },
-  SHORT_CIRCUIT: { label: "Short Circuit", threshold: 2, unit: "volts_with_high_current", color: "#F10000", priority: 3 },
-  OVER_TEMPERATURE: { label: "Over Temperature", threshold: 70, unit: "celsius", color: "#F97316", priority: 2 },
-  GROSS_POWER_DROP: { label: "Gross Power Drop", threshold: 0.5, unit: "expected_power_ratio", color: "#7C3AED", priority: 2 },
-  POSSIBLE_SHADING: { label: "Possible Shading", threshold: 0.75, unit: "expected_power_ratio", color: "#A855F7", priority: 1 },
-  LOW_VOLTAGE: { label: "Low Voltage", threshold: 20, unit: "volts", color: "#00CED1", priority: 1 },
-  LOW_IRRADIANCE: { label: "Low Irradiance", threshold: 100, unit: "watts_per_square_meter", color: "#64748B", priority: 0 },
-  NORMAL: { label: "Normal", color: "#00FF00", priority: 0 },
-  UNKNOWN: { label: "Unknown", color: "#111827", priority: 0 },
-};
+  OPEN_CIRCUIT: {
+    label: "Open Circuit",
+    threshold: 0.02,
+    unit: "proj_power_ratio",
+    color: "#FF6B6B",
+    priority: 3,
+  },
+  SNAPPED_DIODE: {
+    label: "Snapped Diode",
+    threshold: 3.5,
+    unit: "vo_percentage_window",
+    color: "#F7B801",
+    priority: 2,
+  },
+  POWER_DROP: {
+    label: "Power Drop",
+    threshold: 95,
+    unit: "percent_loss",
+    color: "#6A5ACD",
+    priority: 1,
+  },
+  DEAD_PANEL: {
+    label: "Dead Panel",
+    threshold: 1.5,
+    unit: "avg_voltage",
+    color: "#CCCCCC",
+    priority: 4,
+  },
+  LOW_VOLTAGE: {
+    label: "Low Voltage",
+    threshold: 20,
+    unit: "voltage",
+    color: "#00CED1",
+    priority: 0,
+  },
+  LOW_POWER: {
+    label: "Low Power",
+    threshold: 10,
+    unit: "power",
+    color: "#008B8B",
+    priority: 0,
+  },
+  NORMAL: {
+    label: "Normal",
+    color: "#00FF00",
+    priority: 0,
+  },
+}

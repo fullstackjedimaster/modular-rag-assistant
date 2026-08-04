@@ -7,8 +7,6 @@ import { useRouter } from "next/navigation";
 import GroupBox from "@/src/components/GroupBox";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
-  connectRagClient,
-  disconnectRagClient,
   createRagClient,
   deleteRagClient,
   getRagClient,
@@ -145,39 +143,7 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
     }
   }
 
-  async function onConnect() {
-    if (!activeClientId) return;
 
-    setErr("");
-
-    if (isReadOnly) {
-      setErr("Demo mode is read-only. Connect actions are disabled from this screen.");
-      return;
-    }
-
-    try {
-      await connectRagClient(activeClientId);
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function onDisconnect() {
-    if (!activeClientId) return;
-
-    setErr("");
-
-    if (isReadOnly) {
-      setErr("Demo mode is read-only. Disconnect actions are disabled from this screen.");
-      return;
-    }
-
-    try {
-      await disconnectRagClient(activeClientId);
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  }
 
   if (state === "loading") {
     return (
@@ -216,13 +182,13 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="management-shell">
       <GroupBox title={title}>
         {err ? <div className="mb-3 whitespace-pre-wrap text-sm text-red-600">{err}</div> : null}
 
         {isReadOnly ? (
           <div className="mb-3 rounded border bg-gray-50 px-3 py-2 text-sm text-gray-700">
-            Demo mode is read-only. You can view client details, but create, edit, connect, disconnect, and delete actions are disabled here.
+            Demo mode is read-only. You can view client details, but create, edit, and delete actions are disabled here.
           </div>
         ) : null}
 
@@ -283,24 +249,6 @@ export default function ManagementShell(props: { mode: Mode; clientId?: string }
                       disabled={!activeClientId}
                     >
                       Save Changes
-                    </button>
-
-                    <button
-                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                      type="button"
-                      onClick={() => void onConnect()}
-                      disabled={!activeClientId}
-                    >
-                      Connect
-                    </button>
-
-                    <button
-                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                      type="button"
-                      onClick={() => void onDisconnect()}
-                      disabled={!activeClientId}
-                    >
-                      Disconnect
                     </button>
 
                     <button

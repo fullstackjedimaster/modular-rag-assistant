@@ -130,11 +130,11 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
   }
 
   return (
-    <GroupBox title="1) Content docs (client_context)">
+    <section className="knowledge-base-panel" aria-labelledby="knowledge-base-title"><div className="knowledge-base-heading"><p className="management-eyebrow">Knowledge Base</p><h2 id="knowledge-base-title">Documents</h2><p>Add manuals, specifications, guides, and other source material used to ground this client’s answers.</p></div>
       <div className="grid gap-3">
         <div className="grid gap-2">
           <div className="text-xs text-gray-600">
-            These are DB rows, doc_name + file_path. Upload plumbing can come later if you want.
+            Register a document name and its mounted file path or source URL. Documents become the evidence base for retrieval and citations.
           </div>
 
           {isReadOnly ? (
@@ -194,7 +194,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
 
         <div className="rounded border p-2">
           {rows.length === 0 ? (
-            <div className="text-xs text-gray-500">No content docs configured yet.</div>
+            <div className="text-xs text-gray-500">No documents configured yet. Add the first source document above.</div>
           ) : (
             <div className="grid gap-2">
               {rows.map((r) => (
@@ -211,7 +211,7 @@ export default function ContentDocsBox(props: { clientId: RagClientId }) {
           )}
         </div>
       </div>
-    </GroupBox>
+    </section>
   );
 }
 

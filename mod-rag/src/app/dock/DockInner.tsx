@@ -18,11 +18,6 @@ import type {
 
 type ForwardedAttrs = Record<string, string | number | boolean>;
 
-const SOLAR_TELEMETRY_KEYS = [
-    "status", "voltage", "current", "power", "temperature", "irradiance",
-    "expected_power", "performance_ratio", "environmental_state", "diagnostic_basis",
-] as const;
-
 function applyTheme(root: HTMLElement, message: HostThemeMessage): void {
     for (const [name, value] of Object.entries(message.vars)) {
         root.style.setProperty(name, value);
@@ -38,12 +33,15 @@ function selectTelemetryAttrs(
 ): ForwardedAttrs {
     const selected: ForwardedAttrs = {};
 
-    const configuredKeys = client.telemetry_messages.map((message) => message.message_name);
-    const keys = new Set<string>([...configuredKeys, ...SOLAR_TELEMETRY_KEYS]);
-
-    for (const name of keys) {
+    for (const telemetryMessage of client.telemetry_messages) {
+        const name = telemetryMessage.message_name;
         const value = attrs[name];
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+
+        if (
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean"
+        ) {
             selected[name] = value;
         }
     }
