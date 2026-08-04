@@ -23,7 +23,7 @@ export default function HostsPage() {
 
                         <div className="flex items-center gap-2">
                             <Link
-                                href="/mod-rag/public"
+                                href="/"
                                 className="border rounded px-3 py-2 text-sm hover:bg-gray-50"
                             >
                                 Back to Demo

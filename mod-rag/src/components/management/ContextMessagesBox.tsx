@@ -1,263 +1,153 @@
-// app/components/management/ContentDocsBox.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+
 import GroupBox from "@/src/components/GroupBox";
 import { useAppMode } from "@/src/contexts/AppModeContext";
 import {
-    addContentDoc,
-    deleteContentDoc,
-    listContentDocs,
-    updateContentDoc,
-    type ContentDocRow,
+    getContextMessages,
+    saveContextMessages,
+    type ContextMessageRow,
 } from "@/src/lib/hostContextApi";
 
-export default function ContentDocsBox(props: { hostId: string }) {
+const EMPTY_ROW: ContextMessageRow = { name: "", value: "" };
+
+export default function ContextMessagesBox(props: { hostId: string }) {
     const { hostId } = props;
     const { isReadOnly } = useAppMode();
-
+    const [rows, setRows] = useState<ContextMessageRow[]>([]);
     const [busy, setBusy] = useState(false);
-    const [note, setNote] = useState<string>("");
+    const [note, setNote] = useState("");
 
-    const [rows, setRows] = useState<ContentDocRow[]>([]);
-    const [docName, setDocName] = useState("");
-    const [filePath, setFilePath] = useState("");
-
-    async function refresh() {
-        setNote("");
+    const refresh = useCallback(async () => {
         setBusy(true);
+        setNote("");
         try {
-            const list = await listContentDocs(hostId);
-            setRows(list || []);
-        } catch (e: unknown) {
-            setNote(e instanceof Error ? e.message : String(e));
+            setRows(await getContextMessages(hostId));
+        } catch (error: unknown) {
             setRows([]);
+            setNote(error instanceof Error ? error.message : String(error));
         } finally {
             setBusy(false);
         }
-    }
+    }, [hostId]);
 
     useEffect(() => {
         void refresh();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hostId]);
+    }, [refresh]);
 
-    async function onAdd() {
-        setNote("");
-
-        if (isReadOnly) {
-            setNote("Demo mode is read-only. Adding content docs is disabled.");
-            return;
-        }
-        const dn = docName.trim();
-        const fp = filePath.trim();
-        if (!dn) {
-            setNote("doc_name is required.");
-            return;
-        }
-        if (!fp) {
-            setNote("file_path is required.");
-            return;
-        }
-
-        setBusy(true);
-        try {
-            await addContentDoc(hostId, { doc_name: dn, file_path: fp });
-            setDocName("");
-            setFilePath("");
-            await refresh();
-            setNote("Added content doc.");
-        } catch (e: unknown) {
-            setNote(e instanceof Error ? e.message : String(e));
-        } finally {
-            setBusy(false);
-        }
+    function updateRow(index: number, patch: Partial<ContextMessageRow>) {
+        setRows((current) =>
+            current.map((row, rowIndex) =>
+                rowIndex === index ? { ...row, ...patch } : row,
+            ),
+        );
     }
 
-    async function onSaveRow(docId: string, next: { doc_name: string; file_path: string }) {
-        setNote("");
-
-        if (isReadOnly) {
-            setNote("Demo mode is read-only. Saving content docs is disabled.");
-            return;
-        }
-        setBusy(true);
-        try {
-            await updateContentDoc(hostId, docId, {
-                doc_name: next.doc_name.trim(),
-                file_path: next.file_path.trim(),
-            });
-            await refresh();
-            setNote("Saved.");
-        } catch (e: unknown) {
-            setNote(e instanceof Error ? e.message : String(e));
-        } finally {
-            setBusy(false);
-        }
+    function removeRow(index: number) {
+        setRows((current) => current.filter((_, rowIndex) => rowIndex !== index));
     }
 
-    async function onDelete(docId: string) {
+    async function save() {
         if (isReadOnly) {
-            setNote("Demo mode is read-only. Deleting content docs is disabled.");
+            setNote("Demo mode is read-only.");
             return;
         }
 
-        if (!confirm("Delete this content doc?")) return;
-        setNote("");
+        const normalized = rows
+            .map((row) => ({ name: row.name.trim(), value: row.value.trim() }))
+            .filter((row) => row.name.length > 0);
+
         setBusy(true);
+        setNote("");
         try {
-            await deleteContentDoc(hostId, docId);
+            await saveContextMessages(hostId, normalized);
+            setNote("Saved context messages.");
             await refresh();
-            setNote("Deleted.");
-        } catch (e: unknown) {
-            setNote(e instanceof Error ? e.message : String(e));
+        } catch (error: unknown) {
+            setNote(error instanceof Error ? error.message : String(error));
         } finally {
             setBusy(false);
         }
     }
 
     return (
-        <GroupBox title="1) Content docs (host_context)">
+        <GroupBox title="2) Context telemetry">
             <div className="grid gap-3">
-                <div className="grid gap-2">
-                    <div className="text-xs text-gray-600">
-                        These are DB rows (doc_name + file_path). Upload plumbing can come later if you want.
-                    </div>
+                <p className="text-xs text-gray-600">
+                    Choose the telemetry fields the host may send to the dock. These rows are stored in
+                    <code className="ml-1">rag.telemetry_message</code>.
+                </p>
 
-                    {isReadOnly ? (
-                        <div className="rounded border bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                            Demo mode is read-only. You can view content docs, but edits are disabled.
+                <div className="grid gap-2">
+                    {rows.length === 0 ? (
+                        <div className="rounded border px-3 py-3 text-xs text-gray-500">
+                            No context telemetry configured. Add the first field below.
                         </div>
                     ) : null}
 
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                        <div className="md:col-span-4">
-                            <label className="text-xs font-medium">Doc Name</label>
+                    {rows.map((row, index) => (
+                        <div key={row.id || `${index}-${row.name}`} className="grid grid-cols-1 gap-2 md:grid-cols-12">
                             <input
-                                className="w-full border rounded px-2 py-2 text-sm"
-                                value={docName}
-                                onChange={(e) => setDocName(e.target.value)}
+                                className="rounded border px-2 py-2 text-sm md:col-span-4"
+                                value={row.name}
+                                onChange={(event) => updateRow(index, { name: event.target.value })}
+                                placeholder="e.g. irradiance"
                                 disabled={busy || isReadOnly}
-                                placeholder="e.g. Mesh Fault Handbook"
                             />
-                        </div>
-                        <div className="md:col-span-6">
-                            <label className="text-xs font-medium">File Path / URL</label>
                             <input
-                                className="w-full border rounded px-2 py-2 text-sm font-mono"
-                                value={filePath}
-                                onChange={(e) => setFilePath(e.target.value)}
+                                className="rounded border px-2 py-2 text-sm md:col-span-7"
+                                value={row.value}
+                                onChange={(event) => updateRow(index, { value: event.target.value })}
+                                placeholder="Default/example value"
                                 disabled={busy || isReadOnly}
-                                placeholder="/config/source_docs/mesh/handbook.md or https://..."
                             />
-                        </div>
-                        <div className="md:col-span-2 flex items-end">
                             <button
                                 type="button"
-                                className="w-full border rounded px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-                                onClick={() => void onAdd()}
+                                className="rounded border px-2 py-2 text-sm md:col-span-1"
+                                onClick={() => removeRow(index)}
                                 disabled={busy || isReadOnly}
+                                aria-label={`Remove ${row.name || "context field"}`}
                             >
-                                Add
+                                ×
                             </button>
                         </div>
-                    </div>
+                    ))}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2">
+                    {!isReadOnly ? (
+                        <>
+                            <button
+                                type="button"
+                                className="rounded border px-3 py-2 text-sm"
+                                onClick={() => setRows((current) => [...current, { ...EMPTY_ROW }])}
+                                disabled={busy}
+                            >
+                                Add Field
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded border px-3 py-2 text-sm font-medium"
+                                onClick={() => void save()}
+                                disabled={busy}
+                            >
+                                Save
+                            </button>
+                        </>
+                    ) : null}
                     <button
                         type="button"
-                        className="border rounded px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+                        className="rounded border px-3 py-2 text-sm"
                         onClick={() => void refresh()}
                         disabled={busy}
                     >
                         Refresh
                     </button>
-                    {note ? <div className="text-xs text-gray-700 whitespace-pre-wrap">{note}</div> : null}
                 </div>
 
-                <div className="border rounded p-2">
-                    {rows.length === 0 ? (
-                        <div className="text-xs text-gray-500">No content docs configured yet.</div>
-                    ) : (
-                        <div className="grid gap-2">
-                            {rows.map((r) => (
-                                <EditableDocRow
-                                    key={r.id}
-                                    row={r}
-                                    busy={busy}
-                                    isReadOnly={isReadOnly}
-                                    onSave={(next) => void onSaveRow(r.id, next)}
-                                    onDelete={() => void onDelete(r.id)}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {note ? <div className="whitespace-pre-wrap text-xs text-gray-700">{note}</div> : null}
             </div>
         </GroupBox>
-    );
-}
-
-function EditableDocRow(props: {
-    row: ContentDocRow;
-    busy: boolean;
-    isReadOnly: boolean;
-    onSave: (next: { doc_name: string; file_path: string }) => void;
-    onDelete: () => void;
-}) {
-    const { row, busy, isReadOnly, onSave, onDelete } = props;
-    const [doc_name, setDocName] = useState(row.doc_name);
-    const [file_path, setFilePath] = useState(row.file_path);
-
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDocName(row.doc_name);
-        setFilePath(row.file_path);
-    }, [row.doc_name, row.file_path]);
-
-    const dirty = doc_name !== row.doc_name || file_path !== row.file_path;
-
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
-            <div className="md:col-span-4">
-                <label className="text-xs font-medium">Doc Name</label>
-                <input
-                    className="w-full border rounded px-2 py-1 text-sm"
-                    value={doc_name}
-                    onChange={(e) => setDocName(e.target.value)}
-                    disabled={busy || isReadOnly}
-                />
-            </div>
-            <div className="md:col-span-7">
-                <label className="text-xs font-medium">File Path / URL</label>
-                <input
-                    className="w-full border rounded px-2 py-1 text-sm font-mono"
-                    value={file_path}
-                    onChange={(e) => setFilePath(e.target.value)}
-                    disabled={busy || isReadOnly}
-                />
-            </div>
-            <div className="md:col-span-1 flex md:justify-end gap-2 mt-5 md:mt-6">
-                <button
-                    type="button"
-                    className="border rounded px-2 py-1 text-xs disabled:opacity-50"
-                    disabled={busy || isReadOnly || !dirty}
-                    onClick={() => onSave({ doc_name, file_path })}
-                    title="Save"
-                >
-                    Save
-                </button>
-                <button
-                    type="button"
-                    className="border rounded px-2 py-1 text-xs disabled:opacity-50"
-                    disabled={busy || isReadOnly}
-                    onClick={onDelete}
-                    title="Delete"
-                >
-                    ✕
-                </button>
-            </div>
-        </div>
     );
 }

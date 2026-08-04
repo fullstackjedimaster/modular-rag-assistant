@@ -170,7 +170,7 @@ export default function ManagementShell(props: { mode: Mode; hostId?: string }) 
               Retry
             </button>
 
-            <Link className="rounded border px-3 py-2 text-sm" href="/mod-rag/public">
+            <Link className="rounded border px-3 py-2 text-sm" href="/">
               Back
             </Link>
           </div>
@@ -238,7 +238,7 @@ export default function ManagementShell(props: { mode: Mode; hostId?: string }) 
                   </button>
                 ) : null}
 
-                <Link className="rounded border px-3 py-2 text-sm hover:bg-gray-50" href="/mod-rag/public">
+                <Link className="rounded border px-3 py-2 text-sm hover:bg-gray-50" href="/">
                   Cancel
                 </Link>
               </>
@@ -266,7 +266,7 @@ export default function ManagementShell(props: { mode: Mode; hostId?: string }) 
                   </>
                 ) : null}
 
-                <Link className="rounded border px-3 py-2 text-sm hover:bg-gray-50" href="/mod-rag/public">
+                <Link className="rounded border px-3 py-2 text-sm hover:bg-gray-50" href="/">
                   Back
                 </Link>
               </>
