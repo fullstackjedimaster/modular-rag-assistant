@@ -11,7 +11,7 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
       tini \
       ca-certificates \
-      postgresql-host \
+      postgresql-client \
       redis-tools \
       bash \
       openssl \
