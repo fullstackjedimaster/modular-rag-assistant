@@ -1,6 +1,7 @@
 // app/lib/ragHostApi.tS
 
 import { settings } from "@/src/lib/settings";
+import { getEmbedToken } from "@/src/lib/embedTokenStore";
 
 export type RagHostRow = {
     id: string;
@@ -56,10 +57,17 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
     const resp = await fetch(url, {
         ...init,
-        headers: {
-            "Content-Type": "application/json",
-            ...(init?.headers || {}),
-        },
+        headers: (() => {
+            const headers = new Headers(init?.headers || {});
+            headers.set("Content-Type", "application/json");
+
+            const embedToken = getEmbedToken();
+            if (embedToken) {
+                headers.set("X-Embed-Token", embedToken);
+            }
+
+            return headers;
+        })(),
         cache: "no-store",
     });
 

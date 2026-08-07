@@ -23,7 +23,7 @@ from routers.schemas import (
 )
 from routers.status_registry import REGISTRY
 
-router = APIRouter(prefix="/api/rag-hosts", tags=["rag-hosts"])
+router = APIRouter(prefix="/rag-hosts", tags=["rag-hosts"])
 
 
 class SystemPromptBody(BaseModel):

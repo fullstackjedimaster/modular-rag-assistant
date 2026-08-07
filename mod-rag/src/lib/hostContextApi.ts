@@ -1,4 +1,5 @@
 import { settings } from "@/src/lib/settings";
+import { getEmbedToken } from "@/src/lib/embedTokenStore";
 
 export type ContentDocRow = {
     id: string;
@@ -20,10 +21,17 @@ function apiBase(): string {
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${apiBase()}${path}`, {
         ...init,
-        headers: {
-            "Content-Type": "application/json",
-            ...(init?.headers || {}),
-        },
+        headers: (() => {
+            const headers = new Headers(init?.headers || {});
+            headers.set("Content-Type", "application/json");
+
+            const embedToken = getEmbedToken();
+            if (embedToken) {
+                headers.set("X-Embed-Token", embedToken);
+            }
+
+            return headers;
+        })(),
         cache: "no-store",
     });
 
